@@ -1,7 +1,9 @@
 package com.example.learningApp.controller;
 
 import com.example.learningApp.dto.ApiResponse;
+import com.example.learningApp.dto.request.UserLoginRequest;
 import com.example.learningApp.dto.request.UserRequest;
+import com.example.learningApp.dto.response.UserLoginResponse;
 import com.example.learningApp.dto.response.UserResponse;
 import com.example.learningApp.entity.User;
 import com.example.learningApp.service.UserService;
@@ -24,5 +26,10 @@ public class UserController {
     public ResponseEntity<ApiResponse<UserResponse>> registerUser(@RequestBody @Valid UserRequest request) {
         UserResponse response = userService.registerUser(request);
         return ResponseEntity.ok(ApiResponse.success("User registered successfully", response));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<UserLoginResponse>> login(@RequestBody @Valid UserLoginRequest request) {
+        return ResponseEntity.ok(ApiResponse.success("Login successful", userService.login(request)));
     }
 }
