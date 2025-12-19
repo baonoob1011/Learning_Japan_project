@@ -1,0 +1,97 @@
+spring:
+  application:
+    name: learningApp
+
+  main:
+    banner-mode: off
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${COGNITO_ISSUER_URI}
+
+  cache:
+    type: redis
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      cluster:
+        enabled: false
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+
+  kafka:
+    consumer:
+      bootstrap-servers: localhost:9092
+      group-id: user-service-group
+      key-deserializer: ${KAFKA_KEY_SERIALIZER}
+      value-deserializer: ${KAFKA_VALUE_SERIALIZER}
+      properties:
+        spring.json.trusted.packages: "*"
+
+# ================= CUSTOM CONFIG =================
+
+openSearch:
+  host: ${AWS_OPENSEARCH_HOST}
+  username: ${AWS_OPENSEARCH_USERNAME}
+  password: ${AWS_OPENSEARCH_PASSWORD}
+
+aws:
+  iam:
+    region: ${AWS_REGION}
+    cognito-domain: ${AWS_COGNITO_DOMAIN}
+    access-key: ${AWS_ACCESS_KEY}
+    secret-key: ${AWS_SECRET_KEY}
+
+    region-cognito: ${AWS_REGION_COGNITO}
+    access-key-cognito: ${AWS_ACCESS_KEY_COGNITO}
+    secret-key-cognito: ${AWS_SECRET_KEY_COGNITO}
+
+    client-id: ${AWS_CLIENT_ID}
+    client-secret: ${AWS_CLIENT_SECRET}
+    user-pool-id: ${AWS_USER_POOL_ID}
+
+google:
+  redirect-uri: ${REDICT_URI}
+
+cloudwatch:
+  log-group: ${AWS_LOG_GROUP}
+  log-stream: ${AWS_IAM_LOG_STREAM}
+
+jwt:
+  secret-key: ${JWT_SECRET}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  endpoint:
+    prometheus:
+      enabled: true
+  metrics:
+    enable:
+      all: true
+
+app:
+  admin:
+    identity-number: ${ADMIN_IDENTITY_NUMBER}
+    email: ${ADMIN_EMAIL}
+    phone-number: ${ADMIN_PHONE}
+    full-name: ${ADMIN_FULL_NAME}
+    dob: ${ADMIN_DOB}
+    address: ${ADMIN_ADDRESS}
