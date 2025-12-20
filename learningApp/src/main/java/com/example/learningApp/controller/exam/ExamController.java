@@ -37,6 +37,14 @@ public class ExamController {
         return ResponseEntity.ok(ApiResponse.success("Exams retrieved successfully", response));
     }
 
+    @GetMapping("/search")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    public ResponseEntity<ApiResponse<List<ExamResponse>>> searchExams(
+            @RequestParam("key") String keyword) {
+        List<ExamResponse> response = examService.searchExams(keyword);
+        return ResponseEntity.ok(ApiResponse.success("Search results", response));
+    }
+
     // Get exam by ID
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','USER')")

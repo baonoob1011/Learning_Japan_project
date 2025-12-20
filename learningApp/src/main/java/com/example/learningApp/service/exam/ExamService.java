@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -21,6 +22,14 @@ public class ExamService {
 
     ExamRepository examRepository;
     ExamMapper examMapper;
+
+
+    public List<ExamResponse> searchExams(String keyword) {
+        List<Exam> exams = examRepository.searchByKeyword(keyword);
+        return exams.stream()
+                .map(examMapper::toExamResponse)
+                .collect(Collectors.toList());
+    }
 
     public List<ExamResponse> getAllExams() {
         // Map từ List<Exam> sang List<ExamResponse>
