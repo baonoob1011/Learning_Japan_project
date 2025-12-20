@@ -81,9 +81,4 @@ public class SecurityConfig {
         return jwtConverter;
     }
 
-    @Bean
-    public EventBridgeClient eventBridgeClient() {
-        return EventBridgeClient.create();
-    }
-
 }

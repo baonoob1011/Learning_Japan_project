@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
+import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
+import software.amazon.awssdk.services.eventbridge.model.PutEventsResultEntry;
 
 @Service
 @Slf4j
@@ -16,12 +18,6 @@ public class EventBridgePublisher {
     private final EventBridgeClient eventBridgeClient;
     private final ObjectMapper objectMapper;
 
-    /**
-     * Hàm dùng chung cho TOÀN BỘ hệ thống
-     * @param source: Nguồn sự kiện (VD: com.example.auth, com.example.order)
-     * @param eventType: Tên sự kiện (VD: UserLogin, OrderCreated)
-     * @param payload: Dữ liệu (Object bất kỳ, Map, List, DTO...)
-     */
     public void sendEvent(String source, String eventType, Object payload) {
         try {
             // 1. Chuyển Object data thành JSON String
@@ -35,15 +31,26 @@ public class EventBridgePublisher {
                     .eventBusName("default")
                     .build();
 
-            // 3. Gửi đi
-            eventBridgeClient.putEvents(PutEventsRequest.builder()
+            // 3. Gửi đi và HỨNG KẾT QUẢ TRẢ VỀ (Quan trọng!)
+            PutEventsResponse response = eventBridgeClient.putEvents(PutEventsRequest.builder()
                     .entries(entry)
                     .build());
 
-            log.info("✅ Sent EventBridge: [{}] type [{}]", source, eventType);
+            // 4. Kiểm tra xem có vé nào bị trượt (Failed) không
+            if (response.failedEntryCount() > 0) {
+                // Lấy lỗi đầu tiên ra để soi
+                PutEventsResultEntry failure = response.entries().get(0);
+                log.error("❌ GỬI THẤT BẠI! Mã lỗi: [{}] - Lý do: [{}]",
+                        failure.errorCode(), failure.errorMessage());
+            } else {
+                // Thành công thật sự
+                log.info("✅ Sent EventBridge OK: [{}] type [{}] - ID: {}",
+                        source, eventType, response.entries().get(0).eventId());
+            }
 
         } catch (Exception e) {
-            log.error("❌ Failed to send EventBridge event: {}", eventType, e);
+            // Lỗi này là lỗi code (VD: JSON sai, mất mạng...)
+            log.error("❌ Exception sending event: {}", eventType, e);
         }
     }
 }

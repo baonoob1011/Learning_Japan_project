@@ -97,6 +97,14 @@ public class AuthService {
 
             User savedUser = userRepository.save(user);
 
+
+            // 4️⃣ Assign default role
+            if (!isAdmin) {
+                roleService.assignRoleToUser(
+                        new AssignRoleRequest(savedUser.getId(), "USER")
+                );
+            }
+
             AuthEventDTO authEventDTO = AuthEventDTO.builder()
                     .userId(savedUser.getId())
                     .email(savedUser.getEmail())
@@ -105,13 +113,7 @@ public class AuthService {
                     .timestamp(Instant.now().toString())
                     .build();
 
-            eventBridgePublisher.sendEvent("com.example.learningApp.auth", "UserRegistered", authEventDTO);
-            // 4️⃣ Assign default role
-            if (!isAdmin) {
-                roleService.assignRoleToUser(
-                        new AssignRoleRequest(savedUser.getId(), "USER")
-                );
-            }
+            eventBridgePublisher.sendEvent("com.example.learningApp.auth", "UserRegister", authEventDTO);
 
             // 5️⃣ Success
             return userMapper.toUserResponse(savedUser);

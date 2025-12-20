@@ -55,11 +55,13 @@ public class AdminInitializer implements ApplicationRunner {
     @Value("${app.admin.password}")
     String password;
 
+    static String DEFAULT_USER_ROLE = "USER";
+
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
         log.info(" Initializing admin user & role...");
-
+        ensureUserRole();
         ensureAdminRole();
         User adminUser = ensureAdminUser();
         ensureAdminRoleAssigned(adminUser);
@@ -68,6 +70,17 @@ public class AdminInitializer implements ApplicationRunner {
     }
 
     // =============================
+
+    private void ensureUserRole() {
+        if (roleRepository.existsByRoleName(DEFAULT_USER_ROLE)) {
+            log.info("✔ Default Role {} already exists", DEFAULT_USER_ROLE);
+            return;
+        }
+
+        log.info("Creating default role: {}", DEFAULT_USER_ROLE);
+        // Lưu ý: Đảm bảo CreateRoleRequest và RoleService của bạn hoạt động đúng
+        roleService.createRole(new CreateRoleRequest(DEFAULT_USER_ROLE));
+    }
 
     private void ensureAdminRole() {
         if (roleRepository.existsByRoleName(role)) {
