@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.NotAuthorizedException;
 
 import java.util.HashMap;
@@ -17,16 +18,31 @@ import java.util.Map;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    // 🔹 Sai username / password (AWS Cognito)
-    @ExceptionHandler(NotAuthorizedException.class)
-    public ResponseEntity<ApiResponse<Object>> handleNotAuthorized(NotAuthorizedException ex) {
+
+    // 🔹 Business logic error (VD: refresh token bị revoke)
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiResponse<Object>> handleIllegalStateException(
+            IllegalStateException ex) {
+
         ApiResponse<Object> response = ApiResponse.builder()
                 .code(HttpStatus.UNAUTHORIZED.value())
-                .message("Unauthorized: invalid username or password")
+                .message(ex.getMessage())
                 .build();
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }
+
+    @ExceptionHandler(NotAuthorizedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleNotAuthorizedException(NotAuthorizedException ex) {
+
+        ApiResponse<Object> response = ApiResponse.builder()
+                .code(HttpStatus.UNAUTHORIZED.value())
+                .message(ex.getMessage())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
+
 
     // 🔹 Validation error
     @ExceptionHandler(MethodArgumentNotValidException.class)

@@ -1,8 +1,8 @@
 package com.example.learningApp.service;
 
 import com.example.learningApp.configuration.CognitoSecretHashUtil;
-import com.example.learningApp.dto.request.UserLoginRequest;
-import com.example.learningApp.dto.request.UserRequest;
+import com.example.learningApp.dto.request.auth.UserLoginRequest;
+import com.example.learningApp.dto.request.user.CreateUserRequest;
 import com.example.learningApp.dto.response.UserLoginResponse;
 import com.example.learningApp.dto.response.UserResponse;
 import com.example.learningApp.entity.User;
@@ -52,7 +52,7 @@ public class AuthService {
     @NonFinal
     @Value("${aws.iam.user-pool-id}")
     String userPoolId;
-    public UserResponse registerUser(UserRequest request) {
+    public UserResponse registerUser(CreateUserRequest request) {
 
         // 🔹 Check email đã tồn tại DB
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -106,9 +106,9 @@ public class AuthService {
             authParams.put("USERNAME", email);
             authParams.put("PASSWORD", request.getPassword());
 
-            // Nếu client secret có, thêm SECRET_HASH
             if (clientSecret != null && !clientSecret.isBlank()) {
-                String secretHash = CognitoSecretHashUtil.calculateSecretHash(email, clientId, clientSecret);
+                String secretHash = CognitoSecretHashUtil
+                        .calculateSecretHash(email, clientId, clientSecret);
                 authParams.put("SECRET_HASH", secretHash);
             }
 
@@ -119,29 +119,42 @@ public class AuthService {
                     .authParameters(authParams)
                     .build();
 
-            AdminInitiateAuthResponse response = cognitoClient.adminInitiateAuth(authRequest);
+            AdminInitiateAuthResponse response =
+                    cognitoClient.adminInitiateAuth(authRequest);
+
+            if (response.authenticationResult() == null) {
+                throw new IllegalStateException("Invalid login credentials");
+            }
 
             return UserLoginResponse.builder()
                     .accessToken(response.authenticationResult().accessToken())
                     .refreshToken(response.authenticationResult().refreshToken())
                     .build();
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Login failed: " + e.getMessage(), e);
+        } catch (NotAuthorizedException ex) {
+            // Sai email hoặc password
+            throw new IllegalStateException("Invalid email or password");
+
+        } catch (UserNotFoundException ex) {
+            throw new IllegalStateException("User does not exist");
+
+        } catch (Exception ex) {
+            throw new RuntimeException("Login failed", ex);
         }
     }
+
 
     public UserLoginResponse refreshToken(String username, String refreshToken) {
         try {
             Map<String, String> authParams = new HashMap<>();
             authParams.put("REFRESH_TOKEN", refreshToken);
 
-            // Tính SECRET_HASH chính xác nếu client secret có
             if (clientSecret != null && !clientSecret.isBlank()) {
-                String secretHash = CognitoSecretHashUtil.calculateSecretHash(username, clientId, clientSecret);
+                String secretHash = CognitoSecretHashUtil
+                        .calculateSecretHash(username, clientId, clientSecret);
                 authParams.put("SECRET_HASH", secretHash);
             }
+
             AdminInitiateAuthRequest authRequest = AdminInitiateAuthRequest.builder()
                     .userPoolId(userPoolId)
                     .clientId(clientId)
@@ -149,20 +162,47 @@ public class AuthService {
                     .authParameters(authParams)
                     .build();
 
-            AdminInitiateAuthResponse response = cognitoClient.adminInitiateAuth(authRequest);
+            AdminInitiateAuthResponse response =
+                    cognitoClient.adminInitiateAuth(authRequest);
 
-            if (response.authenticationResult() == null || response.authenticationResult().accessToken() == null) {
-                throw new RuntimeException("Refresh token không thành công, không nhận được access token");
+            if (response.authenticationResult() == null ||
+                    response.authenticationResult().accessToken() == null) {
+                throw new IllegalStateException("Unable to refresh token");
             }
 
             return UserLoginResponse.builder()
                     .accessToken(response.authenticationResult().accessToken())
-                    .refreshToken(refreshToken) // refresh token giữ nguyên
+                    .refreshToken(refreshToken)
                     .build();
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Refresh token failed: " + e.getMessage(), e);
+        } catch (NotAuthorizedException ex) {
+
+            // Refresh token không hợp lệ / hết hạn / bị revoke
+            throw new IllegalStateException("Session expired. Please login again");
+
+        } catch (Exception ex) {
+            throw new RuntimeException("Refresh token failed", ex);
+        }
+    }
+
+
+    public void logout(String username, String accessToken, String refreshToken) {
+        try {
+            // Global sign out (invalidate access token)
+            if (accessToken != null && !accessToken.isBlank()) {
+                GlobalSignOutRequest signOutRequest = GlobalSignOutRequest.builder()
+                        .accessToken(accessToken)
+                        .build();
+
+                cognitoClient.globalSignOut(signOutRequest);
+            }
+
+        } catch (NotAuthorizedException ex) {
+            // Token đã hết hạn / đã bị revoke
+            throw new IllegalStateException("Session already expired");
+
+        } catch (Exception ex) {
+            throw new RuntimeException("Logout failed", ex);
         }
     }
 
