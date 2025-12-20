@@ -1,13 +1,15 @@
-package com.example.learningApp.service;
+package com.example.learningApp.service.auth;
 
 import com.example.learningApp.configuration.CognitoSecretHashUtil;
 import com.example.learningApp.dto.request.auth.UserLoginRequest;
+import com.example.learningApp.dto.request.role.AssignRoleRequest;
 import com.example.learningApp.dto.request.user.CreateUserRequest;
 import com.example.learningApp.dto.response.UserLoginResponse;
 import com.example.learningApp.dto.response.UserResponse;
 import com.example.learningApp.entity.User;
 import com.example.learningApp.mapper.UserMapper;
 import com.example.learningApp.repository.UserRepository;
+import com.example.learningApp.service.role.RoleService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -15,6 +17,7 @@ import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
 
@@ -30,6 +33,7 @@ public class AuthService {
     UserRepository userRepository;
     CognitoIdentityProviderClient cognitoClient;
     UserMapper userMapper;
+    RoleService roleService;
 
     @NonFinal
     @Value("${aws.iam.access-key-cognito}")
@@ -37,12 +41,6 @@ public class AuthService {
     @NonFinal
     @Value("${aws.iam.secret-key-cognito}")
     String secretKey;
-    @NonFinal
-    @Value("${aws.iam.cognito-domain}")
-    String cognitoDomain;
-    @NonFinal
-    @Value("${aws.iam.region-cognito}")
-    String region;
     @NonFinal
     @Value("${aws.iam.client-id}")
     String clientId;
@@ -52,50 +50,77 @@ public class AuthService {
     @NonFinal
     @Value("${aws.iam.user-pool-id}")
     String userPoolId;
-    public UserResponse registerUser(CreateUserRequest request) {
 
-        // 🔹 Check email đã tồn tại DB
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email already exists");
+    @Transactional
+    public UserResponse registerUser(CreateUserRequest request, boolean isAdmin) {
+
+        String email = request.getEmail();
+        boolean cognitoUserCreated = false;
+
+        try {
+            // 1️⃣ Create user in Cognito
+            cognitoClient.adminCreateUser(
+                    AdminCreateUserRequest.builder()
+                            .userPoolId(userPoolId)
+                            .username(email)
+                            .userAttributes(
+                                    AttributeType.builder().name("email").value(email).build(),
+                                    AttributeType.builder().name("email_verified").value("true").build(),
+                                    AttributeType.builder().name("name").value(request.getFullName()).build()
+                            )
+                            .messageAction(MessageActionType.SUPPRESS)
+                            .build()
+            );
+            cognitoUserCreated = true;
+
+            // 2️⃣ Set password
+            cognitoClient.adminSetUserPassword(
+                    AdminSetUserPasswordRequest.builder()
+                            .userPoolId(userPoolId)
+                            .username(email)
+                            .password(request.getPassword())
+                            .permanent(true)
+                            .build()
+            );
+
+            // 3️⃣ Save DB
+            User user = User.builder()
+                    .email(email)
+                    .fullName(request.getFullName())
+                    .enabled(true)
+                    .build();
+
+            User savedUser = userRepository.save(user);
+
+            // 4️⃣ Assign default role
+            if (!isAdmin) {
+                roleService.assignRoleToUser(
+                        new AssignRoleRequest(savedUser.getId(), "USER")
+                );
+            }
+
+            // 5️⃣ Success
+            return userMapper.toUserResponse(savedUser);
+
+        } catch (Exception ex) {
+
+            // 🔥 Manual rollback Cognito
+            if (cognitoUserCreated) {
+                try {
+                    cognitoClient.adminDeleteUser(
+                            AdminDeleteUserRequest.builder()
+                                    .userPoolId(userPoolId)
+                                    .username(email)
+                                    .build()
+                    );
+                    log.warn("♻ Rolled back Cognito user: {}", email);
+                } catch (Exception deleteEx) {
+                    log.error("❌ Failed to rollback Cognito user {}", email, deleteEx);
+                }
+            }
+
+            throw new IllegalStateException("User registration failed", ex);
         }
-
-        String email = request.getEmail(); // email sẽ là username trong Cognito
-
-        // 🔹 1. Tạo user trên Cognito
-        AdminCreateUserRequest createUserRequest = AdminCreateUserRequest.builder()
-                .userPoolId(userPoolId)
-                .username(email) // email làm username
-                .userAttributes(
-                        AttributeType.builder().name("email").value(email).build(),
-                        AttributeType.builder().name("email_verified").value("true").build(),
-                        AttributeType.builder().name("name").value(request.getFullName()).build()
-                )
-                .messageAction(MessageActionType.SUPPRESS) // Không gửi email tự động
-                .build();
-
-        cognitoClient.adminCreateUser(createUserRequest);
-
-        // 🔹 2. Set permanent password do client gửi
-        AdminSetUserPasswordRequest setPasswordRequest = AdminSetUserPasswordRequest.builder()
-                .userPoolId(userPoolId)
-                .username(email)
-                .password(request.getPassword())
-                .permanent(true)
-                .build();
-
-        cognitoClient.adminSetUserPassword(setPasswordRequest);
-
-        // 🔹 3. Lưu user vào DB
-        User user = User.builder()
-                .email(email)
-                .fullName(request.getFullName())
-                .enabled(true)
-                .build();
-
-        User savedUser = userRepository.save(user);
-
-        // 🔹 4. Map entity → response
-        return userMapper.toUserResponse(savedUser);
     }
 
     public UserLoginResponse login(UserLoginRequest request) {
@@ -177,7 +202,6 @@ public class AuthService {
 
         } catch (NotAuthorizedException ex) {
 
-            // Refresh token không hợp lệ / hết hạn / bị revoke
             throw new IllegalStateException("Session expired. Please login again");
 
         } catch (Exception ex) {
@@ -186,7 +210,7 @@ public class AuthService {
     }
 
 
-    public void logout(String username, String accessToken, String refreshToken) {
+    public void logout(String accessToken) {
         try {
             // Global sign out (invalidate access token)
             if (accessToken != null && !accessToken.isBlank()) {
@@ -205,7 +229,5 @@ public class AuthService {
             throw new RuntimeException("Logout failed", ex);
         }
     }
-
-
 
 }

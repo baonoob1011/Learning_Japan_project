@@ -1,13 +1,11 @@
-package com.example.learningApp.controller;
+package com.example.learningApp.controller.auth;
 
 import com.example.learningApp.dto.ApiResponse;
 import com.example.learningApp.dto.request.auth.LogoutRequest;
 import com.example.learningApp.dto.request.auth.RefreshTokenRequest;
 import com.example.learningApp.dto.request.auth.UserLoginRequest;
-import com.example.learningApp.dto.request.user.CreateUserRequest;
 import com.example.learningApp.dto.response.UserLoginResponse;
-import com.example.learningApp.dto.response.UserResponse;
-import com.example.learningApp.service.AuthService;
+import com.example.learningApp.service.auth.AuthService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +38,7 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(@RequestBody LogoutRequest request) {
-        authService.logout(request.getUsername(), request.getAccessToken(), request.getRefreshToken());
+        authService.logout(request.getAccessToken());
         return ResponseEntity.ok(ApiResponse.success("Logout successful", null));
 
     }
