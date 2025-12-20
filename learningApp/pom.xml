@@ -9,9 +9,9 @@
 	</parent>
 	<!--  🧱 Thông tin cơ bản của project  -->
 	<groupId>com.example</groupId>
-	<artifactId>IAM_Service</artifactId>
+	<artifactId>Learning_App</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>IAMService</name>
+	<name>Learning_App</name>
 	<description>Identity Access Management Service (User + Role + Auth)</description>
 	<!--  ⚙️ Cấu hình chung  -->
 	<properties>
