@@ -36,19 +36,19 @@ public class AuthService {
     RoleService roleService;
 
     @NonFinal
-    @Value("${aws.iam.access-key-cognito}")
+    @Value("${aws.iam.access-key}")
     String accessKey;
     @NonFinal
-    @Value("${aws.iam.secret-key-cognito}")
+    @Value("${aws.iam.secret-key}")
     String secretKey;
     @NonFinal
-    @Value("${aws.iam.client-id}")
+    @Value("${aws.cognito.client-id}")
     String clientId;
     @NonFinal
-    @Value("${aws.iam.client-secret}")
+    @Value("${aws.cognito.client-secret}")
     String clientSecret;
     @NonFinal
-    @Value("${aws.iam.user-pool-id}")
+    @Value("${aws.cognito.user-pool-id}")
     String userPoolId;
 
     @Transactional

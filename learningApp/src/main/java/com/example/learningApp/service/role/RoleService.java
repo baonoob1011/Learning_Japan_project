@@ -30,7 +30,7 @@ public class RoleService {
     CognitoIdentityProviderClient cognitoClient;
 
     @NonFinal
-    @Value("${aws.iam.user-pool-id}")
+    @Value("${aws.cognito.user-pool-id}")
     String userPoolId;
 
     public void createRole(CreateRoleRequest request) {

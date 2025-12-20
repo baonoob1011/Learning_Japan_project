@@ -36,7 +36,7 @@ public class AdminInitializer implements ApplicationRunner {
     CognitoIdentityProviderClient cognitoClient;
 
     @NonFinal
-    @Value("${aws.iam.user-pool-id}")
+    @Value("${aws.cognito.user-pool-id}")
     String userPoolId;
 
     @NonFinal
