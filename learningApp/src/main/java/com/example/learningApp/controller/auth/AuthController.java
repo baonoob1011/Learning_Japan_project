@@ -4,7 +4,7 @@ import com.example.learningApp.dto.ApiResponse;
 import com.example.learningApp.dto.request.auth.LogoutRequest;
 import com.example.learningApp.dto.request.auth.RefreshTokenRequest;
 import com.example.learningApp.dto.request.auth.UserLoginRequest;
-import com.example.learningApp.dto.response.UserLoginResponse;
+import com.example.learningApp.dto.response.user.UserLoginResponse;
 import com.example.learningApp.service.auth.AuthService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;

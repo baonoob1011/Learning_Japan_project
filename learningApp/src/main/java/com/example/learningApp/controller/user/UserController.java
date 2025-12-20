@@ -2,7 +2,7 @@ package com.example.learningApp.controller.user;
 
 import com.example.learningApp.dto.ApiResponse;
 import com.example.learningApp.dto.request.user.CreateUserRequest;
-import com.example.learningApp.dto.response.UserResponse;
+import com.example.learningApp.dto.response.user.UserResponse;
 import com.example.learningApp.service.auth.AuthService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;

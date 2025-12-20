@@ -2,11 +2,8 @@ package com.example.learningApp.mapper;
 
 
 import com.example.learningApp.dto.request.exam.CreateExamRequest;
-import com.example.learningApp.dto.request.user.CreateUserRequest;
-import com.example.learningApp.dto.response.UserResponse;
 import com.example.learningApp.dto.response.exam.ExamResponse;
 import com.example.learningApp.entity.Exam;
-import com.example.learningApp.entity.User;
 import org.mapstruct.Mapper;
 
 
