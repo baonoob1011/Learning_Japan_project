@@ -39,8 +39,7 @@ public class SecurityConfig {
 
     AccessDeniedHandler accessDeniedHandler;
     private final String[] PUBLIC_ENDPOINTS = {
-       "/api/users/register",
-       "/api/users/login",
+       "/api/auth/**",
     };
 
 
