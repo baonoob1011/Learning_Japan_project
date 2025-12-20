@@ -25,7 +25,7 @@ import java.util.Map;
 @Slf4j
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class UserService {
+public class AuthService {
 
     UserRepository userRepository;
     CognitoIdentityProviderClient cognitoClient;
@@ -100,13 +100,15 @@ public class UserService {
 
     public UserLoginResponse login(UserLoginRequest request) {
         try {
+            String email = request.getEmail();
+
             Map<String, String> authParams = new HashMap<>();
-            authParams.put("USERNAME", request.getEmail());
+            authParams.put("USERNAME", email);
             authParams.put("PASSWORD", request.getPassword());
 
             // Nếu client secret có, thêm SECRET_HASH
-            String secretHash = CognitoSecretHashUtil.calculateSecretHash(request.getEmail(), clientId, clientSecret);
-            if (secretHash != null) {
+            if (clientSecret != null && !clientSecret.isBlank()) {
+                String secretHash = CognitoSecretHashUtil.calculateSecretHash(email, clientId, clientSecret);
                 authParams.put("SECRET_HASH", secretHash);
             }
 
@@ -119,18 +121,51 @@ public class UserService {
 
             AdminInitiateAuthResponse response = cognitoClient.adminInitiateAuth(authRequest);
 
-            // Lấy token từ Cognito response
-            String accessToken = response.authenticationResult().accessToken();
-            String refreshToken = response.authenticationResult().refreshToken();
-
             return UserLoginResponse.builder()
-                    .accessToken(accessToken)
-                    .refreshToken(refreshToken)
+                    .accessToken(response.authenticationResult().accessToken())
+                    .refreshToken(response.authenticationResult().refreshToken())
                     .build();
 
         } catch (Exception e) {
-            throw new RuntimeException("Login failed", e);
+            e.printStackTrace();
+            throw new RuntimeException("Login failed: " + e.getMessage(), e);
         }
     }
+
+    public UserLoginResponse refreshToken(String username, String refreshToken) {
+        try {
+            Map<String, String> authParams = new HashMap<>();
+            authParams.put("REFRESH_TOKEN", refreshToken);
+
+            // Tính SECRET_HASH chính xác nếu client secret có
+            if (clientSecret != null && !clientSecret.isBlank()) {
+                String secretHash = CognitoSecretHashUtil.calculateSecretHash(username, clientId, clientSecret);
+                authParams.put("SECRET_HASH", secretHash);
+            }
+            AdminInitiateAuthRequest authRequest = AdminInitiateAuthRequest.builder()
+                    .userPoolId(userPoolId)
+                    .clientId(clientId)
+                    .authFlow(AuthFlowType.REFRESH_TOKEN_AUTH)
+                    .authParameters(authParams)
+                    .build();
+
+            AdminInitiateAuthResponse response = cognitoClient.adminInitiateAuth(authRequest);
+
+            if (response.authenticationResult() == null || response.authenticationResult().accessToken() == null) {
+                throw new RuntimeException("Refresh token không thành công, không nhận được access token");
+            }
+
+            return UserLoginResponse.builder()
+                    .accessToken(response.authenticationResult().accessToken())
+                    .refreshToken(refreshToken) // refresh token giữ nguyên
+                    .build();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Refresh token failed: " + e.getMessage(), e);
+        }
+    }
+
+
 
 }
