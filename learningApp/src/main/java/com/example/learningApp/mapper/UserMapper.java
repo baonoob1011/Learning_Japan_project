@@ -9,7 +9,7 @@ import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")
 public interface UserMapper {
-    com.example.learningApp.entity.User toUser(CreateUserRequest request);
+    User toUser(CreateUserRequest request);
 
 
     UserResponse toUserResponse(User user);
