@@ -21,6 +21,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
 
 
 import java.io.IOException;
@@ -80,5 +81,9 @@ public class SecurityConfig {
         return jwtConverter;
     }
 
+    @Bean
+    public EventBridgeClient eventBridgeClient() {
+        return EventBridgeClient.create();
+    }
 
 }

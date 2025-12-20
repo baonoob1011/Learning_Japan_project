@@ -148,6 +148,21 @@ services:
       - "9200:9200"
     restart: unless-stopped
 
+  ##################################################
+  # 🐘 PostgreSQL
+  ##################################################
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      POSTGRES_DB: learningApp
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
 
 
 ##################################################
@@ -156,3 +171,4 @@ services:
 volumes:
   redis_data:
   esdata:
+  postgres_data:
