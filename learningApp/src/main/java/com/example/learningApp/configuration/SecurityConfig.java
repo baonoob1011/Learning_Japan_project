@@ -39,7 +39,8 @@ public class SecurityConfig {
 
     AccessDeniedHandler accessDeniedHandler;
     private final String[] PUBLIC_ENDPOINTS = {
-       "/api/users/register"
+       "/api/v1/auth/**",
+       "/api/v1/users/register",
     };
 
 
@@ -47,6 +48,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> {})
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .anyRequest().authenticated()

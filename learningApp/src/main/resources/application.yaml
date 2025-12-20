@@ -89,9 +89,8 @@ management:
 
 app:
   admin:
-    identity-number: ${ADMIN_IDENTITY_NUMBER}
     email: ${ADMIN_EMAIL}
-    phone-number: ${ADMIN_PHONE}
     full-name: ${ADMIN_FULL_NAME}
-    dob: ${ADMIN_DOB}
-    address: ${ADMIN_ADDRESS}
+    role: ${ADMIN_ROLE}
+    password: ${ADMIN_PASSWORD}
+

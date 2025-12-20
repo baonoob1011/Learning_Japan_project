@@ -1,4 +1,4 @@
-package com.example.learningApp.dto.request;
+package com.example.learningApp.dto.request.user;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -9,7 +9,7 @@ import lombok.*;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserRequest {
+public class CreateUserRequest {
 
     @Email(message = "Invalid email format")
     @NotBlank(message = "Email is required")
