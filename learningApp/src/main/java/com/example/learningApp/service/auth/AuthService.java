@@ -97,7 +97,6 @@ public class AuthService {
 
             User savedUser = userRepository.save(user);
 
-
             // 4️⃣ Assign default role
             if (!isAdmin) {
                 roleService.assignRoleToUser(
