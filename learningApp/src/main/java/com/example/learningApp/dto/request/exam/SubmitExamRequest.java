@@ -12,6 +12,5 @@ import java.util.Map;
 @AllArgsConstructor
 @Builder
 public class SubmitExamRequest {
-
     private String participantId;
 }

@@ -26,6 +26,9 @@ public class ExamSubmitService {
     private final QuestionRepository questionRepo;
     private final ExamAnswerRepository examAnswerRepository;
 
+    /**
+     * Submit bài thi: lấy trực tiếp answer đã lưu, cập nhật isCorrect và score
+     */
     @Transactional
     public SubmitExamResponse submitExam(SubmitExamRequest request) {
 
@@ -36,132 +39,100 @@ public class ExamSubmitService {
             throw new IllegalStateException("Exam already submitted");
         }
 
-        LocalDateTime expiredAt =
-                participant.getStartedAt()
-                        .plusMinutes(participant.getExam().getDuration());
+        LocalDateTime expiredAt = participant.getStartedAt()
+                .plusMinutes(participant.getExam().getDuration());
 
-        // ⛔ quá giờ thì không cho submit tay
         if (LocalDateTime.now().isAfter(expiredAt)) {
             throw new IllegalStateException("Exam time expired");
         }
 
-        // ======================
-        // 1️⃣ LẤY TOÀN BỘ ANSWER ĐÃ LƯU
-        // ======================
-        Map<String, String> answers =
-                examAnswerRepository
-                        .findAnswersByParticipantId(participant.getId())
-                        .stream()
-                        .collect(Collectors.toMap(
-                                r -> (String) r[0], // questionId
-                                r -> (String) r[1]  // answer
-                        ));
+        // 🔹 1️⃣ Lấy toàn bộ answer đã lưu
+        List<ExamAnswer> savedAnswers = examAnswerRepository.findByParticipant_Id(participant.getId());
 
-        // ======================
-        // 2️⃣ CHẤM ĐIỂM
-        // ======================
-        float score = calculateScore(
-                participant.getExam().getId(),
-                answers
-        );
+        float totalScore = 0;
 
-        // ======================
-        // 3️⃣ HOÀN TẤT BÀI THI
-        // ======================
-        participant.setScore(score);
+        for (ExamAnswer answer : savedAnswers) {
+            Question question = questionRepo.findById(answer.getQuestionId()).orElse(null);
+            if (question == null) continue;
+
+            // ❌ Không auto chấm ESSAY / READING
+            if ("ESSAY".equals(question.getType()) || "READING".equals(question.getType())) {
+                continue;
+            }
+
+            boolean correct = question.getAnswer() != null &&
+                    question.getAnswer().trim().equalsIgnoreCase(answer.getAnswer() != null ? answer.getAnswer().trim() : "");
+
+            answer.setIsCorrect(correct);
+            answer.setScore(correct ? 1f : 0f);
+
+            totalScore += answer.getScore() != null ? answer.getScore() : 0;
+
+            examAnswerRepository.save(answer);
+        }
+
+        // 🔹 2️⃣ Hoàn tất bài thi
+        participant.setScore(totalScore);
         participant.setCompleted(true);
         participant.setFinishedAt(LocalDateTime.now());
-
         participantRepo.save(participant);
 
-        // ======================
-        // 4️⃣ RESPONSE
-        // ======================
         return SubmitExamResponse.builder()
                 .participantId(participant.getId())
                 .examId(participant.getExam().getId())
                 .examCode(participant.getExam().getCode())
-                .score(score)
+                .score(totalScore)
                 .completed(true)
                 .startedAt(participant.getStartedAt())
                 .finishedAt(participant.getFinishedAt())
                 .build();
     }
 
-
-
     /**
-     * Tính điểm đơn giản
+     * Auto submit khi hết giờ
      */
-    private float calculateScore(String examId, Map<String, String> userAnswers) {
-
-        float score = 0;
-
-        for (Map.Entry<String, String> entry : userAnswers.entrySet()) {
-
-            Question question = questionRepo
-                    .findByIdAndExamId(entry.getKey(), examId);
-
-            if (question == null) continue;
-
-            // ❌ Không auto chấm ESSAY / READING
-            if ("ESSAY".equals(question.getType())
-                    || "READING".equals(question.getType())) {
-                continue;
-            }
-
-            if (question.getAnswer() != null &&
-                    question.getAnswer().trim()
-                            .equalsIgnoreCase(entry.getValue().trim())) {
-                score += 1;
-            }
-        }
-
-        return score;
-    }
-
-
     @Transactional
     @Scheduled(fixedRate = 60000)
     public void autoSubmitExpiredExams() {
 
         LocalDateTime now = LocalDateTime.now();
 
-        List<ExamParticipant> participants =
-                participantRepo.findByCompletedFalse();
+        List<ExamParticipant> participants = participantRepo.findByCompletedFalse();
 
         for (ExamParticipant p : participants) {
 
-            LocalDateTime expiredAt =
-                    p.getStartedAt()
-                            .plusMinutes(p.getExam().getDuration());
+            LocalDateTime expiredAt = p.getStartedAt().plusMinutes(p.getExam().getDuration());
 
             if (now.isAfter(expiredAt)) {
 
-                // 🔥 LẤY ANSWERS ĐÃ LƯU
-                Map<String, String> answers =
-                        examAnswerRepository
-                                .findAnswersByParticipantId(p.getId())
-                                .stream()
-                                .collect(Collectors.toMap(
-                                        r -> (String) r[0],
-                                        r -> (String) r[1]
-                                ));
+                List<ExamAnswer> savedAnswers = examAnswerRepository.findByParticipant_Id(p.getId());
 
-                float score = calculateScore(
-                        p.getExam().getId(),
-                        answers
-                );
+                float totalScore = 0;
 
-                p.setScore(score);
+                for (ExamAnswer answer : savedAnswers) {
+                    Question question = questionRepo.findById(answer.getQuestionId()).orElse(null);
+                    if (question == null) continue;
+
+                    if ("ESSAY".equals(question.getType()) || "READING".equals(question.getType())) {
+                        continue;
+                    }
+
+                    boolean correct = question.getAnswer() != null &&
+                            question.getAnswer().trim().equalsIgnoreCase(answer.getAnswer() != null ? answer.getAnswer().trim() : "");
+
+                    answer.setIsCorrect(correct);
+                    answer.setScore(correct ? 1f : 0f);
+
+                    totalScore += answer.getScore() != null ? answer.getScore() : 0;
+
+                    examAnswerRepository.save(answer);
+                }
+
+                p.setScore(totalScore);
                 p.setCompleted(true);
-                p.setFinishedAt(expiredAt); // ⏰ đúng thời điểm hết giờ
-
+                p.setFinishedAt(expiredAt);
                 participantRepo.save(p);
             }
         }
     }
-
-
-
 }

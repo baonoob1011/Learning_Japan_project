@@ -9,16 +9,8 @@ import java.util.Optional;
 
 public interface ExamAnswerRepository
         extends JpaRepository<ExamAnswer, String> {
+    List<ExamAnswer> findByParticipant_Id(String participantId);
 
-    Optional<ExamAnswer> findByParticipant_IdAndQuestion_Id(
-            String participantId,
-            String questionId
-    );
-    @Query("""
-        SELECT q.id, a.answer
-        FROM ExamAnswer a
-        JOIN a.question q
-        WHERE a.participant.id = :participantId
-    """)
-    List<Object[]> findAnswersByParticipantId(String participantId);
+    Optional<ExamAnswer> findByParticipant_IdAndQuestionId(String participantId, String questionId);
+
 }

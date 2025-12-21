@@ -1,5 +1,6 @@
 package com.example.learningApp.controller.batch;
 
+import com.example.learningApp.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.AccessLevel;
@@ -27,7 +28,7 @@ public class ExamBatchController {
     JobLauncher jobLauncher;
 
     @PostMapping("/trigger-job")
-    public ResponseEntity<String> triggerJob(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<ApiResponse<String>> triggerJob(@RequestParam("file") MultipartFile file) {
         try {
             // 1️⃣ Lưu file tạm
             File tempFile = File.createTempFile("exam_upload_", ".csv");
@@ -41,11 +42,17 @@ public class ExamBatchController {
 
             // 3️⃣ Trigger batch job
             JobExecution jobExecution = jobLauncher.run(importExamJob, jobParameters);
-            return ResponseEntity.ok("Batch job started with status: " + jobExecution.getStatus());
+
+            // 4️⃣ Trả về theo chuẩn ApiResponse
+            String message = "Batch job started with status: " + jobExecution.getStatus();
+            return ResponseEntity.ok(ApiResponse.success(message, jobExecution.getId().toString()));
 
         } catch (Exception e) {
+            // Trả về ApiResponse.error có code và message
             return ResponseEntity.status(500)
-                    .body("Failed to run batch job: " + e.getMessage());
+                    .body(ApiResponse.error(500, "Failed to run batch job: " + e.getMessage()));
         }
     }
+
+
 }

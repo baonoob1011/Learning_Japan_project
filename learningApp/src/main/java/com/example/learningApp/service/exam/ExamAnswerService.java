@@ -34,22 +34,33 @@ public class ExamAnswerService {
         Question question = questionRepo.findById(request.getQuestionId())
                 .orElseThrow(() -> new IllegalArgumentException("Question not found"));
 
-        // 🔁 Nếu đã trả lời → update
+        // 🔁 Nếu đã trả lời → update, dùng participantId + questionId snapshot
         ExamAnswer answer = answerRepo
-                .findByParticipant_IdAndQuestion_Id(
+                .findByParticipant_IdAndQuestionId(
                         participant.getId(),
                         question.getId()
                 )
                 .orElseGet(() -> {
                     ExamAnswer a = new ExamAnswer();
                     a.setParticipant(participant);
-                    a.setQuestion(question);
-                    a.setCreatedAt(LocalDateTime.now());
+
+                    // 🔥 SNAPSHOT QUESTION
+                    a.setQuestionId(question.getId());
+                    a.setQuestionText(question.getQuestionText());
+                    a.setQuestionType(question.getType());
+                    a.setOptions(question.getOptions());
+                    a.setOrderNum(question.getOrderNum());
+                    a.setCorrectAnswer(question.getAnswer());
+
                     return a;
                 });
 
+        // Gán câu trả lời của user và thời điểm trả lời
         answer.setAnswer(request.getAnswer());
+        answer.setAnsweredAt(LocalDateTime.now());
 
         answerRepo.save(answer);
     }
+
+
 }
