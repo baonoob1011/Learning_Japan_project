@@ -10,6 +10,18 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface QuestionRepository extends JpaRepository<Question,String> {
+public interface QuestionRepository extends JpaRepository<Question, String> {
     List<Question> findBySectionId(String sectionId);
+
+    @Query("""
+                SELECT q FROM Question q
+                JOIN q.section s
+                JOIN s.exam e
+                WHERE q.id = :questionId
+                AND e.id = :examId
+            """)
+    Question findByIdAndExamId(
+            @Param("questionId") String questionId,
+            @Param("examId") String examId
+    );
 }

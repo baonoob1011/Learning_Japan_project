@@ -40,8 +40,7 @@ public class Question {
     @JdbcTypeCode(SqlTypes.JSON)
     private String options;
 
-    @Column(columnDefinition = "jsonb")
-    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "TEXT")
     private String answer;
 
     private String imageUrl;
