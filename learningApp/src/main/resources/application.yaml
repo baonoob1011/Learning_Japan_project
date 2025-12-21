@@ -4,7 +4,11 @@ spring:
 
   main:
     banner-mode: off
-
+  mvc:
+    throw-exception-if-no-handler-found: true
+    web:
+      resources:
+        add-mappings: false
   security:
     oauth2:
       resourceserver:
@@ -29,6 +33,17 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
+
+  batch:
+    jdbc:
+      initialize-schema: ${SPRING_BATCH_JDBC_INITIALIZE_SCHEMA:always}
+    platform: ${SPRING_BATCH_PLATFORM:postgresql}
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:org/springframework/batch/core/schema-postgresql.sql
+      continue-on-error: true
 
   jpa:
     hibernate:

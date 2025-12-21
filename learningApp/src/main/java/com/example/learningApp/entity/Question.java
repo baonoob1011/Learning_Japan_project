@@ -2,6 +2,15 @@ package com.example.learningApp.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.Type;
+
+import java.time.LocalDateTime;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.Type;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -13,6 +22,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class Question {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
@@ -21,14 +31,19 @@ public class Question {
     @JoinColumn(name = "section_id", nullable = false)
     private ExamSection section;
 
-    private String type;           // MCQ, FILL_BLANK, ESSAY, READING
+    private String type;
+
     @Column(columnDefinition = "TEXT")
     private String questionText;
 
     @Column(columnDefinition = "jsonb")
-    private String options;        // lưu JSON dạng String
+    @JdbcTypeCode(SqlTypes.JSON)
+    private String options;
+
     @Column(columnDefinition = "jsonb")
-    private String answer;         // đáp án chuẩn
+    @JdbcTypeCode(SqlTypes.JSON)
+    private String answer;
+
     private String imageUrl;
     private String audioUrl;
     private Integer orderNum;

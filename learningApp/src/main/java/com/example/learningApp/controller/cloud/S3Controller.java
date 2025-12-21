@@ -1,5 +1,7 @@
 package com.example.learningApp.controller.cloud;
 
+import com.amazonaws.services.s3.model.ListObjectsV2Request;
+import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.example.learningApp.dto.ApiResponse;
 import com.example.learningApp.service.cloud.S3Service;
 import lombok.AccessLevel;
@@ -11,13 +13,14 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/files")
+@RequestMapping("/api/v1/s3")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class FileController {
+public class S3Controller {
 
     S3Service s3Service;
 
@@ -53,4 +56,36 @@ public class FileController {
                     .body(ApiResponse.error(500, "Could not upload CSV: " + e.getMessage()));
         }
     }
+
+    @GetMapping("/url")
+    public ResponseEntity<ApiResponse<String>> getFileUrl(@RequestParam String key) {
+        try {
+            String url = s3Service.generatePresignedUrl(key, 3600);
+            return ResponseEntity.ok(ApiResponse.success("Pre-signed URL generated", url));
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(ApiResponse.error(500, "Could not generate URL: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/keys")
+    public ResponseEntity<ApiResponse<List<String>>> getAllS3Keys(
+            @RequestParam(required = false) String prefix // images / audios / videos
+    ) {
+        List<String> keys = s3Service.listAllKeys(prefix);
+        return ResponseEntity.ok(
+                ApiResponse.success("Get S3 keys successfully", keys)
+        );
+    }
+    @GetMapping("/media/urls")
+    public ResponseEntity<ApiResponse<List<String>>> getAllMediaUrls() {
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Get all video & audio URLs successfully",
+                        s3Service.getAllMediaUrls()
+                )
+        );
+    }
+
 }

@@ -13,6 +13,7 @@ import java.util.Optional;
 @Repository
 public interface ExamRepository extends JpaRepository<Exam,String> {
     boolean existsByCode(String code);
+    Optional<Exam> findByCode(String code);
 
     @Query("SELECT e FROM Exam e WHERE LOWER(e.code) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(e.level) LIKE LOWER(CONCAT('%', :keyword, '%'))")
