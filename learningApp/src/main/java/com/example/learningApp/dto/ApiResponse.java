@@ -20,7 +20,7 @@ public class ApiResponse<T> {
     String message;
     T result;
 
-    
+
 
     public static <T> ApiResponse<T> of(boolean success, int httpStatus, String message, T result) {
         return ApiResponse.<T>builder()
@@ -42,4 +42,5 @@ public class ApiResponse<T> {
     public static <T> ApiResponse<T> error(int httpStatus, String message) {
         return of(false, httpStatus, message, null);
     }
+
 }

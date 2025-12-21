@@ -4,8 +4,8 @@ import com.example.learningApp.configuration.CognitoSecretHashUtil;
 import com.example.learningApp.dto.request.auth.UserLoginRequest;
 import com.example.learningApp.dto.request.role.AssignRoleRequest;
 import com.example.learningApp.dto.request.user.CreateUserRequest;
-import com.example.learningApp.dto.response.UserLoginResponse;
-import com.example.learningApp.dto.response.UserResponse;
+import com.example.learningApp.dto.response.user.UserLoginResponse;
+import com.example.learningApp.dto.response.user.UserResponse;
 import com.example.learningApp.entity.User;
 import com.example.learningApp.mapper.UserMapper;
 import com.example.learningApp.repository.UserRepository;
@@ -36,19 +36,19 @@ public class AuthService {
     RoleService roleService;
 
     @NonFinal
-    @Value("${aws.iam.access-key-cognito}")
+    @Value("${aws.iam.access-key}")
     String accessKey;
     @NonFinal
-    @Value("${aws.iam.secret-key-cognito}")
+    @Value("${aws.iam.secret-key}")
     String secretKey;
     @NonFinal
-    @Value("${aws.iam.client-id}")
+    @Value("${aws.cognito.client-id}")
     String clientId;
     @NonFinal
-    @Value("${aws.iam.client-secret}")
+    @Value("${aws.cognito.client-secret}")
     String clientSecret;
     @NonFinal
-    @Value("${aws.iam.user-pool-id}")
+    @Value("${aws.cognito.user-pool-id}")
     String userPoolId;
 
     @Transactional

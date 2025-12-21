@@ -43,7 +43,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }
 
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<String>> handleNoResourceFoundException(
+            NoResourceFoundException ex) {
 
+        ApiResponse<String> response = ApiResponse.<String>builder()
+                .code(HttpStatus.NOT_FOUND.value())
+                .message("API endpoint not found")
+                .result(ex.getMessage())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
     // 🔹 Validation error
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationException(

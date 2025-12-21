@@ -4,13 +4,20 @@ spring:
 
   main:
     banner-mode: off
-
+  mvc:
+    throw-exception-if-no-handler-found: true
+    web:
+      resources:
+        add-mappings: false
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: ${COGNITO_ISSUER_URI}
-
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 200MB
   cache:
     type: redis
 
@@ -27,6 +34,17 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
+  batch:
+    jdbc:
+      initialize-schema: ${SPRING_BATCH_JDBC_INITIALIZE_SCHEMA:always}
+    platform: ${SPRING_BATCH_PLATFORM:postgresql}
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:org/springframework/batch/core/schema-postgresql.sql
+      continue-on-error: true
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -34,58 +52,24 @@ spring:
       hibernate:
         format_sql: true
 
-  kafka:
-    consumer:
-      bootstrap-servers: localhost:9092
-      group-id: user-service-group
-      key-deserializer: ${KAFKA_KEY_SERIALIZER}
-      value-deserializer: ${KAFKA_VALUE_SERIALIZER}
-      properties:
-        spring.json.trusted.packages: "*"
-
-# ================= CUSTOM CONFIG =================
-
-openSearch:
-  host: ${AWS_OPENSEARCH_HOST}
-  username: ${AWS_OPENSEARCH_USERNAME}
-  password: ${AWS_OPENSEARCH_PASSWORD}
-
 aws:
-  iam:
-    region: ${AWS_REGION}
+  region: ${AWS_REGION}
+  cognito:
     cognito-domain: ${AWS_COGNITO_DOMAIN}
-    access-key: ${AWS_ACCESS_KEY}
-    secret-key: ${AWS_SECRET_KEY}
-
-    region-cognito: ${AWS_REGION_COGNITO}
-    access-key-cognito: ${AWS_ACCESS_KEY_COGNITO}
-    secret-key-cognito: ${AWS_SECRET_KEY_COGNITO}
-
     client-id: ${AWS_CLIENT_ID}
     client-secret: ${AWS_CLIENT_SECRET}
     user-pool-id: ${AWS_USER_POOL_ID}
-
+  iam:
+    access-key: ${AWS_ACCESS_KEY}
+    secret-key: ${AWS_SECRET_KEY}
+  s3:
+    bucket: ${AWS_S3_BUCKET_NAME}
 google:
   redirect-uri: ${REDICT_URI}
 
-cloudwatch:
-  log-group: ${AWS_LOG_GROUP}
-  log-stream: ${AWS_IAM_LOG_STREAM}
 
 jwt:
   secret-key: ${JWT_SECRET}
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,metrics,prometheus
-  endpoint:
-    prometheus:
-      enabled: true
-  metrics:
-    enable:
-      all: true
 
 app:
   admin:
