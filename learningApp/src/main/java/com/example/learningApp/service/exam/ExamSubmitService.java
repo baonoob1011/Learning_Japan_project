@@ -28,7 +28,7 @@ public class ExamSubmitService {
     private final ExamAnswerRepository examAnswerRepository;
 
     /**
-     * Submit bài thi: lấy trực tiếp answer đã lưu, cập nhật isCorrect và score
+     * Submit bài thi: tính điểm dựa trên AssessmentItem qua Section
      */
     @Transactional
     public SubmitExamResponse submitExam(SubmitExamRequest request) {
@@ -47,7 +47,7 @@ public class ExamSubmitService {
             throw new IllegalStateException("Exam time expired");
         }
 
-        // 🔹 1️⃣ Lấy toàn bộ answer đã lưu
+        // Lấy tất cả answer đã lưu
         List<ExamAnswer> savedAnswers = examAnswerRepository.findByParticipant_Id(participant.getId());
 
         float totalScore = 0;
@@ -56,19 +56,31 @@ public class ExamSubmitService {
             Question question = questionRepo.findById(answer.getQuestionId()).orElse(null);
             if (question == null) continue;
 
+            // Lấy AssessmentItem qua Section
+            float point = 1f; // default
+            if (question.getSection() != null && question.getSection().getAssessmentItems() != null) {
+                // Lấy AssessmentItem theo logic (ví dụ match theo level hoặc questionType)
+                for (var item : question.getSection().getAssessmentItems()) {
+                    if (item.getLevel() != null && item.getLevel().equals(question.getQuestionType().name())) {
+                        point = item.getPointPerQuestion() != null ? item.getPointPerQuestion() : 1f;
+                        break;
+                    }
+                }
+            }
 
+            // So sánh đáp án
             boolean correct = question.getAnswer() != null &&
                     question.getAnswer().trim().equalsIgnoreCase(answer.getAnswer() != null ? answer.getAnswer().trim() : "");
 
             answer.setIsCorrect(correct);
-            answer.setScore(correct ? 1f : 0f);
+            answer.setScore(correct ? point : 0f);
 
-            totalScore += answer.getScore() != null ? answer.getScore() : 0;
+            totalScore += answer.getScore();
 
             examAnswerRepository.save(answer);
         }
 
-        // 🔹 2️⃣ Hoàn tất bài thi
+        // Hoàn tất bài thi
         participant.setScore(totalScore);
         participant.setCompleted(true);
         participant.setFinishedAt(LocalDateTime.now());
@@ -85,7 +97,6 @@ public class ExamSubmitService {
                 .finishedAt(participant.getFinishedAt())
                 .build();
     }
-
 
     /**
      * Auto submit khi hết giờ
@@ -112,13 +123,23 @@ public class ExamSubmitService {
                     Question question = questionRepo.findById(answer.getQuestionId()).orElse(null);
                     if (question == null) continue;
 
+                    float point = 1f;
+                    if (question.getSection() != null && question.getSection().getAssessmentItems() != null) {
+                        for (var item : question.getSection().getAssessmentItems()) {
+                            if (item.getLevel() != null && item.getLevel().equals(question.getQuestionType().name())) {
+                                point = item.getPointPerQuestion() != null ? item.getPointPerQuestion() : 1f;
+                                break;
+                            }
+                        }
+                    }
+
                     boolean correct = question.getAnswer() != null &&
                             question.getAnswer().trim().equalsIgnoreCase(answer.getAnswer() != null ? answer.getAnswer().trim() : "");
 
                     answer.setIsCorrect(correct);
-                    answer.setScore(correct ? 1f : 0f);
+                    answer.setScore(correct ? point : 0f);
 
-                    totalScore += answer.getScore() != null ? answer.getScore() : 0;
+                    totalScore += answer.getScore();
 
                     examAnswerRepository.save(answer);
                 }
@@ -131,3 +152,4 @@ public class ExamSubmitService {
         }
     }
 }
+

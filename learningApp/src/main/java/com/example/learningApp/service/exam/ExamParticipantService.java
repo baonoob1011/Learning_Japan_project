@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -28,8 +29,10 @@ public class ExamParticipantService {
 
     public StartExamResponse startExam(StartExamRequest request) {
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        // Lấy userId trực tiếp từ principal
+        String userId = authentication.getName(); // thường là username hoặc userId
 
         boolean isVip = authentication.getAuthorities()
                 .stream()
@@ -50,7 +53,7 @@ public class ExamParticipantService {
 
             long attemptCount =
                     participantRepo.countByUser_IdAndExam_IdAndStartedAtBetween(
-                            request.getUserId(),
+                            userId,
                             request.getExamId(),
                             startOfDay,
                             endOfDay
@@ -66,7 +69,7 @@ public class ExamParticipantService {
         Exam exam = examRepo.findById(request.getExamId())
                 .orElseThrow(() -> new IllegalArgumentException("Exam not found"));
 
-        User user = userRepo.findById(request.getUserId())
+        User user = userRepo.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         ExamParticipant participant = ExamParticipant.builder()
@@ -88,5 +91,7 @@ public class ExamParticipantService {
                 .startedAt(participant.getStartedAt())
                 .build();
     }
+
+
 }
 
