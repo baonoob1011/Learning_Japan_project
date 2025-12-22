@@ -1,5 +1,8 @@
 package com.example.learningApp.service.exam;
 
+import com.example.learningApp.dto.cache.ExamAnswerCache;
+import com.example.learningApp.dto.cache.QuestionCache;
+import com.example.learningApp.dto.cache.SectionCache;
 import com.example.learningApp.dto.request.exam.SubmitExamRequest;
 import com.example.learningApp.dto.response.exam.SubmitExamResponse;
 import com.example.learningApp.entity.AssessmentItem;
@@ -11,11 +14,13 @@ import com.example.learningApp.repository.ExamParticipantRepository;
 import com.example.learningApp.repository.QuestionRepository;
 import com.example.learningApp.service.ai.ResultAIReviewService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -23,7 +28,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ExamSubmitService {
-
+    private final RedisTemplate<String, Object> redisTemplate;
     private final ExamParticipantRepository participantRepo;
     private final QuestionRepository questionRepo;
     private final ExamAnswerRepository examAnswerRepository;
@@ -32,9 +37,9 @@ public class ExamSubmitService {
      * Submit bài thi: tính điểm dựa trên AssessmentItem qua Section
      */
     @Transactional
-    public SubmitExamResponse submitExam(SubmitExamRequest request) {
+    public SubmitExamResponse submitExam(String participantId) {
 
-        ExamParticipant participant = participantRepo.findById(request.getParticipantId())
+        ExamParticipant participant = participantRepo.findById(participantId)
                 .orElseThrow(() -> new IllegalArgumentException("Participant not found"));
 
         if (Boolean.TRUE.equals(participant.getCompleted())) {
@@ -48,46 +53,78 @@ public class ExamSubmitService {
             throw new IllegalStateException("Exam time expired");
         }
 
-        // Lấy tất cả answer đã lưu
-        List<ExamAnswer> savedAnswers = examAnswerRepository.findByParticipant_Id(participant.getId());
+        // ===== Lấy question + section cache =====
+        String examQuestionKey = "exam:" + participant.getExam().getId() + ":questions";
+        String examSectionKey = "exam:" + participant.getExam().getId() + ":sections";
+
+        Map<String, QuestionCache> questionCacheMap =
+                (Map<String, QuestionCache>) redisTemplate.opsForValue().get(examQuestionKey);
+        Map<String, SectionCache> sectionCacheMap =
+                (Map<String, SectionCache>) redisTemplate.opsForValue().get(examSectionKey);
+
+        // ===== Lấy answer cache theo participantId =====
+        String answerKey = "exam:participant:" + participant.getId() + ":answers";
+        Map<String, ExamAnswerCache> savedAnswerCacheMap =
+                (Map<String, ExamAnswerCache>) redisTemplate.opsForValue().get(answerKey);
+
+        if (savedAnswerCacheMap == null || savedAnswerCacheMap.isEmpty()) {
+            throw new IllegalStateException("No answers found for participant");
+        }
 
         float totalScore = 0;
 
-        for (ExamAnswer answer : savedAnswers) {
-            Question question = questionRepo.findById(answer.getQuestionId()).orElse(null);
-            if (question == null) continue;
+        for (ExamAnswerCache cache : savedAnswerCacheMap.values()) {
 
-            float point = 1f; // default điểm nếu không tìm thấy AssessmentItem
-
-            // 🔹 Lấy AssessmentItem theo section và questionType
-            if (question.getSection() != null && question.getSection().getAssessmentItems() != null) {
-                for (AssessmentItem item : question.getSection().getAssessmentItems()) {
-                    if (item.getAssessmentType() != null &&
-                            item.getAssessmentType().equals(question.getQuestionType())) {
-                        point = item.getPointPerQuestion() != null ? item.getPointPerQuestion() : 1f;
-                        break; // chỉ lấy item đầu tiên match
-                    }
-                }
+            QuestionCache questionCache = questionCacheMap.get(cache.getQuestionId());
+            if (questionCache == null) {
+                throw new IllegalStateException("Question cache not found for id: " + cache.getQuestionId());
             }
 
-            // So sánh đáp án
-            boolean correct = question.getAnswer() != null &&
-                    question.getAnswer().trim().equalsIgnoreCase(answer.getAnswer() != null ? answer.getAnswer().trim() : "");
+            SectionCache section = sectionCacheMap.get(questionCache.getSectionId());
+            if (section == null) {
+                throw new IllegalStateException("Section cache not found for id: " + questionCache.getSectionId());
+            }
 
+            float point = section.getPointMap().getOrDefault(questionCache.getQuestionType(), 1f);
+
+            boolean correct = questionCache.getCorrectAnswer() != null &&
+                    questionCache.getCorrectAnswer().trim().equalsIgnoreCase(
+                            cache.getAnswer() != null ? cache.getAnswer().trim() : ""
+                    );
+
+            // Tạo ExamAnswer mới
+            ExamAnswer answer = new ExamAnswer();
+            answer.setParticipant(participant);
+            answer.setQuestionId(cache.getQuestionId());
+
+            // Snapshot từ Question entity
+            Question qEntity = questionRepo.findById(cache.getQuestionId())
+                    .orElseThrow(() -> new IllegalArgumentException("Question not found"));
+
+            answer.setQuestionText(qEntity.getQuestionText());
+            answer.setQuestionType(qEntity.getQuestionType());
+            answer.setOptions(qEntity.getOptions());
+            answer.setOrderNum(qEntity.getOrderNum());
+            answer.setCorrectAnswer(qEntity.getAnswer());
+
+            // User answer
+            answer.setAnswer(cache.getAnswer());
+            answer.setAnsweredAt(cache.getAnsweredAt());
             answer.setIsCorrect(correct);
             answer.setScore(correct ? point : 0f);
 
             totalScore += answer.getScore();
-
             examAnswerRepository.save(answer);
         }
 
-        // Hoàn tất bài thi
+        // Cập nhật participant
         participant.setScore(totalScore);
         participant.setCompleted(true);
         participant.setFinishedAt(LocalDateTime.now());
-
         participantRepo.save(participant);
+
+        // Xóa cache
+        redisTemplate.delete(answerKey);
 
         return SubmitExamResponse.builder()
                 .participantId(participant.getId())
@@ -101,58 +138,73 @@ public class ExamSubmitService {
     }
 
 
+
     /**
-     * Auto submit khi hết giờ
-     */
-    @Transactional
-    @Scheduled(fixedRate = 60000)
-    public void autoSubmitExpiredExams() {
+         * Auto submit khi hết giờ
+         */
+        @Transactional
+        @Scheduled(fixedRate = 60000) // chạy mỗi 1 phút
+        public void autoSubmitExpiredExams () {
 
-        LocalDateTime now = LocalDateTime.now();
+            LocalDateTime now = LocalDateTime.now();
 
-        List<ExamParticipant> participants = participantRepo.findByCompletedFalse();
+            // Lấy tất cả participant chưa completed
+            List<ExamParticipant> participants = participantRepo.findByCompletedFalse();
 
-        for (ExamParticipant p : participants) {
+            for (ExamParticipant p : participants) {
 
-            LocalDateTime expiredAt = p.getStartedAt().plusMinutes(p.getExam().getDuration());
+                LocalDateTime expiredAt = p.getStartedAt().plusMinutes(p.getExam().getDuration());
 
-            if (now.isAfter(expiredAt)) {
+                if (now.isAfter(expiredAt)) {
 
-                List<ExamAnswer> savedAnswers = examAnswerRepository.findByParticipant_Id(p.getId());
+                    String examQuestionKey = "exam:" + p.getExam().getId() + ":questions";
+                    String examSectionKey = "exam:" + p.getExam().getId() + ":sections";
+                    String answerKey = "exam:participant:" + p.getId() + ":answers";
 
-                float totalScore = 0;
+                    Map<Long, QuestionCache> questionCacheMap =
+                            (Map<Long, QuestionCache>) redisTemplate.opsForValue().get(examQuestionKey);
+                    Map<Long, SectionCache> sectionCacheMap =
+                            (Map<Long, SectionCache>) redisTemplate.opsForValue().get(examSectionKey);
 
-                for (ExamAnswer answer : savedAnswers) {
-                    Question question = questionRepo.findById(answer.getQuestionId()).orElse(null);
-                    if (question == null) continue;
+                    Map<Long, ExamAnswer> savedAnswersMap =
+                            (Map<Long, ExamAnswer>) redisTemplate.opsForValue().get(answerKey);
 
-                    float point = 1f;
-                    if (question.getSection() != null && question.getSection().getAssessmentItems() != null) {
-                        for (var item : question.getSection().getAssessmentItems()) {
-                            if (item.getLevel() != null && item.getLevel().equals(question.getQuestionType().name())) {
-                                point = item.getPointPerQuestion() != null ? item.getPointPerQuestion() : 1f;
-                                break;
-                            }
-                        }
+                    List<ExamAnswer> savedAnswers = savedAnswersMap != null
+                            ? List.copyOf(savedAnswersMap.values())
+                            : List.of();
+
+                    float totalScore = 0;
+
+                    for (ExamAnswer answer : savedAnswers) {
+
+                        QuestionCache question = questionCacheMap.get(answer.getQuestionId());
+                        SectionCache section = sectionCacheMap.get(question.getSectionId());
+
+                        float point = section.getPointMap().getOrDefault(question.getQuestionType(), 1f);
+
+                        boolean correct = question.getCorrectAnswer() != null &&
+                                question.getCorrectAnswer().trim().equalsIgnoreCase(
+                                        answer.getAnswer() != null ? answer.getAnswer().trim() : ""
+                                );
+
+                        answer.setIsCorrect(correct);
+                        answer.setScore(correct ? point : 0f);
+
+                        totalScore += answer.getScore();
+
+                        examAnswerRepository.save(answer);
                     }
 
-                    boolean correct = question.getAnswer() != null &&
-                            question.getAnswer().trim().equalsIgnoreCase(answer.getAnswer() != null ? answer.getAnswer().trim() : "");
+                    p.setScore(totalScore);
+                    p.setCompleted(true);
+                    p.setFinishedAt(expiredAt);
+                    participantRepo.save(p);
 
-                    answer.setIsCorrect(correct);
-                    answer.setScore(correct ? point : 0f);
-
-                    totalScore += answer.getScore();
-
-                    examAnswerRepository.save(answer);
+                    // Xóa cache participant sau khi submit
+                    redisTemplate.delete(answerKey);
                 }
-
-                p.setScore(totalScore);
-                p.setCompleted(true);
-                p.setFinishedAt(expiredAt);
-                participantRepo.save(p);
             }
         }
+
     }
-}
 
