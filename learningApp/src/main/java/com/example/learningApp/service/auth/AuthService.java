@@ -59,7 +59,7 @@ public class AuthService {
 
         try {
             // 1️⃣ Create user in Cognito
-            cognitoClient.adminCreateUser(
+            AdminCreateUserResponse createResponse = cognitoClient.adminCreateUser(
                     AdminCreateUserRequest.builder()
                             .userPoolId(userPoolId)
                             .username(email)
@@ -73,6 +73,13 @@ public class AuthService {
             );
             cognitoUserCreated = true;
 
+            // Lấy sub từ Cognito
+            String sub = createResponse.user().attributes().stream()
+                    .filter(attr -> "sub".equals(attr.name()))
+                    .findFirst()
+                    .map(AttributeType::value)
+                    .orElseThrow(() -> new IllegalStateException("Cognito user sub not found"));
+
             // 2️⃣ Set password
             cognitoClient.adminSetUserPassword(
                     AdminSetUserPasswordRequest.builder()
@@ -83,8 +90,9 @@ public class AuthService {
                             .build()
             );
 
-            // 3️⃣ Save DB
+            // 3️⃣ Save DB, dùng sub làm ID
             User user = User.builder()
+                    .id(sub)               // <-- lưu sub từ Cognito
                     .email(email)
                     .fullName(request.getFullName())
                     .enabled(true)
@@ -122,6 +130,7 @@ public class AuthService {
             throw new IllegalStateException("User registration failed", ex);
         }
     }
+
 
     public UserLoginResponse login(UserLoginRequest request) {
         try {

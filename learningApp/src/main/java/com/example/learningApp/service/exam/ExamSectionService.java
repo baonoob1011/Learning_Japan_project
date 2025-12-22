@@ -29,13 +29,6 @@ public class ExamSectionService {
     ExamSectionMapper examSectionMapper;
     ExamSectionRepository examSectionRepository;
 
-    public List<SectionResponse> getAllSections(String examId) {
-        List<ExamSection> sections = examSectionRepository.findByExamId(examId);
-        return sections.stream()
-                .map(examSectionMapper::toExamSectionResponse)
-                .toList();
-    }
-
 
     public SectionResponse createSection(CreateSectionRequest request) {
         Exam exam = examRepository.findById(request.getExamId())

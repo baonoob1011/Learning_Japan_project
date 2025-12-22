@@ -26,6 +26,7 @@ public class S3Service {
     @Value("${aws.s3.bucket}")
     private String bucketName;
 
+
     private static final Set<String> MEDIA_EXTENSIONS = Set.of(
             "mp4", "mov", "avi",
             "mp3", "wav", "aac"

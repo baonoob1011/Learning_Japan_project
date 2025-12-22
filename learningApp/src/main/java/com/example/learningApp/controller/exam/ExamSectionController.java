@@ -40,11 +40,6 @@ public class ExamSectionController {
 
     ExamSectionService sectionService;
 
-    @GetMapping("/exam/{examId}")
-    public ResponseEntity<ApiResponse<List<SectionResponse>>> getSectionsByExam(@PathVariable String examId) {
-        List<SectionResponse> res = sectionService.getAllSections(examId);
-        return ResponseEntity.ok(ApiResponse.success("Sections retrieved", res));
-    }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping

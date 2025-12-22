@@ -1,5 +1,6 @@
 package com.example.learningApp.configuration;
 
+import com.example.learningApp.exception.CustomAccessDeniedHandler;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -37,7 +38,7 @@ import java.util.stream.Stream;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class SecurityConfig {
 
-    AccessDeniedHandler accessDeniedHandler;
+    CustomAccessDeniedHandler accessDeniedHandler;
     private final String[] PUBLIC_ENDPOINTS = {
        "/api/v1/auth/**",
        "/api/v1/users/register",
@@ -54,7 +55,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception
-                        .accessDeniedHandler(accessDeniedHandler) // 👈 add custom AccessDeniedHandler
+                        .accessDeniedHandler(accessDeniedHandler.accessDeniedHandler()) // 👈 add custom AccessDeniedHandler
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))

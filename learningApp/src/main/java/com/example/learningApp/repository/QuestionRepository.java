@@ -8,8 +8,21 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
-public interface QuestionRepository extends JpaRepository<Question,String> {
+public interface QuestionRepository extends JpaRepository<Question, String> {
     List<Question> findBySectionId(String sectionId);
+
+    @Query("""
+                SELECT q FROM Question q
+                JOIN q.section s
+                JOIN s.exams e
+                WHERE q.id = :questionId
+                AND e.id = :examId
+            """)
+    Optional<Question> findByIdAndExamId(
+            @Param("questionId") String questionId,
+            @Param("examId") String examId
+    );
 }
