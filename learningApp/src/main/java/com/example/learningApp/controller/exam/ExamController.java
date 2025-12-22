@@ -94,7 +94,7 @@ public class ExamController {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Exam submitted successfully",
-                        submitService.submitExam(request)
+                        submitService.submitExam(request.getParticipantId())
                 )
         );
     }
