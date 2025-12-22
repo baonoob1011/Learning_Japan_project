@@ -97,17 +97,14 @@ public class ExamSubmitService {
             answer.setParticipant(participant);
             answer.setQuestionId(cache.getQuestionId());
 
-            // Snapshot từ Question entity
-            Question qEntity = questionRepo.findById(cache.getQuestionId())
-                    .orElseThrow(() -> new IllegalArgumentException("Question not found"));
+// Snapshot từ cache
+            answer.setQuestionText(cache.getQuestionText());
+            answer.setQuestionType(cache.getQuestionType());
+            answer.setOptions(cache.getOptions());
+            answer.setOrderNum(cache.getOrderNum());
+            answer.setCorrectAnswer(cache.getCorrectAnswer());
 
-            answer.setQuestionText(qEntity.getQuestionText());
-            answer.setQuestionType(qEntity.getQuestionType());
-            answer.setOptions(qEntity.getOptions());
-            answer.setOrderNum(qEntity.getOrderNum());
-            answer.setCorrectAnswer(qEntity.getAnswer());
-
-            // User answer
+// User answer
             answer.setAnswer(cache.getAnswer());
             answer.setAnsweredAt(cache.getAnsweredAt());
             answer.setIsCorrect(correct);
