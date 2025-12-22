@@ -2,6 +2,7 @@ package com.example.learningApp.service.exam;
 
 import com.example.learningApp.dto.request.exam.SubmitExamRequest;
 import com.example.learningApp.dto.response.exam.SubmitExamResponse;
+import com.example.learningApp.entity.AssessmentItem;
 import com.example.learningApp.entity.ExamAnswer;
 import com.example.learningApp.entity.ExamParticipant;
 import com.example.learningApp.entity.Question;
@@ -56,14 +57,15 @@ public class ExamSubmitService {
             Question question = questionRepo.findById(answer.getQuestionId()).orElse(null);
             if (question == null) continue;
 
-            // Lấy AssessmentItem qua Section
-            float point = 1f; // default
+            float point = 1f; // default điểm nếu không tìm thấy AssessmentItem
+
+            // 🔹 Lấy AssessmentItem theo section và questionType
             if (question.getSection() != null && question.getSection().getAssessmentItems() != null) {
-                // Lấy AssessmentItem theo logic (ví dụ match theo level hoặc questionType)
-                for (var item : question.getSection().getAssessmentItems()) {
-                    if (item.getLevel() != null && item.getLevel().equals(question.getQuestionType().name())) {
+                for (AssessmentItem item : question.getSection().getAssessmentItems()) {
+                    if (item.getAssessmentType() != null &&
+                            item.getAssessmentType().equals(question.getQuestionType())) {
                         point = item.getPointPerQuestion() != null ? item.getPointPerQuestion() : 1f;
-                        break;
+                        break; // chỉ lấy item đầu tiên match
                     }
                 }
             }
@@ -97,6 +99,7 @@ public class ExamSubmitService {
                 .finishedAt(participant.getFinishedAt())
                 .build();
     }
+
 
     /**
      * Auto submit khi hết giờ

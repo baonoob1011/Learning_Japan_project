@@ -13,11 +13,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -32,17 +35,16 @@ public class ExamParticipantService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         // Lấy userId trực tiếp từ principal
-        String userId = authentication.getName(); // thường là username hoặc userId
+        String userId = authentication.getName(); // thường là username / sub
 
-        boolean isVip = authentication.getAuthorities()
-                .stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch("USER_VIP"::equals);
+        // 🔹 Lấy JWT claims
+        Map<String, Object> claims = ((JwtAuthenticationToken) authentication)
+                .getTokenAttributes();
 
-        boolean isNormalUser = authentication.getAuthorities()
-                .stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch("USER"::equals);
+        List<String> groups = (List<String>) claims.getOrDefault("cognito:groups", List.of());
+
+        boolean isVip = groups.contains("USER_VIP");
+        boolean isNormalUser = groups.contains("USER");
 
         // 🔒 USER thường → tối đa 3 lần / exam / ngày
         if (isNormalUser && !isVip) {
@@ -51,13 +53,12 @@ public class ExamParticipantService {
             LocalDateTime startOfDay = today.atStartOfDay();
             LocalDateTime endOfDay = today.atTime(LocalTime.MAX);
 
-            long attemptCount =
-                    participantRepo.countByUser_IdAndExam_IdAndStartedAtBetween(
-                            userId,
-                            request.getExamId(),
-                            startOfDay,
-                            endOfDay
-                    );
+            long attemptCount = participantRepo.countByUser_IdAndExam_IdAndStartedAtBetween(
+                    userId,
+                    request.getExamId(),
+                    startOfDay,
+                    endOfDay
+            );
 
             if (attemptCount >= 3) {
                 throw new IllegalStateException(
@@ -91,6 +92,7 @@ public class ExamParticipantService {
                 .startedAt(participant.getStartedAt())
                 .build();
     }
+
 
 
 }
