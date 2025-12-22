@@ -1,5 +1,6 @@
 package com.example.learningApp.entity;
 
+import com.example.learningApp.enums.AssessmentType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -42,8 +43,9 @@ public class ExamAnswer {
     @Column(columnDefinition = "TEXT")
     private String questionText;
 
-    @Column(length = 50)
-    private String questionType;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 50)
+    private AssessmentType questionType;
 
     @Column(columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)

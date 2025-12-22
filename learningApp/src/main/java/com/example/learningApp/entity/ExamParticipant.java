@@ -36,7 +36,8 @@ public class ExamParticipant {
             fetch = FetchType.LAZY
     )
     private List<ExamAnswer> answers;
-
+    @Column(name = "ai_review", columnDefinition = "TEXT")
+    private String aiReview;
     private Float score;
 
     @Column(nullable = false)

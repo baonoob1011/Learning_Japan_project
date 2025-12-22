@@ -14,6 +14,7 @@ public class SubmitExamResponse {
     private String participantId;
     private String examId;
     private String examCode;
+    private String aiReview;
 
     private Float score;
     private Boolean completed;

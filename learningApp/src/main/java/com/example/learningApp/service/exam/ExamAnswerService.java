@@ -47,7 +47,7 @@ public class ExamAnswerService {
                     // 🔥 SNAPSHOT QUESTION
                     a.setQuestionId(question.getId());
                     a.setQuestionText(question.getQuestionText());
-                    a.setQuestionType(question.getType());
+                    a.setQuestionType(question.getQuestionType());
                     a.setOptions(question.getOptions());
                     a.setOrderNum(question.getOrderNum());
                     a.setCorrectAnswer(question.getAnswer());

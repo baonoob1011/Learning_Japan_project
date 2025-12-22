@@ -8,6 +8,7 @@ import com.example.learningApp.entity.Question;
 import com.example.learningApp.repository.ExamAnswerRepository;
 import com.example.learningApp.repository.ExamParticipantRepository;
 import com.example.learningApp.repository.QuestionRepository;
+import com.example.learningApp.service.ai.ResultAIReviewService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -55,10 +56,6 @@ public class ExamSubmitService {
             Question question = questionRepo.findById(answer.getQuestionId()).orElse(null);
             if (question == null) continue;
 
-            // ❌ Không auto chấm ESSAY / READING
-            if ("ESSAY".equals(question.getType()) || "READING".equals(question.getType())) {
-                continue;
-            }
 
             boolean correct = question.getAnswer() != null &&
                     question.getAnswer().trim().equalsIgnoreCase(answer.getAnswer() != null ? answer.getAnswer().trim() : "");
@@ -75,6 +72,7 @@ public class ExamSubmitService {
         participant.setScore(totalScore);
         participant.setCompleted(true);
         participant.setFinishedAt(LocalDateTime.now());
+
         participantRepo.save(participant);
 
         return SubmitExamResponse.builder()
@@ -87,6 +85,7 @@ public class ExamSubmitService {
                 .finishedAt(participant.getFinishedAt())
                 .build();
     }
+
 
     /**
      * Auto submit khi hết giờ
@@ -112,10 +111,6 @@ public class ExamSubmitService {
                 for (ExamAnswer answer : savedAnswers) {
                     Question question = questionRepo.findById(answer.getQuestionId()).orElse(null);
                     if (question == null) continue;
-
-                    if ("ESSAY".equals(question.getType()) || "READING".equals(question.getType())) {
-                        continue;
-                    }
 
                     boolean correct = question.getAnswer() != null &&
                             question.getAnswer().trim().equalsIgnoreCase(answer.getAnswer() != null ? answer.getAnswer().trim() : "");

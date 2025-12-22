@@ -26,7 +26,11 @@
 	<!--  📦 Các dependency chính  -->
 	<dependencies>
 
-
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>bedrockruntime</artifactId>
+			<version>2.25.39</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-batch</artifactId>
