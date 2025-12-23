@@ -25,12 +25,30 @@
 	</properties>
 	<!--  📦 Các dependency chính  -->
 	<dependencies>
+		<!-- AWS SigV4 signer (nhẹ, ổn định) -->
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>auth</artifactId>
+			<version>2.25.62</version>
+		</dependency>
 
 		<dependency>
 			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>bedrockruntime</artifactId>
-			<version>2.25.39</version>
+			<artifactId>regions</artifactId>
+			<version>2.25.62</version>
 		</dependency>
+
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>http-client-spi</artifactId>
+			<version>2.25.62</version>
+		</dependency>
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>bedrockruntime</artifactId>
+			<version>2.25.62</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-batch</artifactId>
