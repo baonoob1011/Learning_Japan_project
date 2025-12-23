@@ -11,8 +11,7 @@ import com.example.learningApp.repository.ExamSectionRepository;
 import com.example.learningApp.repository.QuestionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.Step;
+import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
@@ -23,7 +22,9 @@ import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.MultiResourceItemReader;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
-import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
+import org.springframework.batch.item.file.transform.DefaultFieldSet;
+import org.springframework.batch.item.file.transform.FieldSet;
+import org.springframework.batch.item.file.transform.LineTokenizer;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -48,59 +49,81 @@ public class ExamBatchConfig {
     private final ExamSectionRepository sectionRepository;
     private final QuestionRepository questionRepository;
     private final AmazonS3 amazonS3;
-
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${aws.s3.bucket}")
     private String bucketName;
 
-    // =====================================================
-    // READER: LOAD FILE CSV FROM S3 (exam/)
-    // =====================================================
+    // ================== READER ==================
     @Bean(name = "examReader")
     @StepScope
     public MultiResourceItemReader<Map<String, String>> examReader(
             @Value("#{jobParameters['exam']}") String examKey
     ) {
-
-        MultiResourceItemReader<Map<String, String>> reader =
-                new MultiResourceItemReader<>();
-
+        MultiResourceItemReader<Map<String, String>> reader = new MultiResourceItemReader<>();
         reader.setResources(loadExamFilesFromS3(examKey));
         reader.setDelegate(singleExamCsvReader());
-
         return reader;
     }
 
-    // =====================================================
-    // SINGLE CSV READER
-    // =====================================================
     @Bean
     public FlatFileItemReader<Map<String, String>> singleExamCsvReader() {
-
-        FlatFileItemReader<Map<String, String>> reader =
-                new FlatFileItemReader<>();
-
+        FlatFileItemReader<Map<String, String>> reader = new FlatFileItemReader<>();
         reader.setLinesToSkip(1);
         reader.setEncoding("UTF-8");
 
+        String[] names = {
+                "exam_code","exam_level","exam_duration",
+                "section_title","section_order",
+                "question_type","question_text",
+                "options","answer","explanation",
+                "image_url","audio_url","question_order"
+        };
+
         reader.setLineMapper(new DefaultLineMapper<>() {{
-            setLineTokenizer(new DelimitedLineTokenizer() {{
-                setDelimiter(",");
-                setStrict(false);
-                setNames(
-                        "exam_code","exam_level","exam_duration",
-                        "section_title","section_order",
-                        "question_type","question_text",
-                        "options","answer","explanation",
-                        "image_url","audio_url","question_order"
-                );
-            }});
+            setLineTokenizer(new LineTokenizer() {
+                @Override
+                public FieldSet tokenize(String line) {
+                    List<String> tokens = new ArrayList<>();
+                    boolean inBrackets = false;
+                    StringBuilder sb = new StringBuilder();
+
+                    for (char c : line.toCharArray()) {
+                        if (c == '[') inBrackets = true;
+                        if (c == ']') inBrackets = false;
+
+                        if (c == ',' && !inBrackets) {
+                            tokens.add(sb.toString().trim());
+                            sb.setLength(0);
+                        } else {
+                            sb.append(c);
+                        }
+                    }
+                    tokens.add(sb.toString().trim());
+
+                    while (tokens.size() < names.length) {
+                        tokens.add("");
+                    }
+
+                    int optionsIndex = Arrays.asList(names).indexOf("options");
+                    if (optionsIndex >= 0) {
+                        String opt = tokens.get(optionsIndex);
+                        if (opt.startsWith("[") && opt.endsWith("]")) {
+                            opt = opt.substring(1, opt.length() - 1).trim();
+                            tokens.set(optionsIndex, opt);
+                        }
+                    }
+
+                    return new DefaultFieldSet(tokens.toArray(new String[0]), names);
+                }
+            });
+
             setFieldSetMapper(fs -> {
                 Map<String, String> map = new HashMap<>();
-                for (String name : fs.getNames()) {
+                for (String name : names) {
                     map.put(name, fs.readString(name));
                 }
+                map.put("options", parseOptions(map.get("options")));
                 return map;
             });
         }});
@@ -108,100 +131,74 @@ public class ExamBatchConfig {
         return reader;
     }
 
-    // =====================================================
-    // LOAD FILE EXAM/*.CSV FROM S3
-    // =====================================================
     private Resource[] loadExamFilesFromS3(String examKey) {
-
         List<Resource> resources = new ArrayList<>();
-
-        List<S3ObjectSummary> objects =
-                amazonS3.listObjects(bucketName, "exam/")
-                        .getObjectSummaries();
+        List<S3ObjectSummary> objects = amazonS3.listObjects(bucketName, "exam/").getObjectSummaries();
 
         for (S3ObjectSummary obj : objects) {
-
             if (!obj.getKey().endsWith(".csv")) continue;
-
-            // Nếu truyền examKey thì chỉ load đúng file đó
             if (examKey != null && !obj.getKey().contains(examKey)) continue;
-
             try {
-                String url = amazonS3
-                        .getUrl(bucketName, obj.getKey())
-                        .toString();
-
-                System.out.println("📥 Import exam file: " + obj.getKey());
-                resources.add(new UrlResource(url));
-
+                resources.add(new UrlResource(amazonS3.getUrl(bucketName, obj.getKey())));
             } catch (Exception e) {
                 throw new RuntimeException("Cannot load exam file: " + obj.getKey(), e);
             }
         }
 
-        if (resources.isEmpty()) {
-            throw new IllegalStateException(
-                    "❌ Không tìm thấy file CSV trong S3 folder exam/");
-        }
-
+        if (resources.isEmpty()) throw new IllegalStateException("No CSV files found in S3 folder exam/");
         return resources.toArray(new Resource[0]);
     }
 
-    // =====================================================
-    // PROCESSOR
-    // =====================================================
+    // ================== PROCESSOR ==================
     @Bean(name = "examProcessor")
     @StepScope
     public ItemProcessor<Map<String, String>, Question> examProcessor() {
+        Map<String, Exam> examCache = new HashMap<>();
+        Map<String, ExamSection> sectionCache = new HashMap<>();
 
         return row -> {
-            if (row == null || row.get("question_type") == null || row.get("question_type").isBlank()
-                    || row.get("question_text") == null || row.get("question_text").isBlank()) {
-                return null;
-            }
+            if (row == null || row.get("question_type").isBlank() || row.get("question_text").isBlank()) return null;
 
             try {
-                String examCode = row.get("exam_code").trim();
-                String examLevel = row.get("exam_level").trim();
+                String examCode = Optional.ofNullable(row.get("exam_code")).orElse("").trim();
+                String examLevel = Optional.ofNullable(row.get("exam_level")).orElse("").trim();
                 int examDuration = parseIntSafe(row.get("exam_duration"), 0);
-
-                String sectionTitle = row.get("section_title").trim();
+                String sectionTitle = Optional.ofNullable(row.get("section_title")).orElse("").trim();
                 int sectionOrder = parseIntSafe(row.get("section_order"), 0);
                 int questionOrder = parseIntSafe(row.get("question_order"), 0);
+                String questionTypeStr = Optional.ofNullable(row.get("question_type")).orElse("").trim();
 
-                // Parse enum
-                AssessmentType questionType;
-                try {
-                    questionType = AssessmentType.valueOf(row.get("question_type").trim());
-                } catch (IllegalArgumentException e) {
-                    System.err.println("⚠️ Invalid question_type: " + row.get("question_type") + ", skip row.");
-                    return null;
-                }
+                Exam exam = examCache.computeIfAbsent(examCode, code ->
+                        examRepository.findByCode(code)
+                                .orElseGet(() -> examRepository.save(
+                                        Exam.builder()
+                                                .code(code)
+                                                .level(examLevel)
+                                                .duration(examDuration)
+                                                .sections(new ArrayList<>())
+                                                .questions(new ArrayList<>())
+                                                .numSections(0)
+                                                .numQuestions(0)
+                                                .createdAt(LocalDateTime.now())
+                                                .updatedAt(LocalDateTime.now())
+                                                .build()
+                                ))
+                );
 
-                // Exam
-                Exam exam = examRepository.findByCode(examCode)
-                        .orElseGet(() -> examRepository.save(
-                                Exam.builder()
-                                        .code(examCode)
-                                        .level(examLevel)
-                                        .duration(examDuration)
-                                        .sections(new ArrayList<>())
-                                        .questions(new ArrayList<>())
-                                        .numSections(0)
-                                        .numQuestions(0)
-                                        .createdAt(LocalDateTime.now())
-                                        .updatedAt(LocalDateTime.now())
-                                        .build()
-                        ));
+                String sectionKey = sectionTitle + "_" + sectionOrder + "_" + examLevel;
+                ExamSection section = sectionCache.computeIfAbsent(sectionKey, key ->
+                        sectionRepository.findByTitleAndOrderNumAndLevel(sectionTitle, sectionOrder, examLevel)
+                                .orElseGet(() -> sectionRepository.save(
+                                        ExamSection.builder()
+                                                .title(sectionTitle)
+                                                .orderNum(sectionOrder)
+                                                .level(examLevel)
+                                                .exams(new ArrayList<>())
+                                                .questions(new ArrayList<>())
+                                                .build()
+                                ))
+                );
 
-                // Section
-                ExamSection section = sectionRepository
-                        .findByTitleAndOrderNumAndLevel(sectionTitle, sectionOrder, examLevel)
-                        .orElseThrow(() -> new IllegalStateException(
-                                "❌ Section NOT FOUND: " + sectionTitle + " | order=" + sectionOrder + " | level=" + examLevel
-                        ));
-
-                // Add section to exam if not exists
                 if (!exam.getSections().contains(section)) {
                     exam.getSections().add(section);
                     section.getExams().add(exam);
@@ -209,39 +206,37 @@ public class ExamBatchConfig {
                     examRepository.save(exam);
                 }
 
-                // Create question
+                AssessmentType questionType;
+                try { questionType = AssessmentType.valueOf(questionTypeStr); }
+                catch (IllegalArgumentException e) { return null; }
+
+                String answer = Optional.ofNullable(row.get("answer")).orElse("").trim();
+                String optionsParsed = parseOptions(row.get("options"));
+
                 Question question = Question.builder()
                         .section(section)
                         .questionType(questionType)
                         .questionText(row.get("question_text").trim())
-                        .options(toJson(row.get("options")))
-                        .answer(toJson(row.get("answer")))
-                        .explanation(Optional.ofNullable(row.get("explanation")).orElse(""))
+                        .options(optionsParsed)
+                        .answer(answer)
+                        .explanation(Optional.ofNullable(row.get("explanation")).orElse("").trim())
                         .imageUrl(row.get("image_url"))
                         .audioUrl(row.get("audio_url"))
                         .orderNum(questionOrder)
-                        .createdAt(LocalDateTime.now())
-                        .updatedAt(LocalDateTime.now())
                         .build();
 
-                // Gắn exam Many-to-Many
                 question.getExams().add(exam);
                 exam.getQuestions().add(question);
 
                 return question;
 
             } catch (Exception e) {
-                System.err.println("❌ Error row: " + row);
-                e.printStackTrace();
                 return null;
             }
         };
     }
 
-
-    // =====================================================
-    // WRITER
-    // =====================================================
+    // ================== WRITER ==================
     @Bean(name = "examWriter")
     public ItemWriter<Question> examWriter() {
         return items -> {
@@ -251,12 +246,10 @@ public class ExamBatchConfig {
 
             questionRepository.saveAll(list);
 
-            // Lấy tất cả exam liên quan trong batch này
             Set<Exam> exams = list.stream()
                     .flatMap(q -> q.getExams().stream())
                     .collect(Collectors.toSet());
 
-            // Cập nhật numQuestions cho mỗi exam
             for (Exam exam : exams) {
                 exam.setNumQuestions(exam.getQuestions().size());
                 examRepository.save(exam);
@@ -264,19 +257,26 @@ public class ExamBatchConfig {
         };
     }
 
+    @Bean(name = "delayedExamProcessor")
+    @StepScope
+    public ItemProcessor<Map<String, String>, Question> delayedExamProcessor(
+            @Qualifier("examProcessor") ItemProcessor<Map<String, String>, Question> delegate
+    ) {
+        return item -> {
+            if (item != null) {
+                try { Thread.sleep(100); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+            }
+            return delegate.process(item);
+        };
+    }
 
-    // =====================================================
-    // STEP
-    // =====================================================
+    // ================== STEP & JOB ==================
     @Bean(name = "examStep")
     public Step examStep(
-            @Qualifier("examReader")
-            MultiResourceItemReader<Map<String, String>> reader,
-            @Qualifier("examProcessor")
-            ItemProcessor<Map<String, String>, Question> processor,
-            @Qualifier("examWriter")
-            ItemWriter<Question> writer) {
-
+            @Qualifier("examReader") MultiResourceItemReader<Map<String, String>> reader,
+            @Qualifier("delayedExamProcessor") ItemProcessor<Map<String, String>, Question> processor,
+            @Qualifier("examWriter") ItemWriter<Question> writer
+    ) {
         return new StepBuilder("examStep", jobRepository)
                 .<Map<String, String>, Question>chunk(10, transactionManager)
                 .reader(reader)
@@ -285,40 +285,37 @@ public class ExamBatchConfig {
                 .build();
     }
 
-    // =====================================================
-    // JOB
-    // =====================================================
-    @Bean(name = "importExamJob")
+    @Bean
     public Job importExamJob(
-            @Qualifier("examStep") Step step) {
-
+            @Qualifier("examStep") Step examStep
+    ) {
         return new JobBuilder("importExamJob", jobRepository)
-                .start(step)
+                .start(examStep)
                 .build();
     }
 
-    // =====================================================
-    // UTILS
-    // =====================================================
+    // ================== UTILS ==================
     private int parseIntSafe(String value, int defaultValue) {
-        try {
-            if (value == null || value.isBlank()) return defaultValue;
-            return Integer.parseInt(value.trim());
-        } catch (Exception e) {
-            return defaultValue;
-        }
+        try { return (value == null || value.isBlank()) ? defaultValue : Integer.parseInt(value.trim()); }
+        catch (Exception e) { return defaultValue; }
     }
 
-    private String toJson(String raw) {
-        try {
-            if (raw == null || raw.isBlank()) return "null";
-            return objectMapper.writeValueAsString(objectMapper.readTree(raw));
-        } catch (Exception e) {
-            try {
-                return objectMapper.writeValueAsString(raw);
-            } catch (Exception ex) {
-                return "null";
-            }
+    private String parseOptions(String raw) {
+        if (raw == null || raw.isBlank() || raw.equals("[]")) return "[]";
+
+        raw = raw.trim();
+        if (raw.startsWith("[") && raw.endsWith("]")) {
+            raw = raw.substring(1, raw.length() - 1);
         }
+
+        List<String> list = Arrays.stream(raw.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(s -> s.replaceAll("^\"|\"$", ""))
+                .map(s -> s.replaceAll("^'|'$", ""))
+                .toList();
+
+        try { return objectMapper.writeValueAsString(list); }
+        catch (Exception e) { return "[]"; }
     }
 }
