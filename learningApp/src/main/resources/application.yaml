@@ -74,4 +74,3 @@ app:
     full-name: ${ADMIN_FULL_NAME}
     role: ${ADMIN_ROLE}
     password: ${ADMIN_PASSWORD}
-

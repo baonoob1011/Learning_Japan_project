@@ -3,6 +3,7 @@ package com.example.learningApp.controller.ai;
 import com.example.learningApp.dto.ApiResponse;
 import com.example.learningApp.dto.request.exam.QuestionChatRequest;
 import com.example.learningApp.dto.response.ai.QuestionChatResponse;
+import com.example.learningApp.service.ai.QuestionChatAIGeminiService;
 import com.example.learningApp.service.ai.QuestionChatAIService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 @PreAuthorize("hasRole('USER_VIP')")
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class QuestionChatAIController {
-      QuestionChatAIService chatService;
+    QuestionChatAIService chatService;
 
     @PostMapping("/question")
     public ResponseEntity<ApiResponse<QuestionChatResponse>> chatWithQuestion(
