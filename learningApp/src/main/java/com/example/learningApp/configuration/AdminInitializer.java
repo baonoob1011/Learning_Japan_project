@@ -55,11 +55,12 @@ public class AdminInitializer implements ApplicationRunner {
     @Value("${app.admin.password}")
     String password;
 
+    static String DEFAULT_USER_ROLE = "USER";
+
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
         log.info(" Initializing admin user & role...");
-
         ensureAdminRole();
         User adminUser = ensureAdminUser();
         ensureAdminRoleAssigned(adminUser);

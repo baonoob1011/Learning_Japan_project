@@ -1,6 +1,7 @@
 package com.example.learningApp.service.auth;
 
 import com.example.learningApp.configuration.CognitoSecretHashUtil;
+import com.example.learningApp.dto.event.AuthEventDTO;
 import com.example.learningApp.dto.request.auth.UserLoginRequest;
 import com.example.learningApp.dto.request.role.AssignRoleRequest;
 import com.example.learningApp.dto.request.user.CreateUserRequest;
@@ -9,6 +10,7 @@ import com.example.learningApp.dto.response.user.UserResponse;
 import com.example.learningApp.entity.User;
 import com.example.learningApp.mapper.UserMapper;
 import com.example.learningApp.repository.UserRepository;
+import com.example.learningApp.service.common.EventBridgePublisher;
 import com.example.learningApp.service.role.RoleService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
+import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,6 +38,7 @@ public class AuthService {
     CognitoIdentityProviderClient cognitoClient;
     UserMapper userMapper;
     RoleService roleService;
+    EventBridgePublisher eventBridgePublisher;
 
     @NonFinal
     @Value("${aws.iam.access-key}")
@@ -107,6 +112,16 @@ public class AuthService {
                 );
             }
 
+            AuthEventDTO authEventDTO = AuthEventDTO.builder()
+                    .userId(savedUser.getId())
+                    .email(savedUser.getEmail())
+                    .fullName(savedUser.getFullName())
+                    .action("SUCCESS_REGISTER")
+                    .timestamp(Instant.now().toString())
+                    .build();
+
+            eventBridgePublisher.sendEvent("com.example.learningApp.auth", "UserRegister", authEventDTO);
+
             // 5️⃣ Success
             return userMapper.toUserResponse(savedUser);
 
@@ -159,6 +174,13 @@ public class AuthService {
             if (response.authenticationResult() == null) {
                 throw new IllegalStateException("Invalid login credentials");
             }
+
+            AuthEventDTO authEventDTO = AuthEventDTO.builder()
+                    .email(email)
+                    .action("SUCCESS_LOGIN")
+                    .build();
+
+            eventBridgePublisher.sendEvent("com.example.learningApp.auth", "UserLogin", authEventDTO);
 
             return UserLoginResponse.builder()
                     .accessToken(response.authenticationResult().accessToken())
