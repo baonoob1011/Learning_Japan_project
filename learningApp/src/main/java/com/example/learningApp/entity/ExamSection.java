@@ -24,8 +24,9 @@ public class ExamSection {
 
 
     private String title;
-    private Integer orderNum;
-
+    private Integer sectionOrder;
+    @Column(nullable = false)
+    private Integer sectionDuration;   // phút
     private String level;
 
     @OneToMany(mappedBy = "section", cascade = CascadeType.ALL, orphanRemoval = true)

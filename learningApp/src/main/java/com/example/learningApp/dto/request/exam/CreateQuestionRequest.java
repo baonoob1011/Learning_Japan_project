@@ -21,5 +21,5 @@ public class CreateQuestionRequest {
     private String imageUrl;
     private String audioUrl;
     @NotNull
-    private Integer orderNum;
+    private Integer sectionOrder;
 }

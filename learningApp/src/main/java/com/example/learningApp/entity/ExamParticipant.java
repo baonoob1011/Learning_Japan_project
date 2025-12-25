@@ -29,13 +29,7 @@ public class ExamParticipant {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @OneToMany(
-            mappedBy = "participant",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true,
-            fetch = FetchType.LAZY
-    )
-    private List<ExamAnswer> answers;
+
     @Column(name = "ai_review", columnDefinition = "TEXT")
     private String aiReview;
     private Float score;

@@ -81,6 +81,7 @@ public class ExamSectionBatchConfig {
                 setNames(
                         "section_title",
                         "section_order",
+                        "section_duration",
                         "assessment_type",
                         "assessment_name",
                         "assessment_level",
@@ -155,6 +156,7 @@ public class ExamSectionBatchConfig {
             try {
                 String sectionTitle = row.get("section_title").trim();
                 int sectionOrder = parseIntSafe(row.get("section_order"), 0);
+                int sectionDuration = parseIntSafe(row.get("section_duration"), 0);
                 String sectionLevel = row.get("assessment_level").trim();
 
                 String sectionKey =
@@ -163,15 +165,16 @@ public class ExamSectionBatchConfig {
                 // ================== LOAD / CREATE SECTION ==================
                 ExamSection section = sectionCache.computeIfAbsent(sectionKey, key ->
                         sectionRepository
-                                .findByTitleAndOrderNumAndLevel(
+                                .findByTitleAndSectionOrderAndLevel(
                                         sectionTitle,
                                         sectionOrder,
                                         sectionLevel
                                 )
                                 .orElseGet(() -> ExamSection.builder()
                                         .title(sectionTitle)
-                                        .orderNum(sectionOrder)
+                                        .sectionOrder(sectionOrder)
                                         .level(sectionLevel)
+                                        .sectionDuration(sectionDuration)
                                         .assessmentItems(new ArrayList<>())
                                         .questions(new ArrayList<>())
                                         .build())

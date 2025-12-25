@@ -43,7 +43,7 @@ public class S3Service {
     }
     public String uploadCsvFile(MultipartFile file, String folder) throws IOException {
         if (!"text/csv".equals(file.getContentType()) && !file.getOriginalFilename().endsWith(".csv")) {
-            throw new IllegalArgumentException("Only CSV files are allowed");
+            throw new RuntimeException("Only CSV files are allowed");
         }
 
         String fileName = folder + "/csv_" + UUID.randomUUID() + "_" + file.getOriginalFilename();

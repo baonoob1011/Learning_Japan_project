@@ -16,7 +16,7 @@ public class ExamAnswerCache {
     private String questionText;
     private AssessmentType questionType;
     private String options;
-    private int orderNum;
+    private int sectionOrder;
     private String correctAnswer;
 
     private String answer;

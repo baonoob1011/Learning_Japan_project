@@ -32,6 +32,7 @@ public class Exam {
 
     @Column(name = "num_sections")
     private Integer numSections;
+    private long participant;
 
     @Column(name = "num_questions")
     private Integer numQuestions;

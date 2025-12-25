@@ -13,11 +13,6 @@ public interface ExamParticipantRepository extends JpaRepository<ExamParticipant
     List<ExamParticipant> findByCompletedFalse();
 
 
-    boolean existsByUser_IdAndStartedAtBetween(
-            String userId,
-            LocalDateTime startOfDay,
-            LocalDateTime endOfDay
-    );
     long countByUser_IdAndExam_IdAndStartedAtBetween(
             String userId,
             String examId,

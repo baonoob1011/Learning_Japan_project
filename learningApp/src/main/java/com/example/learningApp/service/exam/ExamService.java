@@ -40,7 +40,7 @@ public class ExamService {
 
     public ExamResponse getExamById(String id) {
         Exam exam = examRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Exam not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException("Exam not found with id: " + id));
         return examMapper.toExamResponse(exam);
     }
 
@@ -49,7 +49,7 @@ public class ExamService {
             // Kiểm tra code đã tồn tại chưa
             boolean exists = examRepository.existsByCode(createExamRequest.getCode());
             if (exists) {
-                throw new IllegalArgumentException("Exam code already exists: " + createExamRequest.getCode());
+                throw new RuntimeException("Exam code already exists: " + createExamRequest.getCode());
             }
 
             // Lưu entity
@@ -57,7 +57,7 @@ public class ExamService {
 
             // Map entity → response
             return examMapper.toExamResponse(savedExam);
-        } catch (IllegalArgumentException e) {
+        } catch (RuntimeException e) {
             log.error("Validation error while creating exam: {}", e.getMessage());
             throw e;  // có thể ném tiếp để controller xử lý
         } catch (Exception e) {

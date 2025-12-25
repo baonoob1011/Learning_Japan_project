@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 public class ExamResponse {
     private String id;
     private String code;
+    private long participant;
     private String level;
     private Integer duration;
     private Integer numSections;

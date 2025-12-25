@@ -49,8 +49,8 @@ public class Question {
     @Column(columnDefinition = "TEXT")
     private String explanation;
     private String imageUrl;
+    private Integer questionOrder;
     private String audioUrl;
-    private Integer orderNum;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

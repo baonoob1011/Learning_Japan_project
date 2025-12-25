@@ -32,7 +32,7 @@ public class ExamSectionService {
 
     public SectionResponse createSection(CreateSectionRequest request) {
         Exam exam = examRepository.findById(request.getExamId())
-                .orElseThrow(() -> new IllegalArgumentException("Exam not found"));
+                .orElseThrow(() -> new RuntimeException("Exam not found"));
 
         ExamSection examSection = examSectionRepository.save(examSectionMapper.toExamSection(request));
         return examSectionMapper.toExamSectionResponse(examSection);

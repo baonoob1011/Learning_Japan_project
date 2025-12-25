@@ -46,33 +46,15 @@ public class ExamParticipantService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userId = authentication.getName();
 
-        Map<String, Object> claims = ((JwtAuthenticationToken) authentication).getTokenAttributes();
-        List<String> groups = (List<String>) claims.getOrDefault("cognito:groups", List.of());
-        boolean isVip = groups.contains("USER_VIP");
-        boolean isNormalUser = groups.contains("USER");
-
-        // Kiểm tra số lần thi
-        if (isNormalUser && !isVip) {
-            LocalDate today = LocalDate.now();
-            LocalDateTime startOfDay = today.atStartOfDay();
-            LocalDateTime endOfDay = today.atTime(LocalTime.MAX);
-            long attemptCount = participantRepo.countByUser_IdAndExam_IdAndStartedAtBetween(
-                    userId,
-                    request.getExamId(),
-                    startOfDay,
-                    endOfDay
-            );
-            if (attemptCount >= 3) {
-                throw new IllegalStateException("You can only take this exam 3 times per day");
-            }
-        }
+        // ... kiểm tra quyền, số lần thi hàng ngày
 
         Exam exam = examRepo.findById(request.getExamId())
-                .orElseThrow(() -> new IllegalArgumentException("Exam not found"));
+                .orElseThrow(() -> new RuntimeException("Exam not found"));
 
         User user = userRepo.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
+        // Tạo participant
         ExamParticipant participant = ExamParticipant.builder()
                 .exam(exam)
                 .user(user)
@@ -80,6 +62,10 @@ public class ExamParticipantService {
                 .completed(false)
                 .build();
         participantRepo.save(participant);
+
+        // **Tăng số lần tham gia exam**
+        exam.setParticipant(exam.getParticipant() + 1); // tăng lên 1
+        examRepo.save(exam);
 
         // ===== CACHE QUESTIONS + SECTIONS THEO EXAMID =====
         String examQuestionKey = "exam:" + exam.getId() + ":questions";
@@ -97,16 +83,18 @@ public class ExamParticipantService {
                 sectionCacheMap.put(section.getId(), new SectionCache(section.getId(), pointMap));
 
                 for (var q : section.getQuestions()) {
-                    // Cache full snapshot question
                     questionCacheMap.put(q.getId(), new QuestionCache(
                             q.getId(),
                             q.getQuestionType(),
-                            q.getAnswer(),       // correctAnswer
-                            section.getId(),     // sectionId
-                            q.getQuestionText(), // questionText
-                            q.getOptions(),      // JSON options
-                            q.getOrderNum(),     // orderNum
-                            q.getAnswer()        // correctAnswer snapshot
+                            q.getAnswer(),
+                            section.getId(),
+                            q.getQuestionText(),
+                            q.getOptions(),
+                            q.getQuestionOrder(),
+                            q.getAnswer(),
+                            q.getExplanation(),
+                            q.getImageUrl(),
+                            q.getAudioUrl()
                     ));
                 }
             }

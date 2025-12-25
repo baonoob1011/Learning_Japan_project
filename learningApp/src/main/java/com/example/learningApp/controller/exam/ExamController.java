@@ -2,14 +2,11 @@ package com.example.learningApp.controller.exam;
 
 import com.example.learningApp.dto.ApiResponse;
 import com.example.learningApp.dto.request.exam.CreateExamRequest;
-import com.example.learningApp.dto.request.exam.SaveAnswerRequest;
 import com.example.learningApp.dto.request.exam.StartExamRequest;
 import com.example.learningApp.dto.request.exam.SubmitExamRequest;
 import com.example.learningApp.dto.response.exam.ExamResponse;
 import com.example.learningApp.dto.response.exam.StartExamResponse;
 import com.example.learningApp.dto.response.exam.SubmitExamResponse;
-import com.example.learningApp.entity.ExamParticipant;
-import com.example.learningApp.service.exam.ExamAnswerService;
 import com.example.learningApp.service.exam.ExamParticipantService;
 import com.example.learningApp.service.exam.ExamService;
 import com.example.learningApp.service.exam.ExamSubmitService;
@@ -22,7 +19,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/exams")
@@ -30,7 +26,6 @@ import java.util.Map;
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class ExamController {
     ExamService examService;
-    ExamAnswerService examAnswerService;
     ExamParticipantService examParticipantService;
     ExamSubmitService submitService;
 
@@ -78,15 +73,6 @@ public class ExamController {
         );
     }
 
-    @PostMapping("/answer")
-    public ResponseEntity<ApiResponse<Void>> saveAnswer(
-            @RequestBody @Valid SaveAnswerRequest request
-    ) {
-        examAnswerService.saveAnswer(request);
-        return ResponseEntity.ok(
-                ApiResponse.success("Answer saved", null)
-        );
-    }
     @PostMapping("/submit")
     public ResponseEntity<ApiResponse<SubmitExamResponse>> submitExam(
             @RequestBody @Valid SubmitExamRequest request
@@ -94,7 +80,7 @@ public class ExamController {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Exam submitted successfully",
-                        submitService.submitExam(request.getParticipantId())
+                        submitService.submitExam(request)
                 )
         );
     }

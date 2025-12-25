@@ -127,7 +127,7 @@ public class AuthService {
                 }
             }
 
-            throw new IllegalStateException("User registration failed", ex);
+            throw new RuntimeException("User registration failed", ex);
         }
     }
 
@@ -157,7 +157,7 @@ public class AuthService {
                     cognitoClient.adminInitiateAuth(authRequest);
 
             if (response.authenticationResult() == null) {
-                throw new IllegalStateException("Invalid login credentials");
+                throw new RuntimeException("Invalid login credentials");
             }
 
             return UserLoginResponse.builder()
@@ -167,10 +167,10 @@ public class AuthService {
 
         } catch (NotAuthorizedException ex) {
             // Sai email hoặc password
-            throw new IllegalStateException("Invalid email or password");
+            throw new RuntimeException("Invalid email or password");
 
         } catch (UserNotFoundException ex) {
-            throw new IllegalStateException("User does not exist");
+            throw new RuntimeException("User does not exist");
 
         } catch (Exception ex) {
             throw new RuntimeException("Login failed", ex);
@@ -211,7 +211,7 @@ public class AuthService {
 
         } catch (NotAuthorizedException ex) {
 
-            throw new IllegalStateException("Session expired. Please login again");
+            throw new RuntimeException("Session expired. Please login again");
 
         } catch (Exception ex) {
             throw new RuntimeException("Refresh token failed", ex);
@@ -232,7 +232,7 @@ public class AuthService {
 
         } catch (NotAuthorizedException ex) {
             // Token đã hết hạn / đã bị revoke
-            throw new IllegalStateException("Session already expired");
+            throw new RuntimeException("Session already expired");
 
         } catch (Exception ex) {
             throw new RuntimeException("Logout failed", ex);

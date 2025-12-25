@@ -177,7 +177,6 @@ public class ExamBatchConfig {
                                                 .duration(examDuration)
                                                 .sections(new ArrayList<>())
                                                 .questions(new ArrayList<>())
-                                                .numSections(0)
                                                 .numQuestions(0)
                                                 .createdAt(LocalDateTime.now())
                                                 .updatedAt(LocalDateTime.now())
@@ -187,23 +186,27 @@ public class ExamBatchConfig {
 
                 String sectionKey = sectionTitle + "_" + sectionOrder + "_" + examLevel;
                 ExamSection section = sectionCache.computeIfAbsent(sectionKey, key ->
-                        sectionRepository.findByTitleAndOrderNumAndLevel(sectionTitle, sectionOrder, examLevel)
-                                .orElseGet(() -> sectionRepository.save(
-                                        ExamSection.builder()
-                                                .title(sectionTitle)
-                                                .orderNum(sectionOrder)
-                                                .level(examLevel)
-                                                .exams(new ArrayList<>())
-                                                .questions(new ArrayList<>())
-                                                .build()
+                        sectionRepository.findByTitleAndSectionOrderAndLevel(sectionTitle, sectionOrder, examLevel)
+                                .orElseThrow(() -> new IllegalStateException(
+                                        "Section not found: title=" + sectionTitle
+                                                + ", order=" + sectionOrder
+                                                + ", level=" + examLevel
                                 ))
                 );
 
+
+                // ⚡ Nối Exam <-> Section
                 if (!exam.getSections().contains(section)) {
                     exam.getSections().add(section);
-                    section.getExams().add(exam);
+                    // Cập nhật tổng số section mỗi khi thêm mới
                     exam.setNumSections(exam.getSections().size());
-                    examRepository.save(exam);
+                }
+
+                if (!section.getExams().contains(exam)) {
+                    section.getExams().add(exam);
+                }
+                if (!section.getExams().contains(exam)) {
+                    section.getExams().add(exam);
                 }
 
                 AssessmentType questionType;
@@ -222,7 +225,7 @@ public class ExamBatchConfig {
                         .explanation(Optional.ofNullable(row.get("explanation")).orElse("").trim())
                         .imageUrl(row.get("image_url"))
                         .audioUrl(row.get("audio_url"))
-                        .orderNum(questionOrder)
+                        .questionOrder(questionOrder)
                         .build();
 
                 question.getExams().add(exam);

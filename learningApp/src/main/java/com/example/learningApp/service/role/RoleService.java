@@ -88,7 +88,7 @@ public class RoleService {
         }
 
         if (user.getRoles().contains(role)) {
-            throw new IllegalStateException("User already has this role");
+            throw new RuntimeException("User already has this role");
         }
 
         user.getRoles().add(role);

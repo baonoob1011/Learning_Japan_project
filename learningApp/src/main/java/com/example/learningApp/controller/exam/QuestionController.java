@@ -37,6 +37,11 @@ public class QuestionController {
         QuestionResponse res = questionService.createQuestion(request);
         return ResponseEntity.ok(ApiResponse.success("Question created", res));
     }
+    @GetMapping
+    public ApiResponse<List<QuestionResponse>> getAll() {
+        return ApiResponse.success(questionService.getAll());
+    }
+
 
 }
 

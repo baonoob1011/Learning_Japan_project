@@ -13,9 +13,9 @@ import java.util.Optional;
 @Repository
 public interface ExamSectionRepository extends JpaRepository<ExamSection,String> {
     Optional<ExamSection> findByTitle(String title);
-    Optional<ExamSection> findByTitleAndOrderNumAndLevel(
+    Optional<ExamSection> findByTitleAndSectionOrderAndLevel(
             String title,
-            Integer orderNum,
+            Integer sectionOrder,
             String level
     );
 
