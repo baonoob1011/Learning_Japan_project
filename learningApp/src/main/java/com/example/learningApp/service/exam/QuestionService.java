@@ -68,7 +68,7 @@ public class QuestionService {
 
     public QuestionResponse createQuestion(CreateQuestionRequest request) {
         ExamSection section = sectionRepository.findById(request.getSectionId())
-                .orElseThrow(() -> new RuntimeException("Section not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Section not found"));
         return questionMapper.toQuestionResponse(questionRepository.save(questionMapper.toQuestion(request)));
     }
 

@@ -41,10 +41,13 @@ public class SubmitExamResponse {
         private String questionType;
         private String optionsJson;       // lưu JSON nguyên bản
         private String correctAnswer;
+        private Integer sectionDuration;
         private String answer;
         private Boolean isCorrect;
         private Float score;
         private Integer questionOrder;
+        private Integer sectionOrder;
+        private String sectionTitle;
         private String explanation;
         private String imageUrl;
         private String audioUrl;

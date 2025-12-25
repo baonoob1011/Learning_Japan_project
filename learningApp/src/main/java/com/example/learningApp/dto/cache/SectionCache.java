@@ -12,5 +12,8 @@ import java.util.Map;
 @NoArgsConstructor
 public class SectionCache {
     private String id;
-    private Map<AssessmentType, Float> pointMap; // questionType -> pointPerQuestion
+    private String title;          // thêm field title
+    private Integer sectionOrder;  // giữ nguyên sectionOrder
+    private Integer sectionDuration;
+    private Map<AssessmentType, Float> pointMap;
 }

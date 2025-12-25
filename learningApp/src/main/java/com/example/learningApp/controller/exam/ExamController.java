@@ -5,6 +5,7 @@ import com.example.learningApp.dto.request.exam.CreateExamRequest;
 import com.example.learningApp.dto.request.exam.StartExamRequest;
 import com.example.learningApp.dto.request.exam.SubmitExamRequest;
 import com.example.learningApp.dto.response.exam.ExamResponse;
+import com.example.learningApp.dto.response.exam.SectionWithQuestionsResponse;
 import com.example.learningApp.dto.response.exam.StartExamResponse;
 import com.example.learningApp.dto.response.exam.SubmitExamResponse;
 import com.example.learningApp.service.exam.ExamParticipantService;
@@ -72,7 +73,19 @@ public class ExamController {
                 )
         );
     }
+    @GetMapping("/sections/{examId}")
+    public ResponseEntity<ApiResponse<List<SectionWithQuestionsResponse>>> getSectionsWithQuestions(
+            @PathVariable String examId
+    ) {
+        List<SectionWithQuestionsResponse> sections = examService.getSectionAndQuestionByExam(examId);
 
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Sections with questions fetched successfully",
+                        sections
+                )
+        );
+    }
     @PostMapping("/submit")
     public ResponseEntity<ApiResponse<SubmitExamResponse>> submitExam(
             @RequestBody @Valid SubmitExamRequest request

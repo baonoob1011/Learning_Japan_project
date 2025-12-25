@@ -4,7 +4,8 @@ import com.example.learningApp.dto.cache.QuestionCache;
 import com.example.learningApp.dto.cache.SectionCache;
 import com.example.learningApp.dto.request.exam.SubmitExamRequest;
 import com.example.learningApp.dto.response.exam.SubmitExamResponse;
-import com.example.learningApp.entity.*;
+import com.example.learningApp.entity.ExamParticipant;
+import com.example.learningApp.entity.ExamSection;
 import com.example.learningApp.enums.AssessmentType;
 import com.example.learningApp.repository.ExamParticipantRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,10 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -45,7 +43,7 @@ public class ExamSubmitService {
             throw new RuntimeException("Exam time expired");
         }
 
-        // Key cache
+        // Redis key
         String examQuestionKey = "exam:" + participant.getExam().getId() + ":questions";
         String examSectionKey = "exam:" + participant.getExam().getId() + ":sections";
 
@@ -60,13 +58,23 @@ public class ExamSubmitService {
             sectionCacheMap = new HashMap<>();
 
             for (ExamSection section : participant.getExam().getSections()) {
+                // Map questionType -> pointPerQuestion
                 Map<AssessmentType, Float> pointMap = new HashMap<>();
                 for (var item : section.getAssessmentItems()) {
                     pointMap.put(item.getAssessmentType(), item.getPointPerQuestion());
                 }
-                SectionCache sectionCache = new SectionCache(section.getId(), pointMap);
+
+                // Lưu SectionCache với sectionOrder, title, duration (hoặc field mới)
+                SectionCache sectionCache = new SectionCache(
+                        section.getId(),
+                        section.getTitle(),
+                        section.getSectionOrder(),
+                        section.getSectionDuration(), // field mới, ví dụ sectionDuration
+                        pointMap
+                );
                 sectionCacheMap.put(section.getId(), sectionCache);
 
+                // Lưu QuestionCache
                 for (var q : section.getQuestions()) {
                     QuestionCache questionCache = new QuestionCache(
                             q.getId(),
@@ -85,6 +93,7 @@ public class ExamSubmitService {
                 }
             }
 
+            // Lưu lại Redis
             redisTemplate.opsForValue().set(examQuestionKey, questionCacheMap, Duration.ofHours(5));
             redisTemplate.opsForValue().set(examSectionKey, sectionCacheMap, Duration.ofHours(5));
         }
@@ -106,7 +115,6 @@ public class ExamSubmitService {
                     ? section.getPointMap().getOrDefault(questionCache.getQuestionType(), 1f)
                     : 1f;
 
-            // Lấy câu trả lời người dùng nếu có
             SubmitExamRequest.AnswerDto answerDto = request.getAnswers().stream()
                     .filter(a -> a.getQuestionId().equals(questionCache.getId()))
                     .findFirst()
@@ -127,10 +135,13 @@ public class ExamSubmitService {
                     .questionType(questionCache.getQuestionType().name())
                     .optionsJson(questionCache.getOptions())
                     .correctAnswer(questionCache.getCorrectAnswer())
-                    .answer(userAnswer)      // null nếu bỏ qua
+                    .answer(userAnswer)
                     .isCorrect(correct)
                     .score(correct ? point : 0f)
                     .questionOrder(questionCache.getQuestionOrder())
+                    .sectionOrder(section.getSectionOrder())  // sectionOrder thật
+                    .sectionTitle(section.getTitle())         // title thật
+                    .sectionDuration(section.getSectionDuration()) // field mới
                     .explanation(questionCache.getExplanation())
                     .imageUrl(questionCache.getImageUrl())
                     .audioUrl(questionCache.getAudioUrl())
@@ -162,8 +173,4 @@ public class ExamSubmitService {
                 .finishedAt(participant.getFinishedAt())
                 .build();
     }
-
-
-
 }
-
