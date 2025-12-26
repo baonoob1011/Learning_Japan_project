@@ -43,6 +43,22 @@ public class User {
     )
     private Set<Role> roles;
 
+    @OneToMany(
+            mappedBy = "user",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    private Set<UserExamResult> userExamResults;
+
+    @OneToMany(
+            mappedBy = "user",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    private Set<UserLearningProgress> learningProgresses;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

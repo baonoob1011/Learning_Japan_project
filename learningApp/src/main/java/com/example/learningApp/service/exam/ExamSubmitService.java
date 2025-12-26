@@ -1,13 +1,18 @@
 package com.example.learningApp.service.exam;
 
+import com.example.learningApp.component.kafka.Producer;
 import com.example.learningApp.dto.cache.QuestionCache;
 import com.example.learningApp.dto.cache.SectionCache;
 import com.example.learningApp.dto.request.exam.SubmitExamRequest;
+import com.example.learningApp.dto.request.progress.UpdateUserLearningProgressRequest;
 import com.example.learningApp.dto.response.exam.SubmitExamResponse;
+import com.example.learningApp.dto.response.exam.UserExamResultResponse;
 import com.example.learningApp.entity.ExamParticipant;
 import com.example.learningApp.entity.ExamSection;
+import com.example.learningApp.entity.UserExamResult;
 import com.example.learningApp.enums.AssessmentType;
 import com.example.learningApp.repository.ExamParticipantRepository;
+import com.example.learningApp.repository.UserExamResultRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -22,6 +27,9 @@ import java.util.*;
 public class ExamSubmitService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final ExamParticipantRepository participantRepo;
+    private final Producer producer;
+    private static final String PROGRESS_TOPIC = "user-learning-progress";
+    private static final String EXAM_RESULT_TOPIC = "user-exam-result";
 
     /**
      * Submit bài thi: tính điểm dựa trên AssessmentItem qua Section
@@ -157,6 +165,28 @@ public class ExamSubmitService {
         participant.setCompleted(true);
         participant.setFinishedAt(LocalDateTime.now());
         participantRepo.save(participant);
+
+        UpdateUserLearningProgressRequest progressRequest =
+                UpdateUserLearningProgressRequest.builder()
+                        .userId(participant.getUser().getId())
+                        .level(participant.getExam().getLevel())
+                        .totalQuestions(totalQuestions)
+                        .correctQuestions(correctCount)
+                        .build();
+
+        producer.send(PROGRESS_TOPIC, participant.getUser().getId(), progressRequest);
+
+        UserExamResultResponse dto = UserExamResultResponse.builder()
+                .userId(participant.getUser().getId())
+                .examId(participant.getExam().getId())
+                .totalQuestions(totalQuestions)
+                .correctQuestions(correctCount)
+                .score(totalScore)
+                .submittedAt(LocalDateTime.now())
+                .build();
+
+        producer.send(EXAM_RESULT_TOPIC, participant.getUser().getId(), dto);
+
 
         return SubmitExamResponse.builder()
                 .participantId(participant.getId())
