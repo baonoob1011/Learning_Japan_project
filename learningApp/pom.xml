@@ -25,6 +25,10 @@
 	</properties>
 	<!--  📦 Các dependency chính  -->
 	<dependencies>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-test</artifactId>
+		</dependency>
 
 		<dependency>
 			<groupId>software.amazon.awssdk</groupId>

@@ -81,6 +81,7 @@ aws:
     bucket: ${AWS_S3_BUCKET_NAME}
 google:
   redirect-uri: ${REDICT_URI}
+  api-key: ${GOOGLE_API_KEY}
 
 
 jwt:
