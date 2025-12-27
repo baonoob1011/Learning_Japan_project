@@ -1,4 +1,4 @@
-package com.example.learningApp.dto.request.vode;
+package com.example.learningApp.dto.request.video;
 
 
 import jakarta.validation.constraints.NotBlank;

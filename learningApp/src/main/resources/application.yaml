@@ -68,7 +68,11 @@ spring:
 
 
 aws:
+  iam-nam:
+    access-key: ${AWS_ACCESS_KEY_NAM}
+    secret-key: ${AWS_SECRET_KEY_NAM}
   region: ${AWS_REGION}
+  region-nam: ${AWS_REGION_NAM}
   cognito:
     cognito-domain: ${AWS_COGNITO_DOMAIN}
     client-id: ${AWS_CLIENT_ID}
@@ -79,10 +83,12 @@ aws:
     secret-key: ${AWS_SECRET_KEY}
   s3:
     bucket: ${AWS_S3_BUCKET_NAME}
+    bucket-nam: ${AWS_S3_BUCKET_NAME_V2}
 google:
   redirect-uri: ${REDICT_URI}
   api-key: ${GOOGLE_API_KEY}
-
+openai:
+  api-key: ${OPEN_AI_API_KEY}
 
 jwt:
   secret-key: ${JWT_SECRET}

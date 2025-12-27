@@ -17,6 +17,7 @@ public class YoutubeVideoResponse {
     private String title;
     private String description;
     private String thumbnailUrl;
+    private String urlVideo;
     private String channelTitle;
     private String duration;           // PT2H35M54S
     private Instant publishedAt;

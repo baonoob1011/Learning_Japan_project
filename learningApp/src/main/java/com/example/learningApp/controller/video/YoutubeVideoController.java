@@ -1,11 +1,9 @@
 package com.example.learningApp.controller.video;
 
-
 import com.example.learningApp.dto.ApiResponse;
-import com.example.learningApp.dto.request.vode.YoutubeVideoRequest;
+import com.example.learningApp.dto.request.video.YoutubeVideoRequest;
 import com.example.learningApp.dto.response.video.YoutubeVideoResponse;
 import com.example.learningApp.dto.response.video.YoutubeVideoSummaryResponse;
-import com.example.learningApp.entity.YoutubeVideo;
 import com.example.learningApp.service.video.YoutubeVideoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,8 +27,10 @@ public class YoutubeVideoController {
             @RequestBody @Valid YoutubeVideoRequest request
     ) {
         try {
-            return ResponseEntity.ok(ApiResponse.success("Video uploaded successfully", youtubeVideoService.saveYoutubeVideo(request.getUrl())));
-        } catch (IOException  e) {
+            // Gọi phương thức lưu transcript luôn
+            YoutubeVideoResponse videoResp = youtubeVideoService.saveYoutubeTranscriptAws(request.getUrl(),"vi-VN");
+            return ResponseEntity.ok(ApiResponse.success("Video uploaded successfully with transcript", videoResp));
+        } catch (IOException | InterruptedException e) {
             int status = 500;
             return ResponseEntity
                     .status(status)

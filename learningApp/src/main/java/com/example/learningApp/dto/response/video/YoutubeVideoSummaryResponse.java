@@ -13,7 +13,7 @@ import java.time.Instant;
 public class YoutubeVideoSummaryResponse {
     private String id;
     private String title;
-    private String s3Url;
+    private String urlVideo;
     private String duration;           // PT2H35M54S
     private Instant createdAt;
 }
