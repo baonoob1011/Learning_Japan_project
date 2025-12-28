@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Date;
@@ -31,6 +32,14 @@ public class S3Service {
             "mp4", "mov", "avi",
             "mp3", "wav", "aac"
     );
+    // Upload byte array (dành cho audio Polly)
+    public String uploadBytes(byte[] bytes, String folder, String fileSuffix) {
+        String fileName = folder + "/" + UUID.randomUUID() + fileSuffix;
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(bytes.length);
+        amazonS3.putObject(bucketName, fileName, new ByteArrayInputStream(bytes), metadata);
+        return "https://" + bucketName + ".s3." + amazonS3.getRegionName() + ".amazonaws.com/" + fileName;
+    }
 
     public String uploadFile(MultipartFile file, String folder) throws IOException {
         String fileName = folder + "/" + UUID.randomUUID() + "_" + file.getOriginalFilename();

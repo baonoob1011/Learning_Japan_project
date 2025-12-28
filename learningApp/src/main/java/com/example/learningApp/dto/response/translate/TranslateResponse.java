@@ -10,19 +10,15 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class TranslateResponse {
-    private String original;
+
+    private String videoId;
+    private String surface;
     private String translated;
     private String reading;
     private String romaji;
-    private String explanation;
+    private String partOfSpeech;  // loại từ
+    private String targetDefs;    // nghĩa ngôn ngữ đích
+    private String audioUrl;   // audio lưu đường dẫn s3
+    private String explain;   // audio lưu đường dẫn s3
 
-    private List<Example> examples;
-
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class Example {
-        private String jp;
-        private String vi;
-    }
 }

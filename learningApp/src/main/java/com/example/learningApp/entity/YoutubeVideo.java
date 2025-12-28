@@ -5,12 +5,14 @@ import lombok.*;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 @Entity
 @Table(name = "youtube_videos")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -26,7 +28,13 @@ public class YoutubeVideo {
     private Instant publishedAt;
     private String s3Url;              // URL sau khi upload lên S3
     private String urlVideo;
-
+    @ManyToMany
+    @JoinTable(
+            name = "video_vocab",
+            joinColumns = @JoinColumn(name = "video_id"),
+            inverseJoinColumns = @JoinColumn(name = "vocab_id")
+    )
+    private Set<Vocab> vocabs = new HashSet<>();
     @OneToMany(mappedBy = "video", cascade = CascadeType.ALL)
     private List<YoutubeTranscript> youtubeTranscripts = new ArrayList<>();// URL sau khi upload lên S3
     private Instant createdAt;

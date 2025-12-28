@@ -13,6 +13,7 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.polly.PollyClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.transcribe.TranscribeClient;
 import software.amazon.awssdk.services.translate.TranslateClient;
@@ -47,6 +48,19 @@ public class AwsConfig {
                 .build();
     }
 
+    @Bean
+    public PollyClient pollyClient() {
+        // Thay YOUR_ACCESS_KEY và YOUR_SECRET_KEY bằng key thực tế
+        AwsBasicCredentials awsCreds = AwsBasicCredentials.create(
+                accessKeyNam,
+                secretKeyNam
+        );
+
+        return PollyClient.builder()
+                .region(Region.US_EAST_1) // chọn region phù hợp
+                .credentialsProvider(StaticCredentialsProvider.create(awsCreds))
+                .build();
+    }
     @Bean
     public AmazonS3 amazonS3() {
         BasicAWSCredentials awsCreds = new BasicAWSCredentials(accessKey, secretKey);

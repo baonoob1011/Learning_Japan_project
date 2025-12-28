@@ -1,19 +1,24 @@
 package com.example.learningApp.service.video;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.example.learningApp.dto.cache.VocabCache;
 import com.example.learningApp.dto.response.video.YoutubeVideoResponse;
 import com.example.learningApp.dto.response.video.YoutubeVideoSummaryResponse;
 import com.example.learningApp.dto.request.video.YoutubeTranscriptRequest;
 import com.example.learningApp.dto.request.video.YoutubeTranscriptRequest.TranscriptItem;
+import com.example.learningApp.entity.Vocab;
 import com.example.learningApp.entity.YoutubeTranscript;
 import com.example.learningApp.entity.YoutubeVideo;
+import com.example.learningApp.mapper.VocabMapper;
 import com.example.learningApp.mapper.YoutubeVideoMapper;
+import com.example.learningApp.repository.VocabRepository;
 import com.example.learningApp.repository.YoutubeVideoRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -29,6 +34,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -41,9 +47,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class YoutubeVideoService {
 
-    private final S3Client s3Client;
-
-
     @Value("${openai.api-key}")
     private String openAiApiKey;
     @Value("${aws.s3.bucket-nam}")
@@ -54,8 +57,10 @@ public class YoutubeVideoService {
 
     private final YoutubeVideoRepository youtubeVideoRepository;
     private final YoutubeVideoMapper youtubeVideoMapper;
-    private final TranscriptService transcriptService;
     private final YoutubeVideoInfoService youtubeVideoInfoService;
+    private final VocabRepository vocabRepository;
+    private final VocabMapper vocabMapper;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     // Lấy tất cả video
     public List<YoutubeVideoSummaryResponse> getAllVideos() {
@@ -75,8 +80,20 @@ public class YoutubeVideoService {
     public YoutubeVideoResponse getVideoById(String id) {
         YoutubeVideo video = youtubeVideoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Video not found with id: " + id));
+
+        List<Vocab> vocabList = vocabRepository.findAllByVideoId(id);
+
+        if (!vocabList.isEmpty()) {
+            List<VocabCache> vocabCacheList = vocabMapper.toVocabCacheList(vocabList);
+            String redisKey = "vocabCache:" + id;
+            redisTemplate.opsForValue().set(redisKey, vocabCacheList, Duration.ofHours(1));
+        }
+
+        // 4️⃣ Trả về video như cũ
         return youtubeVideoMapper.toYoutubeVideoResponse(video);
     }
+
+
 
     // ------------------- MAIN FLOW -------------------
     public YoutubeVideoResponse saveYoutubeTranscriptAws(String youtubeUrl, String languageCode) throws IOException, InterruptedException {
@@ -171,7 +188,6 @@ public class YoutubeVideoService {
     }
 
 
-    // ------------------- AWS S3 -------------------
 
     public String uploadToS3(File audioFile, String key) throws IOException {
         S3Client s3 = S3Client.builder().region(Region.of(awsRegion)).build();

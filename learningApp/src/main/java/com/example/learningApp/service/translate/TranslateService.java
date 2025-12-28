@@ -2,11 +2,21 @@ package com.example.learningApp.service.translate;
 
 import com.atilika.kuromoji.ipadic.Token;
 import com.atilika.kuromoji.ipadic.Tokenizer;
+import com.example.learningApp.component.kafka.Producer;
+import com.example.learningApp.dto.request.vocab.CreateVocabRequest;
 import com.example.learningApp.dto.response.translate.TranslateResponse;
+import com.example.learningApp.repository.VocabRepository;
+import com.example.learningApp.service.cloud.S3Service;
+import com.example.learningApp.service.vocab.VocabService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.core.ResponseBytes;
+import software.amazon.awssdk.services.polly.PollyClient;
+import software.amazon.awssdk.services.polly.model.OutputFormat;
+import software.amazon.awssdk.services.polly.model.SynthesizeSpeechRequest;
+import software.amazon.awssdk.services.polly.model.SynthesizeSpeechResponse;
 import software.amazon.awssdk.services.translate.TranslateClient;
 import software.amazon.awssdk.services.translate.model.TranslateTextRequest;
 import software.amazon.awssdk.services.translate.model.TranslateTextResponse;
@@ -25,14 +35,16 @@ import java.util.stream.Collectors;
 public class TranslateService {
 
     private final TranslateClient translateClient;
+    private final PollyClient pollyClient;
+    private final S3Service s3Service;
+    private final Producer producer;
+
     private final Tokenizer tokenizer = new Tokenizer();
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private static final String VOCAB_TOPIC = "create-vocab";
 
-    public TranslateResponse translate(String text, String source, String target) throws IOException, InterruptedException {
+    public TranslateResponse translate(String videoId, String text, String source, String target) throws IOException {
 
-        // 1️⃣ Dịch câu gốc bằng AWS Translate
-        TranslateTextResponse response = translateClient.translateText(
+        TranslateTextResponse translateResp = translateClient.translateText(
                 TranslateTextRequest.builder()
                         .text(text)
                         .sourceLanguageCode(source)
@@ -40,97 +52,79 @@ public class TranslateService {
                         .build()
         );
 
-        // 2️⃣ Tokenize câu gốc bằng Kuromoji
         List<Token> tokens = tokenizer.tokenize(text);
 
-        // 3️⃣ Reading (Katakana/Hiragana)
         String reading = tokens.stream()
                 .map(t -> t.getReading() != null ? t.getReading() : t.getSurface())
                 .collect(Collectors.joining(" "));
 
-        // 4️⃣ Romaji
         String romaji = tokens.stream()
                 .map(t -> toRomaji(t.getReading() != null ? t.getReading() : t.getSurface()))
                 .collect(Collectors.joining(" "));
 
-        // 5️⃣ Giải thích chi tiết từng từ
-        String explanation = buildExplanation(tokens, target);
+        Token firstToken = tokens.get(0);
+        String surface = firstToken.getSurface();
+        String partOfSpeech = firstToken.getPartOfSpeechLevel1();
 
-        // 6️⃣ Ví dụ mặc định
-        List<TranslateResponse.Example> examples = new ArrayList<>();
-        examples.add(new TranslateResponse.Example(text, response.translatedText()));
+        TranslateTextResponse targetDefResp = translateClient.translateText(
+                TranslateTextRequest.builder()
+                        .text(surface)
+                        .sourceLanguageCode("ja")
+                        .targetLanguageCode(target)
+                        .build()
+        );
+        String targetDefs = targetDefResp.translatedText();
 
-        // 7️⃣ Trả về response
+        TranslateTextResponse explainResp = translateClient.translateText(
+                TranslateTextRequest.builder()
+                        .text(surface)
+                        .sourceLanguageCode("ja")
+                        .targetLanguageCode("vi")
+                        .build()
+        );
+        String explain = explainResp.translatedText();
+
+        SynthesizeSpeechRequest speechRequest = SynthesizeSpeechRequest.builder()
+                .text(surface)
+                .voiceId("Mizuki")
+                .outputFormat(OutputFormat.MP3)
+                .build();
+
+        byte[] audioBytes;
+        try (software.amazon.awssdk.core.ResponseInputStream<SynthesizeSpeechResponse> speechResponse =
+                     pollyClient.synthesizeSpeech(speechRequest)) {
+            audioBytes = speechResponse.readAllBytes();
+        }
+
+        String audioUrl = s3Service.uploadBytes(audioBytes, "tts", ".mp3");
+
+        CreateVocabRequest vocabRequest = CreateVocabRequest.builder()
+                .videoId(videoId)
+                .surface(surface)
+                .romaji(romaji)
+                .reading(reading)
+                .translated(translateResp.translatedText())
+                .partOfSpeech(partOfSpeech)
+                .targetDefs(targetDefs)
+                .explain(explain)
+                .audioUrl(audioUrl)
+                .build();
+
+       producer.send(VOCAB_TOPIC, videoId, vocabRequest);
+
         return new TranslateResponse(
-                text,
-                response.translatedText(),
+                videoId,
+                surface,
+                translateResp.translatedText(),
                 reading,
                 romaji,
-                explanation,
-                examples
+                partOfSpeech,
+                targetDefs,
+                audioUrl,
+                explain
         );
     }
 
-    /**
-     * Build explanation kiểu từ điển + dịch sang target language
-     */
-    private String buildExplanation(List<Token> tokens, String targetLang) throws IOException, InterruptedException {
-        List<String> parts = new ArrayList<>();
-
-        for (Token t : tokens) {
-            String surface = t.getSurface();
-            String reading = t.getReading() != null ? t.getReading() : surface;
-            String romaji = toRomaji(reading);
-
-            // Gọi Jisho API để lấy nghĩa tiếng Anh
-            String apiUrl = "https://jisho.org/api/v1/search/words?keyword=" + surface;
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(apiUrl))
-                    .GET()
-                    .build();
-
-            HttpResponse<String> apiResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            JsonNode root = objectMapper.readTree(apiResponse.body());
-
-            StringBuilder englishDefs = new StringBuilder();
-            StringBuilder targetDefs = new StringBuilder();
-
-            if (root.has("data") && root.get("data").isArray() && root.get("data").size() > 0) {
-                JsonNode senses = root.get("data").get(0).get("senses");
-                for (JsonNode sense : senses) {
-                    // Lấy nghĩa tiếng Anh
-                    if (sense.has("english_definitions")) {
-                        List<String> eng = new ArrayList<>();
-                        for (JsonNode def : sense.get("english_definitions")) {
-                            eng.add(def.asText());
-                        }
-                        String engText = String.join(", ", eng);
-                        englishDefs.append(engText).append("; ");
-
-                        // Dịch nghĩa sang target language
-                        TranslateTextResponse viResp = translateClient.translateText(
-                                TranslateTextRequest.builder()
-                                        .text(engText)
-                                        .sourceLanguageCode("en")
-                                        .targetLanguageCode(targetLang)
-                                        .build()
-                        );
-                        targetDefs.append(viResp.translatedText()).append("; ");
-                    }
-                }
-            }
-
-            String partOfSpeech = t.getPartOfSpeechLevel1();
-            parts.add(String.format("%s [%s] (%s) → EN: %s | %s", surface, romaji, partOfSpeech,
-                    englishDefs.toString(), targetDefs.toString()));
-        }
-
-        return String.join("\n", parts);
-    }
-
-    /**
-     * Chuyển Katakana → Romaji
-     */
     private String toRomaji(String katakana) {
         return katakana
                 .replace("ア", "a").replace("イ", "i").replace("ウ", "u")

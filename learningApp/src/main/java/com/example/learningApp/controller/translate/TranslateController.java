@@ -4,6 +4,7 @@ import com.example.learningApp.dto.ApiResponse;
 import com.example.learningApp.dto.request.translate.TranslateRequest;
 import com.example.learningApp.dto.response.translate.TranslateResponse;
 import com.example.learningApp.service.translate.TranslateService;
+import com.example.learningApp.service.vocab.VocabService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,13 +20,14 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class TranslateController {
 
-    private final TranslateService translateService;
+    private final VocabService vocabService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<TranslateResponse>> translate(
             @RequestBody @Valid TranslateRequest request
     ) throws IOException, InterruptedException {
-        TranslateResponse result = translateService.translate(
+        TranslateResponse result = vocabService.findOrTranslate(
+                request.getVideoId(),
                 request.getText(),
                 request.getSourceLang(),
                 request.getTargetLang()
