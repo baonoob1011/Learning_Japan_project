@@ -9,4 +9,5 @@ import lombok.Data;
 public class YoutubeVideoRequest {
     @NotBlank(message = "YouTube URL is required")
     private String url;
+
 }

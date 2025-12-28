@@ -1,7 +1,7 @@
 package com.example.learningApp.configuration;
 
+import com.example.learningApp.common.RoleConstants;
 import com.example.learningApp.dto.request.role.AssignRoleRequest;
-import com.example.learningApp.dto.request.role.CreateRoleRequest;
 import com.example.learningApp.dto.request.user.CreateUserRequest;
 import com.example.learningApp.entity.Role;
 import com.example.learningApp.entity.User;
@@ -48,59 +48,44 @@ public class AdminInitializer implements ApplicationRunner {
     String fullName;
 
     @NonFinal
-    @Value("${app.admin.role}")
-    String role;
-
-    @NonFinal
     @Value("${app.admin.password}")
     String password;
 
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        log.info(" Initializing admin user & role...");
+        log.info("🚀 Initializing system defaults...");
 
-        ensureAdminRole();
+        ensureDefaultRoles();          // ✅ BẮT BUỘC
         User adminUser = ensureAdminUser();
         ensureAdminRoleAssigned(adminUser);
 
-        log.info("Admin initialization completed");
+        log.info("✅ Admin initialization completed");
     }
 
-    // =============================
+    // =========================
 
-    private void ensureAdminRole() {
-        if (roleRepository.existsByRoleName(role)) {
-            log.info("✔ Role {} already exists", role);
-            return;
-        }
-
-        log.info("➕ Creating role {}", role);
-        roleService.createRole(new CreateRoleRequest(role));
+    private void ensureDefaultRoles() {
+        RoleConstants.DEFAULT_ROLES.forEach(roleService::createRoleIfNotExists);
     }
 
     private User ensureAdminUser() {
 
-        // Case 1: DB đã có
         return userRepository.findByEmail(email)
                 .orElseGet(() -> {
 
-                    boolean existsInCognito = cognitoUserExists(email);
-
-                    //  Case 2: Cognito có – DB chưa có
-                    if (existsInCognito) {
+                    if (cognitoUserExists(email)) {
                         log.info("♻ Cognito user exists but DB missing → creating DB record");
 
-                        User user = User.builder()
-                                .email(email)
-                                .fullName(fullName)
-                                .enabled(true)
-                                .build();
-
-                        return userRepository.save(user);
+                        return userRepository.save(
+                                User.builder()
+                                        .email(email)
+                                        .fullName(fullName)
+                                        .enabled(true)
+                                        .build()
+                        );
                     }
 
-                    //  Case 3: chưa có ở cả Cognito lẫn DB
                     log.info("➕ Creating admin user in Cognito & DB");
 
                     CreateUserRequest request = new CreateUserRequest();
@@ -116,25 +101,25 @@ public class AdminInitializer implements ApplicationRunner {
                 });
     }
 
-
     private void ensureAdminRoleAssigned(User adminUser) {
-        Role adminRole = roleRepository.findByRoleName(role)
-                .orElseThrow(() -> new IllegalStateException("Role not found: " + role));
+
+        Role adminRole = roleRepository.findByRoleName(RoleConstants.ADMIN)
+                .orElseThrow(() -> new IllegalStateException("ADMIN role not found"));
 
         if (adminUser.getRoles() != null &&
                 adminUser.getRoles().contains(adminRole)) {
-            log.info("✔ Admin already has role {}", role);
+            log.info("✔ Admin already has ADMIN role");
             return;
         }
 
-        log.info(" Assigning role {} to admin", role);
-
         roleService.assignRoleToUser(
-                new AssignRoleRequest(adminUser.getId(), role)
+                new AssignRoleRequest(adminUser.getId(), RoleConstants.ADMIN)
         );
+
+        log.info("🔑 ADMIN role assigned to admin user");
     }
 
-    public boolean cognitoUserExists(String email) {
+    private boolean cognitoUserExists(String email) {
         try {
             cognitoClient.adminGetUser(
                     AdminGetUserRequest.builder()
@@ -147,5 +132,4 @@ public class AdminInitializer implements ApplicationRunner {
             return false;
         }
     }
-
 }

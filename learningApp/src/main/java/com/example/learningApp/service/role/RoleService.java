@@ -13,6 +13,7 @@ import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminAddUserToGroupRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.CreateGroupRequest;
@@ -33,16 +34,16 @@ public class RoleService {
     @Value("${aws.cognito.user-pool-id}")
     String userPoolId;
 
-    public void createRole(CreateRoleRequest request) {
+    @Transactional
+    public void createRoleIfNotExists(String roleName) {
 
-        String roleName = request.getRoleName();
-
-        // 1️⃣ Nếu DB đã có → DONE
+        // 1️⃣ DB đã có → DONE
         if (roleRepository.existsByRoleName(roleName)) {
+            log.info("✔ Role '{}' already exists in DB", roleName);
             return;
         }
 
-        // 2️⃣ Ensure Cognito group (có thì bỏ qua)
+        // 2️⃣ Ensure Cognito group
         try {
             cognitoClient.createGroup(
                     CreateGroupRequest.builder()
@@ -50,18 +51,19 @@ public class RoleService {
                             .groupName(roleName)
                             .build()
             );
+            log.info("➕ Created Cognito group '{}'", roleName);
+
         } catch (GroupExistsException ex) {
-            log.info("♻ Cognito group '{}' already exists, syncing DB only", roleName);
+            log.info("♻ Cognito group '{}' already exists", roleName);
         }
 
-        // 3️⃣ Tạo DB role (luôn làm nếu DB chưa có)
+        // 3️⃣ Always ensure DB role
         Role role = Role.builder()
                 .roleName(roleName)
                 .build();
 
         roleRepository.save(role);
-
-        log.info("✅ Role '{}' ensured in DB", roleName);
+        log.info("✅ Role '{}' saved in DB", roleName);
     }
 
     public void assignRoleToUser(AssignRoleRequest request) {

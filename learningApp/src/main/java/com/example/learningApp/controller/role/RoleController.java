@@ -21,13 +21,6 @@ public class RoleController {
 
     RoleService roleService;
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<Void>> createRole(
-            @RequestBody @Valid CreateRoleRequest request) {
-
-        roleService.createRole(request);
-        return ResponseEntity.ok(ApiResponse.success("Role created successfully", null));
-    }
 
     @PostMapping("/assign")
     public ResponseEntity<ApiResponse<Void>> assignRole(
