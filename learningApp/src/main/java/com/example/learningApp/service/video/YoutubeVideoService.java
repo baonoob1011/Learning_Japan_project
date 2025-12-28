@@ -77,20 +77,32 @@ public class YoutubeVideoService {
     }
 
     // Lấy video theo ID
-    public YoutubeVideoResponse getVideoById(String id) {
+    public Void getVideoById(String id) {
+        // Lấy video, nếu không tồn tại thì throw
         YoutubeVideo video = youtubeVideoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Video not found with id: " + id));
 
+        // Lấy vocab liên quan và cache từng vocab riêng lẻ
         List<Vocab> vocabList = vocabRepository.findAllByVideoId(id);
-
         if (!vocabList.isEmpty()) {
-            List<VocabCache> vocabCacheList = vocabMapper.toVocabCacheList(vocabList);
-            String redisKey = "vocabCache:" + id;
-            redisTemplate.opsForValue().set(redisKey, vocabCacheList, Duration.ofHours(1));
+            for (Vocab vocab : vocabList) {
+                VocabCache cache = new VocabCache();
+                cache.setId(vocab.getId());
+                cache.setSurface(vocab.getSurface());
+                cache.setRomaji(vocab.getRomaji());
+                cache.setTranslated(vocab.getTranslated());
+                cache.setReading(vocab.getReading());
+                cache.setTargetDefs(vocab.getTargetDefs());
+                cache.setPartOfSpeech(vocab.getPartOfSpeech());
+                cache.setExplain(vocab.getExplain());
+                cache.setAudioUrl(vocab.getAudioUrl());
+
+                String redisKey = "vocabCache:" + id + ":" + vocab.getSurface().toLowerCase();
+                redisTemplate.opsForValue().set(redisKey, cache, Duration.ofHours(1));
+            }
         }
 
-        // 4️⃣ Trả về video như cũ
-        return youtubeVideoMapper.toYoutubeVideoResponse(video);
+        return null;
     }
 
 

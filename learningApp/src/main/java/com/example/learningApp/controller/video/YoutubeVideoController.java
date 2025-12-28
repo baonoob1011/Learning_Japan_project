@@ -48,8 +48,7 @@ public class YoutubeVideoController {
      * Lấy video theo ID, trả về chi tiết
      */
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<YoutubeVideoResponse>> getVideoById(@PathVariable String id) {
-        YoutubeVideoResponse videoResponse = youtubeVideoService.getVideoById(id);
-        return ResponseEntity.ok(ApiResponse.success("Video retrieved successfully", videoResponse));
+    public ResponseEntity<ApiResponse<Void>> getVideoById(@PathVariable String id) {
+        return ResponseEntity.ok(ApiResponse.success("Video retrieved successfully", youtubeVideoService.getVideoById(id)));
     }
 }

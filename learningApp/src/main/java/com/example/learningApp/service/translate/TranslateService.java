@@ -3,6 +3,7 @@ package com.example.learningApp.service.translate;
 import com.atilika.kuromoji.ipadic.Token;
 import com.atilika.kuromoji.ipadic.Tokenizer;
 import com.example.learningApp.component.kafka.Producer;
+import com.example.learningApp.dto.cache.VocabCache;
 import com.example.learningApp.dto.request.vocab.CreateVocabRequest;
 import com.example.learningApp.dto.response.translate.TranslateResponse;
 import com.example.learningApp.repository.VocabRepository;
@@ -11,6 +12,7 @@ import com.example.learningApp.service.vocab.VocabService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.services.polly.PollyClient;
@@ -26,10 +28,10 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
 public class TranslateService {
@@ -38,12 +40,15 @@ public class TranslateService {
     private final PollyClient pollyClient;
     private final S3Service s3Service;
     private final Producer producer;
-
+    private final ObjectMapper objectMapper;
     private final Tokenizer tokenizer = new Tokenizer();
+    private final RedisTemplate<String, Object> redisTemplate;
+
     private static final String VOCAB_TOPIC = "create-vocab";
 
-    public TranslateResponse translate(String videoId, String text, String source, String target) throws IOException {
 
+    public TranslateResponse translate(String videoId, String text, String source, String target) throws IOException, InterruptedException {
+        // Dịch câu gốc
         TranslateTextResponse translateResp = translateClient.translateText(
                 TranslateTextRequest.builder()
                         .text(text)
@@ -57,7 +62,6 @@ public class TranslateService {
         String reading = tokens.stream()
                 .map(t -> t.getReading() != null ? t.getReading() : t.getSurface())
                 .collect(Collectors.joining(" "));
-
         String romaji = tokens.stream()
                 .map(t -> toRomaji(t.getReading() != null ? t.getReading() : t.getSurface()))
                 .collect(Collectors.joining(" "));
@@ -66,6 +70,7 @@ public class TranslateService {
         String surface = firstToken.getSurface();
         String partOfSpeech = firstToken.getPartOfSpeechLevel1();
 
+        // Dịch sang target language (nghĩa chính)
         TranslateTextResponse targetDefResp = translateClient.translateText(
                 TranslateTextRequest.builder()
                         .text(surface)
@@ -75,29 +80,23 @@ public class TranslateService {
         );
         String targetDefs = targetDefResp.translatedText();
 
-        TranslateTextResponse explainResp = translateClient.translateText(
-                TranslateTextRequest.builder()
-                        .text(surface)
-                        .sourceLanguageCode("ja")
-                        .targetLanguageCode("vi")
-                        .build()
-        );
-        String explain = explainResp.translatedText();
+        // Lấy explain từ Jisho API
+        String explain = getExplainFromJisho(surface);
 
+        // Tạo audio S3
         SynthesizeSpeechRequest speechRequest = SynthesizeSpeechRequest.builder()
                 .text(surface)
                 .voiceId("Mizuki")
                 .outputFormat(OutputFormat.MP3)
                 .build();
-
         byte[] audioBytes;
         try (software.amazon.awssdk.core.ResponseInputStream<SynthesizeSpeechResponse> speechResponse =
                      pollyClient.synthesizeSpeech(speechRequest)) {
             audioBytes = speechResponse.readAllBytes();
         }
-
         String audioUrl = s3Service.uploadBytes(audioBytes, "tts", ".mp3");
 
+        // Tạo VocabRequest và gửi Kafka
         CreateVocabRequest vocabRequest = CreateVocabRequest.builder()
                 .videoId(videoId)
                 .surface(surface)
@@ -109,8 +108,22 @@ public class TranslateService {
                 .explain(explain)
                 .audioUrl(audioUrl)
                 .build();
+        producer.send(VOCAB_TOPIC, videoId, vocabRequest);
 
-       producer.send(VOCAB_TOPIC, videoId, vocabRequest);
+        // Lưu cache Redis
+        VocabCache cache = new VocabCache(
+                videoId + "_" + surface,
+                surface,
+                romaji,
+                translateResp.translatedText(),
+                reading,
+                targetDefs,
+                partOfSpeech,
+                explain,
+                audioUrl
+        );
+        String redisKey = "vocabCache:" + videoId + "_" + surface;
+        redisTemplate.opsForValue().set(redisKey, objectMapper.convertValue(cache, Object.class), Duration.ofHours(1));
 
         return new TranslateResponse(
                 videoId,
@@ -125,6 +138,25 @@ public class TranslateService {
         );
     }
 
+    private String getExplainFromJisho(String word) throws IOException, InterruptedException {
+        String url = "https://jisho.org/api/v1/search/words?keyword=" + word;
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .GET()
+                .build();
+
+        HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+        JsonNode root = objectMapper.readTree(response.body());
+
+        // Lấy English definitions của sense đầu tiên
+        JsonNode senses = root.at("/data/0/senses/0/english_definitions");
+        if (senses.isArray()) {
+            List<String> defs = new ArrayList<>();
+            senses.forEach(d -> defs.add(d.asText()));
+            return String.join(", ", defs);
+        }
+        return "";
+    }
     private String toRomaji(String katakana) {
         return katakana
                 .replace("ア", "a").replace("イ", "i").replace("ウ", "u")

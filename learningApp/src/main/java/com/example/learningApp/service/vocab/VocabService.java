@@ -9,6 +9,7 @@ import com.example.learningApp.mapper.VocabMapper;
 import com.example.learningApp.repository.VocabRepository;
 import com.example.learningApp.repository.YoutubeVideoRepository;
 import com.example.learningApp.service.translate.TranslateService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -52,42 +53,50 @@ public class VocabService {
     }
 
 
-    public TranslateResponse findOrTranslate(String videoId, String text, String source, String target) throws IOException {
+    public TranslateResponse findOrTranslate(String videoId, String text, String source, String target) throws IOException, InterruptedException {
+        String redisKey = "vocabCache:" + videoId + ":" + text.toLowerCase();
+        Object cached = redisTemplate.opsForValue().get(redisKey);
+        VocabCache cache = null;
 
-        // 1️⃣ Lấy vocab cache từ Redis
-        String redisKey = "vocabCache:" + videoId;
-        List<VocabCache> vocabCacheList = (List<VocabCache>) redisTemplate.opsForValue().get(redisKey);
-
-        if (vocabCacheList != null) {
-            // 2️⃣ Tìm vocab trong cache theo surface
-            for (VocabCache cache : vocabCacheList) {
-                if (cache.getSurface().equalsIgnoreCase(text)) {
-                    return new TranslateResponse(
-                            videoId,
-                            cache.getSurface(),
-                            cache.getTranslated(),
-                            cache.getReading(),
-                            cache.getRomaji(),
-                            cache.getPartOfSpeech(),
-                            cache.getTargetDefs(),  // thêm nếu VocabCache có
-                            cache.getAudioUrl(),
-                            cache.getExplain()
-                    );
-                }
-            }
+        if (cached != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            // Convert Object -> VocabCache
+            cache = objectMapper.convertValue(cached, VocabCache.class);
         }
 
-        // 3️⃣ Nếu không có trong cache -> tìm trong DB
+        if (cache != null) {
+            // Nếu tìm thấy trong Redis
+            return new TranslateResponse(
+                    videoId,
+                    cache.getSurface(),
+                    cache.getTranslated(),
+                    cache.getReading(),
+                    cache.getRomaji(),
+                    cache.getPartOfSpeech(),
+                    cache.getTargetDefs(),
+                    cache.getAudioUrl(),
+                    cache.getExplain()
+            );
+        }
+
+        // Nếu không có trong Redis -> tìm trong DB
         var optionalVocab = vocabRepository.findBySurface(text);
         if (optionalVocab.isPresent()) {
-            var vocab = optionalVocab.get();
+            Vocab vocab = optionalVocab.get();
 
-            // 4️⃣ Optional: cập nhật cache mới
-            if (vocabCacheList != null) {
-                VocabCache newCache = vocabMapper.toVocabCache(vocab);
-                vocabCacheList.add(newCache);
-                redisTemplate.opsForValue().set(redisKey, vocabCacheList, Duration.ofHours(1));
-            }
+            // Cache vocab mới vào Redis
+            VocabCache newCache = new VocabCache(
+                    vocab.getId(),
+                    vocab.getSurface(),
+                    vocab.getRomaji(),
+                    vocab.getTranslated(),
+                    vocab.getReading(),
+                    vocab.getTargetDefs(),
+                    vocab.getPartOfSpeech(),
+                    vocab.getExplain(),
+                    vocab.getAudioUrl()
+            );
+            redisTemplate.opsForValue().set(redisKey, newCache, Duration.ofHours(1));
 
             return new TranslateResponse(
                     videoId,
@@ -102,8 +111,9 @@ public class VocabService {
             );
         }
 
-        // 5️⃣ Nếu không tìm thấy trong DB -> gọi translateService
+        // Nếu không tìm thấy -> gọi TranslateService
         return translateService.translate(videoId, text, source, target);
     }
+
 
 }
