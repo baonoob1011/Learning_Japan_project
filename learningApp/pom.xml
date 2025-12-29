@@ -239,6 +239,12 @@
 			<artifactId>postgresql</artifactId>
 			<scope>runtime</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.jsoup</groupId>
+			<artifactId>jsoup</artifactId>
+			<version>1.16.1</version>
+		</dependency>
+
 		<!--  1. Spring Boot Starter for Caching  -->
 		<!--  This dependency provides Spring's caching abstraction layer, including  -->
 		<!--  annotations like @EnableCaching and @Cacheable.  -->

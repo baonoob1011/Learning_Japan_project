@@ -34,6 +34,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -94,7 +95,6 @@ public class YoutubeVideoService {
                 cache.setReading(vocab.getReading());
                 cache.setTargetDefs(vocab.getTargetDefs());
                 cache.setPartOfSpeech(vocab.getPartOfSpeech());
-                cache.setExplain(vocab.getExplain());
                 cache.setAudioUrl(vocab.getAudioUrl());
 
                 String redisKey = "vocabCache:" + id + ":" + vocab.getSurface().toLowerCase();
@@ -155,19 +155,29 @@ public class YoutubeVideoService {
     }
 
 
-
     // Download audio bằng yt-dlp + ffmpeg
     private File downloadAudio(String youtubeUrl) throws IOException, InterruptedException {
         String fileName = "audio_" + System.currentTimeMillis() + ".mp3";
 
+        // 1. Ưu tiên biến môi trường
         String ytDlpPath = System.getenv("YT_DLP_PATH");
+        String ffmpegPath = System.getenv("FFMPEG_PATH");
+
+        // 2. Fallback: dùng exe trong thư mục tool của project
         if (ytDlpPath == null || ytDlpPath.isBlank()) {
-            ytDlpPath = "C:\\tool\\yt-dlp\\yt-dlp.exe";
+            ytDlpPath = Paths.get("tool", "yt-dlp.exe").toAbsolutePath().toString();
         }
 
-        String ffmpegPath = System.getenv("FFMPEG_PATH");
         if (ffmpegPath == null || ffmpegPath.isBlank()) {
-            ffmpegPath = "C:\\tool\\ffmpeg\\ffmpeg-8.0.1-essentials_build\\bin\\ffmpeg.exe";
+            ffmpegPath = Paths.get("tool", "ffmpeg.exe").toAbsolutePath().toString();
+        }
+
+        // 3. Check tồn tại
+        if (!Files.exists(Paths.get(ytDlpPath))) {
+            throw new RuntimeException("Không tìm thấy yt-dlp.exe tại: " + ytDlpPath);
+        }
+        if (!Files.exists(Paths.get(ffmpegPath))) {
+            throw new RuntimeException("Không tìm thấy ffmpeg.exe tại: " + ffmpegPath);
         }
 
         ProcessBuilder pb = new ProcessBuilder(
@@ -177,15 +187,23 @@ public class YoutubeVideoService {
                 "-o", fileName,
                 youtubeUrl
         );
+
         pb.inheritIO();
         Process process = pb.start();
         int exitCode = process.waitFor();
-        if (exitCode != 0) throw new RuntimeException("yt-dlp failed, exitCode=" + exitCode);
 
-        File f = new File(fileName);
-        if (!f.exists()) throw new RuntimeException("Audio file not created: " + fileName);
-        return f;
+        if (exitCode != 0) {
+            throw new RuntimeException("yt-dlp failed, exitCode=" + exitCode);
+        }
+
+        File audioFile = new File(fileName);
+        if (!audioFile.exists()) {
+            throw new RuntimeException("Audio file not created: " + fileName);
+        }
+
+        return audioFile;
     }
+
 
     // Lấy videoId từ URL YouTube
     private String extractVideoId(String youtubeUrl) {

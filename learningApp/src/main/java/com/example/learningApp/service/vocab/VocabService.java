@@ -3,9 +3,12 @@ package com.example.learningApp.service.vocab;
 import com.example.learningApp.dto.cache.VocabCache;
 import com.example.learningApp.dto.request.vocab.CreateVocabRequest;
 import com.example.learningApp.dto.response.translate.TranslateResponse;
+import com.example.learningApp.entity.Exam;
+import com.example.learningApp.entity.User;
 import com.example.learningApp.entity.Vocab;
 import com.example.learningApp.entity.YoutubeVideo;
 import com.example.learningApp.mapper.VocabMapper;
+import com.example.learningApp.repository.UserRepository;
 import com.example.learningApp.repository.VocabRepository;
 import com.example.learningApp.repository.YoutubeVideoRepository;
 import com.example.learningApp.service.translate.TranslateService;
@@ -15,6 +18,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -29,6 +34,7 @@ public class VocabService {
     VocabMapper vocabMapper;
     YoutubeVideoRepository youtubeVideoRepository;
     TranslateService translateService;
+    UserRepository userRepository;
      RedisTemplate<String, Object> redisTemplate;
 
     @Transactional
@@ -74,8 +80,7 @@ public class VocabService {
                     cache.getRomaji(),
                     cache.getPartOfSpeech(),
                     cache.getTargetDefs(),
-                    cache.getAudioUrl(),
-                    cache.getExplain()
+                    cache.getAudioUrl()
             );
         }
 
@@ -93,7 +98,6 @@ public class VocabService {
                     vocab.getReading(),
                     vocab.getTargetDefs(),
                     vocab.getPartOfSpeech(),
-                    vocab.getExplain(),
                     vocab.getAudioUrl()
             );
             redisTemplate.opsForValue().set(redisKey, newCache, Duration.ofHours(1));
@@ -106,13 +110,35 @@ public class VocabService {
                     vocab.getRomaji(),
                     vocab.getPartOfSpeech(),
                     vocab.getTargetDefs(),
-                    vocab.getAudioUrl(),
-                    vocab.getExplain()
+                    vocab.getAudioUrl()
             );
         }
 
         // Nếu không tìm thấy -> gọi TranslateService
         return translateService.translate(videoId, text, source, target);
+    }
+    public Void saveVocabForCurrentUser(String surface) {
+
+        // 1️⃣ Lấy userId từ sub
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userId = authentication.getName();
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Vocab vocab = vocabRepository.findBySurface(surface)
+                .orElseThrow(() -> new RuntimeException("Vocab not found"));
+
+        // 2️⃣ Tránh lưu trùng
+        if (user.getSavedVocabs().contains(vocab)) {
+            return null;
+        }
+
+        // 3️⃣ Lưu quan hệ
+        user.getSavedVocabs().add(vocab);
+        userRepository.save(user);
+
+        return null;
     }
 
 

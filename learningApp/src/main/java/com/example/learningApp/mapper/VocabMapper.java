@@ -11,18 +11,11 @@ import com.example.learningApp.entity.Vocab;
 import org.mapstruct.Mapper;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 
 @Mapper(componentModel = "spring")
 public interface VocabMapper {
  Vocab toVocab (CreateVocabRequest request);
- VocabCache toVocabCache(Vocab vocab);
-
- default List<VocabCache> toVocabCacheList(Set<Vocab> vocabs) {
-  return vocabs.stream().map(this::toVocabCache).toList();
  }
-
- default List<VocabCache> toVocabCacheList(List<Vocab> vocabs) {
-  return vocabs.stream().map(this::toVocabCache).toList();
- }}

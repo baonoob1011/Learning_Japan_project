@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -58,6 +59,14 @@ public class User {
             fetch = FetchType.LAZY
     )
     private Set<UserLearningProgress> learningProgresses;
+
+    @ManyToMany
+    @JoinTable(
+            name = "user_vocab",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "vocab_id")
+    )
+    private Set<Vocab> savedVocabs = new HashSet<>();
 
     @PrePersist
     protected void onCreate() {
