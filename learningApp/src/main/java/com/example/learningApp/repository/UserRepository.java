@@ -1,6 +1,8 @@
 package com.example.learningApp.repository;
 
 import com.example.learningApp.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -26,4 +28,6 @@ public interface UserRepository extends JpaRepository<User,String> {
             @Param("oldUserId") String oldUserId,
             @Param("newUserId") String newUserId
     );    Optional<User> findByEmail(String email);
+
+    Page<User> findByEmailContainingIgnoreCaseOrFullNameContainingIgnoreCase(String email, String fullName, Pageable pageable);
 }

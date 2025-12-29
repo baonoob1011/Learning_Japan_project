@@ -21,6 +21,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserNotFoundException;
 
 @Slf4j
@@ -69,6 +70,20 @@ public class AdminInitializer implements ApplicationRunner {
         RoleConstants.DEFAULT_ROLES.forEach(roleService::createRoleIfNotExists);
     }
 
+    private String getCognitoSub(String email) {
+        return cognitoClient.adminGetUser(
+                        AdminGetUserRequest.builder()
+                                .userPoolId(userPoolId)
+                                .username(email)
+                                .build()
+                ).userAttributes().stream()
+                .filter(a -> "sub".equals(a.name()))
+                .findFirst()
+                .map(AttributeType::value)
+                .orElseThrow(() ->
+                        new IllegalStateException("Cognito sub not found"));
+    }
+
     private User ensureAdminUser() {
 
         return userRepository.findByEmail(email)
@@ -76,9 +91,10 @@ public class AdminInitializer implements ApplicationRunner {
 
                     if (cognitoUserExists(email)) {
                         log.info("♻ Cognito user exists but DB missing → creating DB record");
-
+                        String sub = getCognitoSub(email);
                         return userRepository.save(
                                 User.builder()
+                                        .id(sub)
                                         .email(email)
                                         .fullName(fullName)
                                         .enabled(true)
