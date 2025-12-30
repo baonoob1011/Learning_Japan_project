@@ -1,18 +1,16 @@
 package com.example.learningApp.service.video;
 
-import com.amazonaws.services.s3.AmazonS3;
+import com.example.learningApp.component.kafka.Producer;
 import com.example.learningApp.dto.cache.VocabCache;
 import com.example.learningApp.dto.response.video.YoutubeVideoResponse;
 import com.example.learningApp.dto.response.video.YoutubeVideoSummaryResponse;
-import com.example.learningApp.dto.request.video.YoutubeTranscriptRequest;
-import com.example.learningApp.dto.request.video.YoutubeTranscriptRequest.TranscriptItem;
 import com.example.learningApp.entity.Vocab;
 import com.example.learningApp.entity.YoutubeTranscript;
 import com.example.learningApp.entity.YoutubeVideo;
-import com.example.learningApp.mapper.VocabMapper;
 import com.example.learningApp.mapper.YoutubeVideoMapper;
 import com.example.learningApp.repository.VocabRepository;
 import com.example.learningApp.repository.YoutubeVideoRepository;
+import com.example.learningApp.service.audio.AudioService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -32,15 +30,11 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -55,12 +49,13 @@ public class YoutubeVideoService {
 
     @Value("${aws.region-nam}")
     private String awsRegion;
-
+    private static final String TRANSCRIPT_READY = "transcript-ready";
+    private final AudioService audioService;
+    private final Producer producer;
     private final YoutubeVideoRepository youtubeVideoRepository;
     private final YoutubeVideoMapper youtubeVideoMapper;
     private final YoutubeVideoInfoService youtubeVideoInfoService;
     private final VocabRepository vocabRepository;
-    private final VocabMapper vocabMapper;
     private final RedisTemplate<String, Object> redisTemplate;
 
     // Lấy tất cả video
@@ -127,7 +122,7 @@ public class YoutubeVideoService {
             youtubeVideoRepository.save(video);
         }
 
-        File audioFile = downloadAudio(youtubeUrl);
+        File audioFile = audioService.downloadAudio(youtubeUrl);
         try {
             String s3Key = "audio_" + System.currentTimeMillis() + ".mp3";
             String s3Uri = uploadToS3(audioFile, s3Key);
@@ -137,8 +132,12 @@ public class YoutubeVideoService {
 
             String transcriptJson = getTranscriptionResult(jobName);
 
+
+
+
             // Parse trực tiếp sang entity
-            List<YoutubeTranscript> transcriptList = parseTranscriptionJson(transcriptJson, video);
+            List<YoutubeTranscript> transcriptList =
+                    parseTranscriptionJson(transcriptJson, video, audioFile);
 
             // Xóa transcript cũ nếu có
             video.getYoutubeTranscripts().clear();
@@ -152,56 +151,6 @@ public class YoutubeVideoService {
         }
 
         return youtubeVideoMapper.toYoutubeVideoResponse(video);
-    }
-
-
-    // Download audio bằng yt-dlp + ffmpeg
-    private File downloadAudio(String youtubeUrl) throws IOException, InterruptedException {
-        String fileName = "audio_" + System.currentTimeMillis() + ".mp3";
-
-        // 1. Ưu tiên biến môi trường
-        String ytDlpPath = System.getenv("YT_DLP_PATH");
-        String ffmpegPath = System.getenv("FFMPEG_PATH");
-
-        // 2. Fallback: dùng exe trong thư mục tool của project
-        if (ytDlpPath == null || ytDlpPath.isBlank()) {
-            ytDlpPath = Paths.get("tool", "yt-dlp.exe").toAbsolutePath().toString();
-        }
-
-        if (ffmpegPath == null || ffmpegPath.isBlank()) {
-            ffmpegPath = Paths.get("tool", "ffmpeg.exe").toAbsolutePath().toString();
-        }
-
-        // 3. Check tồn tại
-        if (!Files.exists(Paths.get(ytDlpPath))) {
-            throw new RuntimeException("Không tìm thấy yt-dlp.exe tại: " + ytDlpPath);
-        }
-        if (!Files.exists(Paths.get(ffmpegPath))) {
-            throw new RuntimeException("Không tìm thấy ffmpeg.exe tại: " + ffmpegPath);
-        }
-
-        ProcessBuilder pb = new ProcessBuilder(
-                ytDlpPath,
-                "-x", "--audio-format", "mp3",
-                "--ffmpeg-location", ffmpegPath,
-                "-o", fileName,
-                youtubeUrl
-        );
-
-        pb.inheritIO();
-        Process process = pb.start();
-        int exitCode = process.waitFor();
-
-        if (exitCode != 0) {
-            throw new RuntimeException("yt-dlp failed, exitCode=" + exitCode);
-        }
-
-        File audioFile = new File(fileName);
-        if (!audioFile.exists()) {
-            throw new RuntimeException("Audio file not created: " + fileName);
-        }
-
-        return audioFile;
     }
 
 
@@ -280,63 +229,125 @@ public class YoutubeVideoService {
         return transcriptJson;
     }
 
-
-    public static List<YoutubeTranscript> parseTranscriptionJson(String transcriptJson, YoutubeVideo video) {
+    public List<YoutubeTranscript> parseTranscriptionJson(
+            String transcriptJson,
+            YoutubeVideo video,
+            File sourceAudio
+    ) {
         List<YoutubeTranscript> transcripts = new ArrayList<>();
+
         try {
             ObjectMapper mapper = new ObjectMapper();
-            JsonNode root = mapper.readTree(transcriptJson);
-            JsonNode items = root.path("results").path("items");
+            JsonNode items = mapper.readTree(transcriptJson)
+                    .path("results")
+                    .path("items");
 
             StringBuilder sentence = new StringBuilder();
             double sentenceStart = -1;
-            double sentenceEnd = -1;
+            double lastEndTime = -1;
 
             for (JsonNode item : items) {
-                if (!item.has("start_time") || !item.has("alternatives")) continue;
 
-                double start = item.path("start_time").asDouble();
-                double end = item.path("end_time").asDouble();
-                String word = item.path("alternatives").get(0).path("content").asText();
+                String type = item.path("type").asText();
 
-                if (sentenceStart < 0) sentenceStart = start;
-                sentenceEnd = end;
+                // 🔹 WORD
+                if ("pronunciation".equals(type)) {
+                    double start = item.path("start_time").asDouble();
+                    double end = item.path("end_time").asDouble();
+                    String word = item.path("alternatives").get(0).path("content").asText();
 
-                sentence.append(word).append(" ");
+                    if (sentenceStart < 0) sentenceStart = start;
+                    lastEndTime = end;
 
-                // Nếu gặp dấu câu hoặc khoảng cách > 0.5s coi là kết thúc câu
-                if (word.matches(".*[.!?]") || end - start > 0.5) {
-                    YoutubeTranscript t = YoutubeTranscript.builder()
-                            .video(video)
-                            .startOffset((int)(sentenceStart * 1000))
-                            .endOffset((int)(sentenceEnd * 1000))
-                            .text(sentence.toString().trim())
-                            .createdAt(LocalDateTime.now())
-                            .build();
-                    transcripts.add(t);
+                    sentence.append(word).append(" ");
 
-                    sentence = new StringBuilder();
-                    sentenceStart = -1;
+                    // 🔥 cắt nếu câu quá dài (3s)
+                    if ((lastEndTime - sentenceStart) >= 3.0 && lastEndTime > sentenceStart) {
+                        flushSentenceSafe(transcripts, video, sourceAudio,
+                                sentence, sentenceStart, lastEndTime);
+                        sentence = new StringBuilder();
+                        sentenceStart = -1;
+                    }
+                }
+
+                // 🔹 PUNCTUATION
+                else if ("punctuation".equals(type) && sentence.length() > 0) {
+                    String punc = item.path("alternatives").get(0).path("content").asText();
+
+                    // bỏ space trước dấu câu
+                    if (sentence.charAt(sentence.length() - 1) == ' ') {
+                        sentence.setLength(sentence.length() - 1);
+                    }
+                    sentence.append(punc).append(" ");
+
+                    if (punc.matches("[.!?]")) {
+                        flushSentenceSafe(transcripts, video, sourceAudio,
+                                sentence, sentenceStart, lastEndTime);
+                        sentence = new StringBuilder();
+                        sentenceStart = -1;
+                    }
                 }
             }
 
-            // Nếu còn câu chưa kết thúc
-            if (sentence.length() > 0) {
-                YoutubeTranscript t = YoutubeTranscript.builder()
-                        .video(video)
-                        .startOffset((int)(sentenceStart * 1000))
-                        .endOffset((int)(sentenceEnd * 1000))
-                        .text(sentence.toString().trim())
-                        .createdAt(LocalDateTime.now())
-                        .build();
-                transcripts.add(t);
+            // 🔥 FIX QUAN TRỌNG – CÂU CUỐI
+            // 🔥 FIX QUAN TRỌNG – CÂU CUỐI
+            if (sentence.length() > 0 && sentenceStart >= 0 && lastEndTime > sentenceStart) {
+                flushSentenceSafe(transcripts, video, sourceAudio,
+                        sentence, sentenceStart, lastEndTime);
             }
 
+
         } catch (Exception e) {
-            throw new RuntimeException("Failed to parse AWS Transcribe JSON", e);
+            throw new RuntimeException("Parse + cut audio failed", e);
         }
 
         return transcripts;
     }
+
+    private void flushSentenceSafe(
+            List<YoutubeTranscript> transcripts,
+            YoutubeVideo video,
+            File sourceAudio,
+            StringBuilder sentence,
+            double startSec,
+            double endSec
+    ) throws IOException, InterruptedException {
+
+        // 🛡 guard tuyệt đối
+        if (startSec < 0 || endSec <= startSec || sentence.length() == 0) {
+            return;
+        }
+
+        int startMs = (int) (startSec * 1000);
+        int endMs = (int) (endSec * 1000);
+        endMs = Math.max(endMs, startMs + 300);
+
+        File audio = audioService.cutAudio(
+                sourceAudio,
+                startMs,
+                endMs,
+                "sentence_" + video.getId() + "_" + startMs + "_" + System.nanoTime() + ".mp3"
+        );
+
+
+        String audioUrl = uploadToS3(
+                audio,
+                "sentence/" + video.getId() + "/" + audio.getName()
+        );
+
+        YoutubeTranscript t = YoutubeTranscript.builder()
+                .video(video)
+                .text(sentence.toString().trim())
+                .startOffset(startMs)
+                .endOffset(endMs)
+                .audioUrl(audioUrl)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        transcripts.add(t);
+        audio.delete();
+    }
+
+
 
 }

@@ -12,7 +12,7 @@ public class Producer {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public void send(String topic,String userId, Object request) {
-        kafkaTemplate.send(topic, userId, request);
+    public void send(String topic, String key, Object payload) {
+        kafkaTemplate.send(topic, key, payload);
     }
 }

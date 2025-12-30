@@ -30,7 +30,7 @@ public class YoutubeVideoController {
             // Gọi phương thức lưu transcript luôn
             YoutubeVideoResponse videoResp = youtubeVideoService.saveYoutubeTranscriptAws(request.getUrl(),"ja-JP");
             return ResponseEntity.ok(ApiResponse.success("Video uploaded successfully with transcript", videoResp));
-        } catch (IOException | InterruptedException e) {
+        } catch (Exception e) {
             int status = 500;
             return ResponseEntity
                     .status(status)

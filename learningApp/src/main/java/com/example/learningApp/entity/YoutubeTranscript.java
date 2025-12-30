@@ -26,6 +26,8 @@ public class YoutubeTranscript {
     @Column(columnDefinition = "text")
     private String text;
 
+    private String audioUrl;
+
     @Column(name = "start_offset_ms")
     private Integer startOffset; // thời điểm bắt đầu câu (ms)
 
