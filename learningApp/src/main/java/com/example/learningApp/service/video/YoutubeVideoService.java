@@ -1,5 +1,7 @@
 package com.example.learningApp.service.video;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.example.learningApp.component.kafka.Producer;
 import com.example.learningApp.dto.cache.VocabCache;
 import com.example.learningApp.dto.response.video.YoutubeVideoResponse;
@@ -11,10 +13,12 @@ import com.example.learningApp.mapper.YoutubeVideoMapper;
 import com.example.learningApp.repository.VocabRepository;
 import com.example.learningApp.repository.YoutubeVideoRepository;
 import com.example.learningApp.service.audio.AudioService;
+import com.example.learningApp.service.cloud.S3Service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -30,11 +34,13 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -49,9 +55,13 @@ public class YoutubeVideoService {
 
     @Value("${aws.region-nam}")
     private String awsRegion;
+
+    private final AmazonS3 amazonS3;
+
+
     private static final String TRANSCRIPT_READY = "transcript-ready";
     private final AudioService audioService;
-    private final Producer producer;
+    private final S3Service s3Service;
     private final YoutubeVideoRepository youtubeVideoRepository;
     private final YoutubeVideoMapper youtubeVideoMapper;
     private final YoutubeVideoInfoService youtubeVideoInfoService;
@@ -330,9 +340,9 @@ public class YoutubeVideoService {
         );
 
 
-        String audioUrl = uploadToS3(
+        String audioUrl = uploadFile(
                 audio,
-                "sentence/" + video.getId() + "/" + audio.getName()
+                "sentence/" + video.getId()
         );
 
         YoutubeTranscript t = YoutubeTranscript.builder()
@@ -347,7 +357,24 @@ public class YoutubeVideoService {
         transcripts.add(t);
         audio.delete();
     }
+    public String uploadFile(File file, String folder) throws IOException {
+        String fileName = folder + "/" + UUID.randomUUID() + "_" + file.getName();
 
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(file.length());
 
+        amazonS3.putObject(
+                s3Bucket,
+                fileName,
+                Files.newInputStream(file.toPath()),
+                metadata
+        );
 
+        return buildPublicUrl(fileName);
+    }
+    private String buildPublicUrl(String key) {
+        return "https://" + s3Bucket + ".s3."
+                + amazonS3.getRegionName()
+                + ".amazonaws.com/" + key;
+    }
 }

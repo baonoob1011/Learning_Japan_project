@@ -9,6 +9,7 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -61,14 +62,27 @@ public class AwsConfig {
                 .credentialsProvider(StaticCredentialsProvider.create(awsCreds))
                 .build();
     }
-    @Bean
-    public AmazonS3 amazonS3() {
-        BasicAWSCredentials awsCreds = new BasicAWSCredentials(accessKey, secretKey);
+        @Bean(name = "amazonS3Default")
+    public AmazonS3 amazonS3Default() {
+        BasicAWSCredentials awsCreds =
+                new BasicAWSCredentials(accessKey, secretKey);
         return AmazonS3ClientBuilder.standard()
                 .withRegion(Regions.fromName(region))
                 .withCredentials(new AWSStaticCredentialsProvider(awsCreds))
                 .build();
     }
+
+    @Bean(name = "amazonS3Nam")
+    @Primary
+    public AmazonS3 amazonS3Nam() {
+        BasicAWSCredentials awsCreds =
+                new BasicAWSCredentials(accessKeyNam, secretKeyNam);
+        return AmazonS3ClientBuilder.standard()
+                .withRegion(Regions.US_EAST_1)
+                .withCredentials(new AWSStaticCredentialsProvider(awsCreds))
+                .build();
+    }
+
     @Bean
     public TranscribeClient transcribeClient() {
         return TranscribeClient.builder()

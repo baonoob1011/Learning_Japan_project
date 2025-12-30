@@ -26,10 +26,15 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class S3Service {
-    private AmazonS3 amazonS3;
+    @Qualifier("amazonS3Default")
+    private final AmazonS3 amazonS3;
+
+    @Value("${aws.s3.bucket}")
+    private String bucket;
 
     @Value("${aws.s3.bucket}")
     private String bucketName;
+
 
     private static final Set<String> MEDIA_EXTENSIONS = Set.of(
             "mp4", "mov", "avi",

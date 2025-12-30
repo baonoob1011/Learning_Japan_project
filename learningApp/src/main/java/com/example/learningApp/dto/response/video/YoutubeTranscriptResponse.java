@@ -27,6 +27,7 @@ public class YoutubeTranscriptResponse {
     public static class transcriptsDTO {
         private String id;
         private String text;              // toàn bộ câu
+        private String audioUrl;              // toàn bộ câu
         private Integer startOffset; // giờ phút: giây (mm:ss)
         private Integer endOffset;   // giờ phút: giây (mm:ss)   // thời điểm kết thúc câu (ms)
         private LocalDateTime createdAt;

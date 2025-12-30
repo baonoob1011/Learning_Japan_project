@@ -36,6 +36,7 @@ public class TranscriptService {
                 .map(t -> YoutubeTranscriptResponse.transcriptsDTO.builder()
                         .id(t.getId())
                         .text(t.getText())
+                        .audioUrl(t.getAudioUrl())
                         .startOffset(t.getStartOffset())
                         .endOffset(t.getEndOffset())
                         .createdAt(t.getCreatedAt())
