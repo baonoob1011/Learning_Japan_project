@@ -60,7 +60,6 @@ public class YoutubeVideoService {
     private final YoutubeVideoMapper youtubeVideoMapper;
     private final YoutubeVideoInfoService youtubeVideoInfoService;
     private final VocabRepository vocabRepository;
-    private final VocabMapper vocabMapper;
     private final RedisTemplate<String, Object> redisTemplate;
 
     // Lấy tất cả video
@@ -146,6 +145,7 @@ public class YoutubeVideoService {
             video.setUpdatedAt(Instant.now());
 
             youtubeVideoRepository.save(video);
+            deleteFromS3(s3Key);
 
         } finally {
             if (audioFile.exists()) audioFile.delete();
@@ -217,6 +217,18 @@ public class YoutubeVideoService {
         throw new RuntimeException("Invalid YouTube URL");
     }
 
+    public void deleteFromS3(String key) {
+        S3Client s3 = S3Client.builder()
+                .region(Region.of(awsRegion))
+                .build();
+
+        s3.deleteObject(builder -> builder
+                .bucket(s3Bucket)
+                .key(key)
+        );
+
+        log.info("✅ Deleted audio from S3: {}", key);
+    }
 
 
     public String uploadToS3(File audioFile, String key) throws IOException {
