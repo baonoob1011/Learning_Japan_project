@@ -2,7 +2,9 @@ package com.example.learningApp.service.vocab;
 
 import com.example.learningApp.dto.cache.VocabCache;
 import com.example.learningApp.dto.request.vocab.CreateVocabRequest;
+import com.example.learningApp.dto.request.vocab.UpdateVocabRequest;
 import com.example.learningApp.dto.response.translate.TranslateResponse;
+import com.example.learningApp.dto.response.vocab.VocabResponse;
 import com.example.learningApp.entity.Exam;
 import com.example.learningApp.entity.User;
 import com.example.learningApp.entity.Vocab;
@@ -141,5 +143,50 @@ public class VocabService {
         return null;
     }
 
+    public List<VocabResponse> getSavedVocabsOfCurrentUser() {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userId = authentication.getName();
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return user.getSavedVocabs()
+                .stream()
+                .map(vocabMapper::toVocabResponse)
+                .toList();
+    }
+
+    @Transactional
+    public void removeVocabForCurrentUser(String surface) {
+
+        // 1️⃣ Lấy user hiện tại
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userId = authentication.getName();
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // 2️⃣ Tìm vocab
+        Vocab vocab = vocabRepository.findBySurface(surface)
+                .orElseThrow(() -> new RuntimeException("Vocab not found"));
+
+        // 3️⃣ Xóa quan hệ
+        if (user.getSavedVocabs().remove(vocab)) {
+            vocab.getUsers().remove(user); // ✔ giữ consistency 2 chiều
+            userRepository.save(user);
+        }
+    }
+    @Transactional
+    public void updateVocabMeaning(UpdateVocabRequest request) {
+
+        Vocab vocab = vocabRepository.findBySurface(request.getSurface())
+                .orElseThrow(() -> new RuntimeException("Vocab not found"));
+
+        // 🔒 CHỈ sửa nghĩa
+        vocab.setTranslated(request.getTranslated());
+
+        vocabRepository.save(vocab);
+    }
 
 }
