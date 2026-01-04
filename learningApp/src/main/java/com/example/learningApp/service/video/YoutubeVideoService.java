@@ -172,17 +172,19 @@ public class YoutubeVideoService {
 
 
     // ------------------- MAIN FLOW -------------------
-    public YoutubeVideoResponse saveYoutubeTranscriptAws(YoutubeVideoRequest request) throws IOException, InterruptedException {
+    public Void saveYoutubeTranscriptAws(YoutubeVideoRequest request)
+            throws IOException, InterruptedException {
+
         log.info("===== Start saveYoutubeTranscriptAws =====");
 
         String videoId = extractVideoId(request.getUrl());
+
         YoutubeVideo video = youtubeVideoRepository.findById(videoId)
                 .orElseGet(() -> {
                     try {
-                        return youtubeVideoInfoService.fetchAndSaveVideoInfo(request.getUrl(), videoId);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    } catch (InterruptedException e) {
+                        return youtubeVideoInfoService
+                                .fetchAndSaveVideoInfo(request.getUrl(), videoId);
+                    } catch (IOException | InterruptedException e) {
                         throw new RuntimeException(e);
                     }
                 });
@@ -192,6 +194,7 @@ public class YoutubeVideoService {
         }
 
         File audioFile = downloadAudio(request.getUrl());
+
         try {
             String s3Key = "audio_" + System.currentTimeMillis() + ".mp3";
             String s3Uri = uploadToS3(audioFile, s3Key);
@@ -201,25 +204,28 @@ public class YoutubeVideoService {
 
             String transcriptJson = getTranscriptionResult(jobName);
 
-            // Parse trực tiếp sang entity
-            List<YoutubeTranscript> transcriptList = parseTranscriptionJson(transcriptJson, video);
+            List<YoutubeTranscript> transcriptList =
+                    parseTranscriptionJson(transcriptJson, video);
 
-            // Xóa transcript cũ nếu có
             video.getYoutubeTranscripts().clear();
             video.getYoutubeTranscripts().addAll(transcriptList);
+
             video.setUpdatedAt(Instant.now());
             video.setLevel(request.getLevel());
             video.setVideoTag(request.getVideoTag());
+
             youtubeVideoRepository.save(video);
+
             deleteFromS3(s3Key);
 
         } finally {
-            if (audioFile.exists()) audioFile.delete();
+            if (audioFile.exists()) {
+                audioFile.delete();
+            }
         }
 
-        return youtubeVideoMapper.toYoutubeVideoResponse(video);
+        return null; // ✅ BẮT BUỘC khi dùng Void
     }
-
 
     // Download audio bằng yt-dlp + ffmpeg
     private File downloadAudio(String youtubeUrl) throws IOException, InterruptedException {

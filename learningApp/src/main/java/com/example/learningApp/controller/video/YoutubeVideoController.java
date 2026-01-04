@@ -51,22 +51,28 @@ public class YoutubeVideoController {
                 ApiResponse.success("Get my saved videos successfully", videos)
         );
     }
-    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/upload")
-    public ResponseEntity<ApiResponse<YoutubeVideoResponse>> uploadYoutubeVideo(
+    public ResponseEntity<ApiResponse<Void>> uploadYoutubeVideo(
             @RequestBody @Valid YoutubeVideoRequest request
     ) {
-        try {//"ja-JP"
-            // Gọi phương thức lưu transcript luôn
-            YoutubeVideoResponse videoResp = youtubeVideoService.saveYoutubeTranscriptAws(request);
-            return ResponseEntity.ok(ApiResponse.success("Video uploaded successfully with transcript", videoResp));
+        try {
+            youtubeVideoService.saveYoutubeTranscriptAws(request);
+
+            return ResponseEntity.ok(
+                    ApiResponse.success("Video uploaded successfully with transcript", null)
+            );
+
         } catch (IOException | InterruptedException e) {
             int status = 500;
             return ResponseEntity
                     .status(status)
-                    .body(ApiResponse.error(status, "Failed to upload video: " + e.getMessage()));
+                    .body(ApiResponse.error(
+                            status,
+                            "Failed to upload video: " + e.getMessage()
+                    ));
         }
     }
+
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<YoutubeVideoSummaryResponse>>> getAllVideos() {
