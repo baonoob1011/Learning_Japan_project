@@ -1,5 +1,7 @@
 package com.example.learningApp.entity;
 
+import com.example.learningApp.enums.JLPTLevel;
+import com.example.learningApp.enums.VideoTag;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,6 +25,13 @@ public class YoutubeVideo {
     @Column(columnDefinition = "TEXT")
     private String description;
     private String thumbnailUrl;
+
+    @Enumerated(EnumType.STRING)
+    private VideoTag videoTag;
+
+    @Enumerated(EnumType.STRING)
+    private JLPTLevel level;
+
     private String channelTitle;
     private String duration;           // PT2H35M54S
     private Instant publishedAt;

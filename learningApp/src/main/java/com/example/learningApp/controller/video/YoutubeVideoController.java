@@ -56,9 +56,9 @@ public class YoutubeVideoController {
     public ResponseEntity<ApiResponse<YoutubeVideoResponse>> uploadYoutubeVideo(
             @RequestBody @Valid YoutubeVideoRequest request
     ) {
-        try {
+        try {//"ja-JP"
             // Gọi phương thức lưu transcript luôn
-            YoutubeVideoResponse videoResp = youtubeVideoService.saveYoutubeTranscriptAws(request.getUrl(),"ja-JP");
+            YoutubeVideoResponse videoResp = youtubeVideoService.saveYoutubeTranscriptAws(request);
             return ResponseEntity.ok(ApiResponse.success("Video uploaded successfully with transcript", videoResp));
         } catch (IOException | InterruptedException e) {
             int status = 500;

@@ -1,20 +1,13 @@
-package com.example.learningApp.service.video;
+package com.example.learningApp.service.transcrip;
 
-import com.example.learningApp.dto.request.video.YoutubeTranscriptRequest;
 import com.example.learningApp.dto.response.video.YoutubeTranscriptResponse;
-import com.example.learningApp.entity.YoutubeTranscript;
 import com.example.learningApp.entity.YoutubeVideo;
-import com.example.learningApp.mapper.YoutubeTranscriptMapper;
-import com.example.learningApp.repository.YoutubeTranscriptRepository;
 import com.example.learningApp.repository.YoutubeVideoRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 

@@ -2,6 +2,7 @@ package com.example.learningApp.service.video;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.example.learningApp.dto.cache.VocabCache;
+import com.example.learningApp.dto.request.video.YoutubeVideoRequest;
 import com.example.learningApp.dto.response.video.YoutubeVideoResponse;
 import com.example.learningApp.dto.response.video.YoutubeVideoSummaryResponse;
 import com.example.learningApp.dto.request.video.YoutubeTranscriptRequest;
@@ -171,14 +172,14 @@ public class YoutubeVideoService {
 
 
     // ------------------- MAIN FLOW -------------------
-    public YoutubeVideoResponse saveYoutubeTranscriptAws(String youtubeUrl, String languageCode) throws IOException, InterruptedException {
+    public YoutubeVideoResponse saveYoutubeTranscriptAws(YoutubeVideoRequest request) throws IOException, InterruptedException {
         log.info("===== Start saveYoutubeTranscriptAws =====");
 
-        String videoId = extractVideoId(youtubeUrl);
+        String videoId = extractVideoId(request.getUrl());
         YoutubeVideo video = youtubeVideoRepository.findById(videoId)
                 .orElseGet(() -> {
                     try {
-                        return youtubeVideoInfoService.fetchAndSaveVideoInfo(youtubeUrl, videoId);
+                        return youtubeVideoInfoService.fetchAndSaveVideoInfo(request.getUrl(), videoId);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     } catch (InterruptedException e) {
@@ -190,13 +191,13 @@ public class YoutubeVideoService {
             youtubeVideoRepository.save(video);
         }
 
-        File audioFile = downloadAudio(youtubeUrl);
+        File audioFile = downloadAudio(request.getUrl());
         try {
             String s3Key = "audio_" + System.currentTimeMillis() + ".mp3";
             String s3Uri = uploadToS3(audioFile, s3Key);
 
             String jobName = "yt-transcribe-" + System.currentTimeMillis();
-            createTranscriptionJob(jobName, s3Uri, languageCode);
+            createTranscriptionJob(jobName, s3Uri, "ja-JP");
 
             String transcriptJson = getTranscriptionResult(jobName);
 
@@ -207,7 +208,8 @@ public class YoutubeVideoService {
             video.getYoutubeTranscripts().clear();
             video.getYoutubeTranscripts().addAll(transcriptList);
             video.setUpdatedAt(Instant.now());
-
+            video.setLevel(request.getLevel());
+            video.setVideoTag(request.getVideoTag());
             youtubeVideoRepository.save(video);
             deleteFromS3(s3Key);
 

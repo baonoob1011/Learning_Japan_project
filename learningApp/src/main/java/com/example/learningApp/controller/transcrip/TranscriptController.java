@@ -3,7 +3,7 @@ package com.example.learningApp.controller.transcrip;
 
 import com.example.learningApp.dto.ApiResponse;
 import com.example.learningApp.dto.response.video.YoutubeTranscriptResponse;
-import com.example.learningApp.service.video.TranscriptService;
+import com.example.learningApp.service.transcrip.TranscriptService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
