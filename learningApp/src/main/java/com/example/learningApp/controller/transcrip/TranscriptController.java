@@ -1,21 +1,17 @@
-package com.example.learningApp.controller.video;
+package com.example.learningApp.controller.transcrip;
 
 
 import com.example.learningApp.dto.ApiResponse;
 import com.example.learningApp.dto.response.video.YoutubeTranscriptResponse;
-import com.example.learningApp.dto.response.video.YoutubeVideoResponse;
 import com.example.learningApp.service.video.TranscriptService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/v1/transcripts")
 @RequiredArgsConstructor
-public class YoutubeTranscriptController {
+public class TranscriptController {
 
     private final TranscriptService transcriptService;
 

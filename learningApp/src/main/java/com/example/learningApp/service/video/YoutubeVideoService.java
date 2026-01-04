@@ -6,11 +6,13 @@ import com.example.learningApp.dto.response.video.YoutubeVideoResponse;
 import com.example.learningApp.dto.response.video.YoutubeVideoSummaryResponse;
 import com.example.learningApp.dto.request.video.YoutubeTranscriptRequest;
 import com.example.learningApp.dto.request.video.YoutubeTranscriptRequest.TranscriptItem;
+import com.example.learningApp.entity.User;
 import com.example.learningApp.entity.Vocab;
 import com.example.learningApp.entity.YoutubeTranscript;
 import com.example.learningApp.entity.YoutubeVideo;
 import com.example.learningApp.mapper.VocabMapper;
 import com.example.learningApp.mapper.YoutubeVideoMapper;
+import com.example.learningApp.repository.UserRepository;
 import com.example.learningApp.repository.VocabRepository;
 import com.example.learningApp.repository.YoutubeVideoRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -19,7 +21,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -61,6 +67,64 @@ public class YoutubeVideoService {
     private final YoutubeVideoInfoService youtubeVideoInfoService;
     private final VocabRepository vocabRepository;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final UserRepository userRepository;
+
+
+    @Transactional(readOnly = true)
+    public List<YoutubeVideoSummaryResponse> getMySavedVideos() {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        String userId = authentication.getName();
+
+        return youtubeVideoRepository
+                .findSavedVideosByUserId(userId)
+                .stream()
+                .map(youtubeVideoMapper::toYoutubeVideoSummaryResponse)
+                .toList();
+    }
+
+
+
+    public void saveVideoForUser(String videoId) {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userId = authentication.getName();
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        YoutubeVideo video = youtubeVideoRepository.findById(videoId)
+                .orElseThrow(() -> new RuntimeException("Video not found"));
+
+        // tránh save trùng
+        if (user.getSavedVideos().contains(video)) {
+            return;
+        }
+
+        user.getSavedVideos().add(video);
+
+        // không bắt buộc nhưng nên có cho consistency
+        video.getUsers().add(user);
+
+        userRepository.save(user);
+    }
+
+    public void removeSavedVideo( String videoId) {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userId = authentication.getName();
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        YoutubeVideo video = youtubeVideoRepository.findById(videoId)
+                .orElseThrow(() -> new RuntimeException("Video not found"));
+
+        user.getSavedVideos().remove(video);
+        video.getUsers().remove(user);
+
+        userRepository.save(user);
+    }
 
     // Lấy tất cả video
     public List<YoutubeVideoSummaryResponse> getAllVideos() {

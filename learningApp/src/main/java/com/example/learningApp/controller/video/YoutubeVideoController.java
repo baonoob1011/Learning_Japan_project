@@ -21,6 +21,36 @@ public class YoutubeVideoController {
 
     private final YoutubeVideoService youtubeVideoService;
 
+
+    @PostMapping("/{videoId}")
+    public ResponseEntity<ApiResponse<Void>> saveVideo(
+            @PathVariable String videoId
+    ) {
+        youtubeVideoService.saveVideoForUser(videoId);
+        return ResponseEntity.ok(
+                ApiResponse.success("Saved video successfully", null)
+        );
+    }
+
+    @DeleteMapping("/{videoId}")
+    public ResponseEntity<ApiResponse<Void>> removeSavedVideo(
+            @PathVariable String videoId
+    ) {
+        youtubeVideoService.removeSavedVideo(videoId);
+        return ResponseEntity.ok(
+                ApiResponse.success("Removed video successfully", null)
+        );
+    }
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<List<YoutubeVideoSummaryResponse>>> getMySavedVideos() {
+
+        List<YoutubeVideoSummaryResponse> videos =
+                youtubeVideoService.getMySavedVideos();
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Get my saved videos successfully", videos)
+        );
+    }
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/upload")
     public ResponseEntity<ApiResponse<YoutubeVideoResponse>> uploadYoutubeVideo(

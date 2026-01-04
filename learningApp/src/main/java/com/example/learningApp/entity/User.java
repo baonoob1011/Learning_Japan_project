@@ -44,6 +44,15 @@ public class User {
     )
     private Set<Role> roles;
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "user_videos",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "video_id")
+    )
+    private Set<YoutubeVideo> savedVideos = new HashSet<>();
+
+
     @OneToMany(
             mappedBy = "user",
             cascade = CascadeType.ALL,
