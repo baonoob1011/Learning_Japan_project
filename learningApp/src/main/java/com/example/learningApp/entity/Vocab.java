@@ -27,4 +27,8 @@ public class Vocab {
     private String audioUrl;      // đường dẫn audio trên S3
     @ManyToMany(mappedBy = "vocabs")
     private Set<YoutubeVideo> videos = new HashSet<>();
+
+    @ManyToMany(mappedBy = "savedVocabs")
+    private Set<User> users = new HashSet<>();
+
 }

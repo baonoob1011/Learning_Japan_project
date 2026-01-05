@@ -15,6 +15,5 @@ public class VocabCache {
     private String reading;       // cách đọc
     private String targetDefs;    // nghĩa ngôn ngữ đích
     private String partOfSpeech;  // loại từ
-    private String explain;       // giải thích chi tiết
     private String audioUrl;      // đường dẫn audio trên S3
 }

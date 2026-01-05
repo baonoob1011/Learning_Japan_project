@@ -28,6 +28,11 @@ public class YoutubeVideo {
     private Instant publishedAt;
     private String s3Url;              // URL sau khi upload lên S3
     private String urlVideo;
+
+    @ManyToMany(mappedBy = "savedVideos", fetch = FetchType.LAZY)
+    private Set<User> users = new HashSet<>();
+
+
     @ManyToMany
     @JoinTable(
             name = "video_vocab",
