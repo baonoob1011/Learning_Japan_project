@@ -1,6 +1,7 @@
 package com.example.learningApp.entity;
 
 import com.example.learningApp.enums.JLPTLevel;
+import com.example.learningApp.enums.VideoStatus;
 import com.example.learningApp.enums.VideoTag;
 import jakarta.persistence.*;
 import lombok.*;
@@ -31,6 +32,11 @@ public class YoutubeVideo {
 
     @Enumerated(EnumType.STRING)
     private JLPTLevel level;
+
+    @Enumerated(EnumType.STRING)
+    private VideoStatus videoStatus = VideoStatus.NEW;
+
+
 
     private String channelTitle;
     private String duration;           // PT2H35M54S

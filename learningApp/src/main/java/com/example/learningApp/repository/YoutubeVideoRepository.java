@@ -15,5 +15,12 @@ public interface YoutubeVideoRepository extends JpaRepository<YoutubeVideo, Stri
     where u.id = :userId
 """)
     List<YoutubeVideo> findSavedVideosByUserId(@Param("userId") String userId);
+    @Query("""
+    select distinct v
+    from YoutubeVideo v
+    join v.vocabs vb
+    where vb.id = :vocabId
+""")
+    List<YoutubeVideo> findAllByVocabId(@Param("vocabId") String vocabId);
 
 }

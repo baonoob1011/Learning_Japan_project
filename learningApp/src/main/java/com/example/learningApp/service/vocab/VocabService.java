@@ -39,6 +39,21 @@ public class VocabService {
     UserRepository userRepository;
      RedisTemplate<String, Object> redisTemplate;
 
+    public List<VocabResponse> getSavedVocabsOfCurrentUserByVideo(String videoId) {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userId = authentication.getName();
+
+        List<Vocab> vocabs =
+                vocabRepository.findSavedVocabsByUserAndVideo(userId, videoId);
+
+        return vocabs.stream()
+                .map(vocabMapper::toVocabResponse)
+                .toList();
+    }
+
+
+
     @Transactional
     public void createVocab(CreateVocabRequest request) {
         Vocab vocab = vocabMapper.toVocab(request);

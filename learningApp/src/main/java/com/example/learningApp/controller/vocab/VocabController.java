@@ -21,6 +21,18 @@ public class VocabController {
 
     VocabService vocabService;
 
+    @GetMapping("/my/video/{videoId}")
+    public ResponseEntity<ApiResponse<List<VocabResponse>>> getMyVocabsByVideo(
+            @PathVariable String videoId
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Get saved vocabs by video successfully",
+                        vocabService.getSavedVocabsOfCurrentUserByVideo(videoId)
+                )
+        );
+    }
+
     @PostMapping
     public ResponseEntity<ApiResponse<Void>> saveVocab(@RequestBody CreateVocabRequest request) {
         return ResponseEntity.ok(ApiResponse.success("Saved vocab successfully  ",  vocabService.saveVocabForCurrentUser(request.getSurface())));

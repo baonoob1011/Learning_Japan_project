@@ -55,22 +55,12 @@ public class YoutubeVideoController {
     public ResponseEntity<ApiResponse<Void>> uploadYoutubeVideo(
             @RequestBody @Valid YoutubeVideoRequest request
     ) {
-        try {
-            youtubeVideoService.saveYoutubeTranscriptAws(request);
+        youtubeVideoService.saveYoutubeTranscriptAws(request);
 
-            return ResponseEntity.ok(
-                    ApiResponse.success("Video uploaded successfully with transcript", null)
-            );
+        return ResponseEntity.ok(
+                ApiResponse.success("Video uploaded successfully with transcript", null)
+        );
 
-        } catch (IOException | InterruptedException e) {
-            int status = 500;
-            return ResponseEntity
-                    .status(status)
-                    .body(ApiResponse.error(
-                            status,
-                            "Failed to upload video: " + e.getMessage()
-                    ));
-        }
     }
 
 
@@ -78,6 +68,12 @@ public class YoutubeVideoController {
     public ResponseEntity<ApiResponse<List<YoutubeVideoSummaryResponse>>> getAllVideos() {
         List<YoutubeVideoSummaryResponse> videos = youtubeVideoService.getAllVideos();
         return ResponseEntity.ok(ApiResponse.success("All videos retrieved", videos));
+    }
+
+    @GetMapping("/vocab")
+    public ResponseEntity<ApiResponse<List<YoutubeVideoSummaryResponse>>> getAllVideoByVocab() {
+        List<YoutubeVideoSummaryResponse> videos = youtubeVideoService.getAllVideoByVocab();
+        return ResponseEntity.ok(ApiResponse.success("All videos by vocab", videos));
     }
 
     /**

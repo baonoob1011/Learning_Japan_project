@@ -16,4 +16,17 @@ public interface VocabRepository extends JpaRepository<Vocab, String> {
     @Query("SELECT v FROM Vocab v JOIN v.videos vid WHERE vid.id = :videoId")
     List<Vocab> findAllByVideoId(@Param("videoId") String videoId);
     // Nếu muốn tìm theo partial match (vd: contains)
+
+    @Query("""
+        SELECT v
+        FROM Vocab v
+        JOIN v.users u
+        JOIN v.videos vid
+        WHERE u.id = :userId
+          AND vid.id = :videoId
+    """)
+    List<Vocab> findSavedVocabsByUserAndVideo(
+            @Param("userId") String userId,
+            @Param("videoId") String videoId
+    );
 }
