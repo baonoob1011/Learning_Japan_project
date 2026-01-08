@@ -1,11 +1,15 @@
 package com.example.learningApp.service.video;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.example.learningApp.component.kafka.Producer;
 import com.example.learningApp.dto.cache.VocabCache;
+import com.example.learningApp.dto.event.YoutubeTranscribeMessage;
+import com.example.learningApp.dto.request.video.YoutubeVideoRequest;
 import com.example.learningApp.dto.response.video.YoutubeVideoResponse;
 import com.example.learningApp.dto.response.video.YoutubeVideoSummaryResponse;
 import com.example.learningApp.dto.request.video.YoutubeTranscriptRequest;
 import com.example.learningApp.dto.request.video.YoutubeTranscriptRequest.TranscriptItem;
+import com.example.learningApp.dto.response.vocab.VocabResponse;
 import com.example.learningApp.entity.User;
 import com.example.learningApp.entity.Vocab;
 import com.example.learningApp.entity.YoutubeTranscript;
@@ -15,6 +19,7 @@ import com.example.learningApp.mapper.YoutubeVideoMapper;
 import com.example.learningApp.repository.UserRepository;
 import com.example.learningApp.repository.VocabRepository;
 import com.example.learningApp.repository.YoutubeVideoRepository;
+import com.example.learningApp.service.vocab.VocabService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -44,9 +49,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -62,13 +65,30 @@ public class YoutubeVideoService {
     @Value("${aws.region-nam}")
     private String awsRegion;
 
+    private final Producer producer;
     private final YoutubeVideoRepository youtubeVideoRepository;
     private final YoutubeVideoMapper youtubeVideoMapper;
-    private final YoutubeVideoInfoService youtubeVideoInfoService;
     private final VocabRepository vocabRepository;
     private final RedisTemplate<String, Object> redisTemplate;
     private final UserRepository userRepository;
+    private final VocabService vocabService;
 
+    public List<YoutubeVideoSummaryResponse> getAllVideoByVocab(){
+        var listVocabByCurrentUser= vocabService.getSavedVocabsOfCurrentUser();
+
+        Set<YoutubeVideo> videoSet = new HashSet<>();
+        for (VocabResponse vocab : listVocabByCurrentUser) {
+            // nếu vocabResponse có videoIds
+            List<YoutubeVideo> videos =
+                    youtubeVideoRepository.findAllByVocabId(vocab.getId());
+
+            videoSet.addAll(videos);
+        }
+        // map entity -> response
+        return videoSet.stream()
+                .map(youtubeVideoMapper::toYoutubeVideoSummaryResponse)
+                .toList();
+    }
 
     @Transactional(readOnly = true)
     public List<YoutubeVideoSummaryResponse> getMySavedVideos() {
@@ -134,6 +154,8 @@ public class YoutubeVideoService {
                         video.getId(),
                         video.getTitle(),
                         video.getUrlVideo(),
+                        video.getVideoTag(),
+                        video.getLevel(),
                         video.getDuration(),
                         video.getCreatedAt()
                 ))
@@ -171,56 +193,33 @@ public class YoutubeVideoService {
 
 
     // ------------------- MAIN FLOW -------------------
-    public YoutubeVideoResponse saveYoutubeTranscriptAws(String youtubeUrl, String languageCode) throws IOException, InterruptedException {
-        log.info("===== Start saveYoutubeTranscriptAws =====");
+    public Void saveYoutubeTranscriptAws(YoutubeVideoRequest request) {
 
-        String videoId = extractVideoId(youtubeUrl);
-        YoutubeVideo video = youtubeVideoRepository.findById(videoId)
-                .orElseGet(() -> {
-                    try {
-                        return youtubeVideoInfoService.fetchAndSaveVideoInfo(youtubeUrl, videoId);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+        String videoId = extractVideoId(request.getUrl());
 
-        if (!youtubeVideoRepository.existsById(video.getId())) {
-            youtubeVideoRepository.save(video);
-        }
+        YoutubeTranscribeMessage message =
+                new YoutubeTranscribeMessage(
+                        videoId,
+                        request.getUrl(),
+                        request.getLevel(),
+                        request.getVideoTag()
+                );
 
-        File audioFile = downloadAudio(youtubeUrl);
-        try {
-            String s3Key = "audio_" + System.currentTimeMillis() + ".mp3";
-            String s3Uri = uploadToS3(audioFile, s3Key);
+        // 🔑 KEY = videoId (cực kỳ quan trọng)
+        producer.send(
+                "youtube-transcribe",
+                videoId,
+                message
+        );
 
-            String jobName = "yt-transcribe-" + System.currentTimeMillis();
-            createTranscriptionJob(jobName, s3Uri, languageCode);
+        log.info("📤 Enqueued transcribe job for video {}", videoId);
 
-            String transcriptJson = getTranscriptionResult(jobName);
-
-            // Parse trực tiếp sang entity
-            List<YoutubeTranscript> transcriptList = parseTranscriptionJson(transcriptJson, video);
-
-            // Xóa transcript cũ nếu có
-            video.getYoutubeTranscripts().clear();
-            video.getYoutubeTranscripts().addAll(transcriptList);
-            video.setUpdatedAt(Instant.now());
-
-            youtubeVideoRepository.save(video);
-            deleteFromS3(s3Key);
-
-        } finally {
-            if (audioFile.exists()) audioFile.delete();
-        }
-
-        return youtubeVideoMapper.toYoutubeVideoResponse(video);
+        return null;
     }
 
 
     // Download audio bằng yt-dlp + ffmpeg
-    private File downloadAudio(String youtubeUrl) throws IOException, InterruptedException {
+    public File downloadAudio(String youtubeUrl) throws IOException, InterruptedException {
         String fileName = "audio_" + System.currentTimeMillis() + ".mp3";
 
         // 1. Ưu tiên biến môi trường

@@ -1,30 +1,27 @@
-package com.example.learningApp.service.video;
+package com.example.learningApp.service.transcrip;
 
-import com.example.learningApp.dto.request.video.YoutubeTranscriptRequest;
 import com.example.learningApp.dto.response.video.YoutubeTranscriptResponse;
-import com.example.learningApp.entity.YoutubeTranscript;
 import com.example.learningApp.entity.YoutubeVideo;
-import com.example.learningApp.mapper.YoutubeTranscriptMapper;
-import com.example.learningApp.repository.YoutubeTranscriptRepository;
 import com.example.learningApp.repository.YoutubeVideoRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.transcribe.TranscribeClient;
+import software.amazon.awssdk.services.transcribe.model.DeleteTranscriptionJobRequest;
+import software.amazon.awssdk.services.transcribe.model.TranscribeException;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class TranscriptService {
 
     YoutubeVideoRepository youtubeVideoRepository;
-
+ TranscribeClient transcribeClient;
     public YoutubeTranscriptResponse getTranscriptsByVideoId(String videoId) {
         // Lấy video
         YoutubeVideo video = youtubeVideoRepository.findById(videoId)
@@ -52,7 +49,21 @@ public class TranscriptService {
                 .transcriptsDTOS(transcriptDTOs)
                 .build();
     }
+    public void deleteTranscriptionJob(String jobName) {
+        try {
+            DeleteTranscriptionJobRequest request = DeleteTranscriptionJobRequest.builder()
+                    .transcriptionJobName(jobName)
+                    .build();
 
+            transcribeClient.deleteTranscriptionJob(request);
+            log.info("Deleted transcription job: {}", jobName);
+
+        } catch (TranscribeException e) {
+            log.warn("AWS Transcribe failed to delete job {}: {}", jobName, e.awsErrorDetails().errorMessage());
+        } catch (Exception e) {
+            log.warn("Unexpected error when deleting transcription job {}: {}", jobName, e.getMessage());
+        }
+    }
 
 // Nếu cần hiển thị UI, FE mới gọi formatTime(ms) chuyển sang mm:ss
 
