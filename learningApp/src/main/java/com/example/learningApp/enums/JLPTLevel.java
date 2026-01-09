@@ -5,5 +5,5 @@ public enum JLPTLevel {
     N2,
     N3,
     N4,
-    N5
+    UNKNOWN, N5
 }

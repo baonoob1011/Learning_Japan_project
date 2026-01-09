@@ -25,6 +25,13 @@ spring:
         host: localhost
         port: 6379
 
+  data:
+    elasticsearch:
+      repositories:
+        enabled: true
+      mapping:
+        exclude-class: true
+
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
