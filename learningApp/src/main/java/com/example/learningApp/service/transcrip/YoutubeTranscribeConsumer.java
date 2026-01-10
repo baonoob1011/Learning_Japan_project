@@ -3,26 +3,31 @@ package com.example.learningApp.service.transcrip;
 import com.example.learningApp.dto.event.YoutubeTranscribeMessage;
 import com.example.learningApp.entity.YoutubeTranscript;
 import com.example.learningApp.entity.YoutubeVideo;
+import com.example.learningApp.entity.YoutubeVideoDocument;
 import com.example.learningApp.enums.VideoStatus;
 import com.example.learningApp.repository.YoutubeVideoRepository;
+import com.example.learningApp.repository.YoutubeVideoSearchRepository;
 import com.example.learningApp.service.video.YoutubeVideoInfoService;
 import com.example.learningApp.service.video.YoutubeVideoService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.elasticsearch.core.suggest.Completion;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class YoutubeTranscribeConsumer {
-
+    private final YoutubeVideoSearchRepository youtubeVideoSearchRepository;
     private final YoutubeVideoRepository youtubeVideoRepository;
     private final YoutubeVideoInfoService youtubeVideoInfoService;
     private final YoutubeVideoService youtubeVideoService;
@@ -81,6 +86,29 @@ public class YoutubeTranscribeConsumer {
             video.setUpdatedAt(Instant.now());
 
             youtubeVideoRepository.save(video);
+
+            YoutubeVideoDocument document = YoutubeVideoDocument.builder()
+                    .id(video.getId())
+                    .title(video.getTitle())
+                    .urlVideo(video.getUrlVideo())
+                    // chuyển enum sang string
+                    .videoTag(video.getVideoTag() != null ? video.getVideoTag().name() : null)
+                    .level(video.getLevel() != null ? video.getLevel().name() : null)
+                    .duration(video.getDuration())
+                    // LocalDateTime -> ISO String
+                    .createdAt(
+                            video.getCreatedAt() != null
+                                    ? video.getCreatedAt().toEpochMilli()
+                                    : Instant.now().toEpochMilli()
+                    )
+
+                    .build();
+
+            youtubeVideoSearchRepository.save(document);
+
+
+
+
             youtubeVideoService.deleteFromS3(s3Key);
 
         } catch (Exception e) {

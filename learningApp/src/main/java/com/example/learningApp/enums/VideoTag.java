@@ -14,5 +14,5 @@ public enum VideoTag {
     TRAVEL,
     CULTURE,
     FOOD,
-    KIDS
+    DEFAULT, KIDS
 }

@@ -23,6 +23,7 @@ public class YoutubeTranscript {
     @Column(name = "offset_sec") // thời điểm từ trong video (ms)
     private Integer offset;
 
+    
     @Column(columnDefinition = "text")
     private String text;
 
