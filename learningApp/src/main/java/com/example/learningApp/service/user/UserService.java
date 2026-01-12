@@ -15,11 +15,18 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.UUID;
 
 import static com.example.learningApp.configuration.CognitoSecretHashUtil.calculateSecretHash;
 
@@ -35,6 +42,9 @@ public class UserService {
     @NonFinal
     @Value("${aws.cognito.client-secret}")
     String clientSecret;
+    @NonFinal
+    @Value("${aws.cognito.user-pool-id}")
+    String userPoolId;
 
     CognitoIdentityProviderClient cognitoClient;
     UserRepository userRepository;
@@ -116,6 +126,42 @@ public class UserService {
                 .totalElements(userPage.getTotalElements())
                 .totalPages(userPage.getTotalPages())
                 .build();
+    }
+
+    public void deleteUser(String email) {
+        try {
+            // Xoá user trong Cognito
+            cognitoClient.adminDeleteUser(AdminDeleteUserRequest.builder()
+                    .userPoolId(userPoolId)
+                    .username(email)
+                    .build());
+        } catch (Exception e) {
+            throw new RuntimeException("Delete user failed", e);
+        }
+    }
+
+    public UserResponse getMyInfo() {
+        var context = SecurityContextHolder.getContext();
+        String userId = context.getAuthentication().getName();
+        User user = userRepository.findById(userId).orElseThrow();
+        return userMapper.toUserResponse(user);
+    }
+
+    public void updateAvatarUrl(String url) {
+
+        // lấy email từ token
+        var context = SecurityContextHolder.getContext();
+        String userId = context.getAuthentication().getName();
+
+        // tìm user
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // cập nhật avatar
+        user.setAvatarUrl(url);
+
+        // lưu lại
+        userRepository.save(user);
     }
 
 }

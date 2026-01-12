@@ -27,6 +27,9 @@ public class User {
     @Column(name = "full_name", length = 255)
     private String fullName;
 
+    @Column(name = "avatar_url", length = 255)
+    private String avatarUrl;
+
     @Column(nullable = false)
     private Boolean enabled = true;
 

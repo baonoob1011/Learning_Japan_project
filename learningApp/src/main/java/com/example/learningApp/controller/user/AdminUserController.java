@@ -9,10 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/admin/users")
@@ -23,6 +20,7 @@ public class AdminUserController {
     UserService userService;
 
     @GetMapping
+    // @PreAuthorize("hasRole('ADMIN')") // Nên chặn quyền nếu cần
     public ResponseEntity<ApiResponse<PageResponse<UserResponse>>> getAllUsers(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -31,5 +29,12 @@ public class AdminUserController {
         PageResponse<UserResponse> response = userService.getAllUsers(page, size, search);
         return ResponseEntity.ok(ApiResponse.success("Users retrieved successfully", response));
 
+    }
+
+    @DeleteMapping("/delete-account")
+// @PreAuthorize("hasRole('ADMIN')") // Nên chặn quyền nếu cần
+    public ResponseEntity<ApiResponse<String>> deleteAccount(@RequestParam String email) {
+        userService.deleteUser(email);
+        return ResponseEntity.ok(ApiResponse.success("Account deleted permanently", null));
     }
 }

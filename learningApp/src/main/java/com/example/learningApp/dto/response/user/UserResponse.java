@@ -15,4 +15,5 @@ public class UserResponse {
     private Boolean enabled;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String avatarUrl;
 }

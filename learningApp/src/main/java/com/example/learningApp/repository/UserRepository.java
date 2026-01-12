@@ -31,4 +31,6 @@ public interface UserRepository extends JpaRepository<User,String> {
     );    Optional<User> findByEmail(String email);
 
     Page<User> findByEmailContainingIgnoreCaseOrFullNameContainingIgnoreCase(String email, String fullName, Pageable pageable);
+
+    void deleteByEmail(String email);
 }

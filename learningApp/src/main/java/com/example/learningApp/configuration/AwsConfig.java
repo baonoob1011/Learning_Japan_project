@@ -39,10 +39,10 @@ public class AwsConfig {
     @Bean
     public S3Client s3Client() {
         return S3Client.builder()
-                .region(Region.US_EAST_1)
+                .region(Region.AP_SOUTHEAST_1)
                 .credentialsProvider(
                         StaticCredentialsProvider.create(
-                                AwsBasicCredentials.create(accessKeyNam, secretKeyNam)
+                                AwsBasicCredentials.create(accessKey, secretKey)
                         )
                 )
                 .build();
