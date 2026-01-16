@@ -31,6 +31,8 @@ public class UserLearningController {
                 ApiResponse.success("Dashboard retrieved", res)
         );
     }
+
+
     @GetMapping("/daily")
     public ResponseEntity<ApiResponse<List<DailyProgressResponse>>> getDailyProgress(
             @RequestParam(defaultValue = "7") int days

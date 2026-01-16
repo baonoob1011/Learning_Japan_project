@@ -34,4 +34,5 @@ public interface UserLearningProgressRepository
     );
 
 
+    UserLearningProgress findFirstByUserIdOrderByLastExamAtDesc(String id);
 }

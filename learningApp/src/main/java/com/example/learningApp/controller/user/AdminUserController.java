@@ -2,6 +2,7 @@ package com.example.learningApp.controller.user;
 
 import com.example.learningApp.common.PageResponse;
 import com.example.learningApp.dto.ApiResponse;
+import com.example.learningApp.dto.response.user.UserForAdminResponse;
 import com.example.learningApp.dto.response.user.UserResponse;
 import com.example.learningApp.service.user.UserService;
 import lombok.AccessLevel;
@@ -20,13 +21,12 @@ public class AdminUserController {
     UserService userService;
 
     @GetMapping
-    // @PreAuthorize("hasRole('ADMIN')") // Nên chặn quyền nếu cần
-    public ResponseEntity<ApiResponse<PageResponse<UserResponse>>> getAllUsers(
+    public ResponseEntity<ApiResponse<PageResponse<UserForAdminResponse>>> getAllUsers(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search
     ){
-        PageResponse<UserResponse> response = userService.getAllUsers(page, size, search);
+        PageResponse<UserForAdminResponse> response = userService.getAllUsers(page, size, search);
         return ResponseEntity.ok(ApiResponse.success("Users retrieved successfully", response));
 
     }

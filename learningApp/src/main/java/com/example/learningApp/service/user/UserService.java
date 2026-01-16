@@ -1,9 +1,11 @@
 package com.example.learningApp.service.user;
 
 import com.example.learningApp.common.PageResponse;
+import com.example.learningApp.dto.response.user.UserForAdminResponse;
 import com.example.learningApp.dto.response.user.UserResponse;
 import com.example.learningApp.entity.User;
 import com.example.learningApp.mapper.UserMapper;
+import com.example.learningApp.repository.UserLearningProgressRepository;
 import com.example.learningApp.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.example.learningApp.configuration.CognitoSecretHashUtil.calculateSecretHash;
 
@@ -48,6 +51,7 @@ public class UserService {
 
     CognitoIdentityProviderClient cognitoClient;
     UserRepository userRepository;
+    UserLearningProgressRepository userLearningProgressRepository;
 
     public void changePassword(String accessToken, String oldPassword, String newPassword) {
         try{
@@ -105,11 +109,11 @@ public class UserService {
         }
     }
 
-    public PageResponse<UserResponse> getAllUsers(int page, int size, String search) {
-        // Implementation for retrieving all users with pagination
-        Pageable pageable = PageRequest.of(page - 1,size, Sort.by("createdAt").descending());
-        Page<User> userPage;
+    public PageResponse<UserForAdminResponse> getAllUsers(int page, int size, String search) {
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("createdAt").descending());
 
+        // 1. Tìm kiếm và phân trang User
+        Page<User> userPage;
         if (search == null) {
             userPage = userRepository.findAll(pageable);
         }else {
@@ -117,16 +121,59 @@ public class UserService {
                     search, search, pageable);
         }
 
-        List<UserResponse> userResponses = userPage.getContent().stream().map(userMapper::toUserResponse).toList();
+        // 2. Map sang UserResponse và ĐIỀN THÊM DỮ LIỆU HỌC TẬP
+        List<UserForAdminResponse> userForAdminResponse = userPage.getContent().stream().map(user -> {
+            // Map cơ bản (id, email, name...)
+            UserForAdminResponse response = mapToUserResponse(user);
 
-        return PageResponse.<UserResponse>builder()
-                .data(userResponses)
-                .page(userPage.getNumber())
+            // Lấy progress mới nhất của user này
+            var progress = userLearningProgressRepository.findFirstByUserIdOrderByLastExamAtDesc(user.getId());
+
+            if (progress != null) {
+                response.setLevel(progress.getLevel()); // Set Level
+
+                // Tính % hoàn thành (ví dụ đơn giản)
+                int percent = (progress.getTotalQuestionsDone() == 0) ? 0 :
+                        (int) ((double) progress.getCorrectQuestions() / progress.getTotalQuestionsDone() * 100);
+                response.setProcessPercent(percent);
+
+                // Set Stage (Ví dụ: Nếu làm > 10 bài thi là giai đoạn Exam, ngược lại là Junbi)
+                response.setStage(progress.getTotalExamsTaken() > 10 ? "Exam" : "Junbi");
+            } else {
+                // Mặc định cho user mới chưa học gì
+                response.setLevel("N5");
+                response.setProcessPercent(0);
+                response.setStage("Newbie");
+            }
+
+            // Set Premium (giả sử User entity có field này hoặc check role)
+            // response.setPremium(user.getRoles().stream().anyMatch(r -> r.getName().equals("ROLE_PREMIUM")));
+
+            return response;
+        }).collect(Collectors.toList());
+
+        return PageResponse.<UserForAdminResponse>builder()
+                .page(page)
+                .totalPages(userPage.getTotalPages())
                 .size(userPage.getSize())
                 .totalElements(userPage.getTotalElements())
-                .totalPages(userPage.getTotalPages())
+                .data(userForAdminResponse)
                 .build();
     }
+
+    // Helper map cơ bản
+    private UserForAdminResponse mapToUserResponse(User user) {
+        return UserForAdminResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .enabled(user.getEnabled())
+                .avatarUrl(user.getAvatarUrl())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                .build();
+    }
+
 
     public void deleteUser(String email) {
         try {
@@ -149,7 +196,7 @@ public class UserService {
 
     public void updateAvatarUrl(String url) {
 
-        // lấy email từ token
+        // lấy userid từ token
         var context = SecurityContextHolder.getContext();
         String userId = context.getAuthentication().getName();
 
