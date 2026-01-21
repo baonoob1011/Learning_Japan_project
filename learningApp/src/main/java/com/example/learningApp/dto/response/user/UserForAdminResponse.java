@@ -16,6 +16,7 @@ public class UserForAdminResponse {
     private String fullName;
     private Boolean enabled;
     private String avatarUrl;
+    private String role;
 
     // --- CÁC TRƯỜNG CẦN BỔ SUNG CHO DASHBOARD ---
 

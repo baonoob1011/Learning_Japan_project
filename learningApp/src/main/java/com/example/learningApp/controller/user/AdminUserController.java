@@ -31,10 +31,32 @@ public class AdminUserController {
 
     }
 
+    @GetMapping("/manager")
+    public ResponseEntity<ApiResponse<PageResponse<UserForAdminResponse>>> getAllUsersManager(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search
+    ){
+        PageResponse<UserForAdminResponse> response = userService.getAllUsersManager(page, size, search);
+        return ResponseEntity.ok(ApiResponse.success("Users retrieved successfully", response));
+
+    }
+
     @DeleteMapping("/delete-account")
-// @PreAuthorize("hasRole('ADMIN')") // Nên chặn quyền nếu cần
     public ResponseEntity<ApiResponse<String>> deleteAccount(@RequestParam String email) {
         userService.deleteUser(email);
         return ResponseEntity.ok(ApiResponse.success("Account deleted permanently", null));
+    }
+
+    @PostMapping("/ban/{email}")
+    public ResponseEntity<ApiResponse<String>> banUser(@PathVariable String email) {
+        userService.banUser(email);
+        return ResponseEntity.ok(ApiResponse.success("User banned successfully", null));
+    }
+
+    @PostMapping("/unban/{email}")
+    public ResponseEntity<ApiResponse<String>> unbanUser(@PathVariable String email) {
+        userService.unbanUser(email);
+        return ResponseEntity.ok(ApiResponse.success("User unbanned successfully", null));
     }
 }

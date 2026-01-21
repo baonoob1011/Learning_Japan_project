@@ -3,6 +3,7 @@ package com.example.learningApp.service.user;
 import com.example.learningApp.common.PageResponse;
 import com.example.learningApp.dto.response.user.UserForAdminResponse;
 import com.example.learningApp.dto.response.user.UserResponse;
+import com.example.learningApp.entity.Role;
 import com.example.learningApp.entity.User;
 import com.example.learningApp.mapper.UserMapper;
 import com.example.learningApp.repository.UserLearningProgressRepository;
@@ -19,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
@@ -109,6 +111,26 @@ public class UserService {
         }
     }
 
+    public PageResponse<UserForAdminResponse> getAllUsersManager(int page, int size, String search){
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<User> userPage;
+        if (search == null) {
+            userPage = userRepository.findAll(pageable);
+        }else {
+            userPage = userRepository.findByEmailContainingIgnoreCaseOrFullNameContainingIgnoreCase(
+                    search, search, pageable);
+        }
+
+        List<UserForAdminResponse> userForAdminResponse = userPage.getContent().stream().map(this::mapToUserResponse).toList();
+        return PageResponse.<UserForAdminResponse>builder()
+                .page(page)
+                .totalPages(userPage.getTotalPages())
+                .size(userPage.getSize())
+                .totalElements(userPage.getTotalElements())
+                .data(userForAdminResponse)
+                .build();
+    }
+
     public PageResponse<UserForAdminResponse> getAllUsers(int page, int size, String search) {
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by("createdAt").descending());
 
@@ -168,14 +190,51 @@ public class UserService {
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .enabled(user.getEnabled())
+                .role(String.valueOf(user.getRoles().stream().map(Role::getRoleName).collect(Collectors.toList())))
                 .avatarUrl(user.getAvatarUrl())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();
     }
 
+    @Transactional
+    public void banUser(String email) {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+        user.setEnabled(false);
+        userRepository.save(user);
+
+        try {
+            // Disable user in Cognito
+            cognitoClient.adminDisableUser(AdminDisableUserRequest.builder()
+                    .userPoolId(userPoolId)
+                    .username(email)
+                    .build());
+        } catch (Exception e) {
+            throw new RuntimeException("Ban user failed", e);
+        }
+    }
+
+    @Transactional
+    public void unbanUser(String email) {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+        user.setEnabled(true);
+        userRepository.save(user);
+
+        try {
+            // Enable user in Cognito
+            cognitoClient.adminEnableUser(AdminEnableUserRequest.builder()
+                    .userPoolId(userPoolId)
+                    .username(email)
+                    .build());
+        } catch (Exception e) {
+            throw new RuntimeException("Unban user failed", e);
+        }
+    }
 
     public void deleteUser(String email) {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+        userRepository.delete(user);
+
         try {
             // Xoá user trong Cognito
             cognitoClient.adminDeleteUser(AdminDeleteUserRequest.builder()
@@ -187,6 +246,7 @@ public class UserService {
         }
     }
 
+    //============== USER ==================
     public UserResponse getMyInfo() {
         var context = SecurityContextHolder.getContext();
         String userId = context.getAuthentication().getName();
