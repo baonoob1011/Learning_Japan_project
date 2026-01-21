@@ -10,6 +10,5 @@ public class VideoProgressRequest {
     private String videoId;
     private Long lastPositionSeconds;   // giây hiện tại
     private Long watchedSecondsDelta;   // xem thêm bao nhiêu giây
-    private boolean completed;
 
 }
