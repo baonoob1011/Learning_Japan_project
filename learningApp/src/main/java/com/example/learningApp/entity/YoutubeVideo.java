@@ -36,7 +36,12 @@ public class YoutubeVideo {
     @Enumerated(EnumType.STRING)
     private VideoStatus videoStatus = VideoStatus.NEW;
 
-
+    @OneToMany(
+            mappedBy = "video",
+            fetch = FetchType.LAZY,
+            cascade = CascadeType.ALL
+    )
+    Set<UserVideoTracking> videoTrackings;
 
     private String channelTitle;
     private String duration;           // PT2H35M54S

@@ -39,6 +39,21 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @OneToMany(
+            mappedBy = "user",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    private Set<UserVocabProgress> vocabProgresses = new HashSet<>();
+
+    @OneToMany(
+            mappedBy = "user",
+            cascade = CascadeType.ALL,
+            fetch = FetchType.LAZY
+    )
+    Set<UserVideoTracking> videoTrackings;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "user_roles",

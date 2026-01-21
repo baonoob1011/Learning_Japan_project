@@ -83,8 +83,13 @@ public class AwsConfig {
     @Bean
     public TranslateClient translateClient() {
         return TranslateClient.builder()
-                .region(Region.US_EAST_1) // Tokyo (gần VN, nhanh)
-                .credentialsProvider(DefaultCredentialsProvider.create())
+                .region(Region.US_EAST_1)
+                .credentialsProvider(
+                        StaticCredentialsProvider.create(
+                                AwsBasicCredentials.create(accessKeyNam, secretKeyNam)
+                        )
+                )
                 .build();
     }
+
 }
