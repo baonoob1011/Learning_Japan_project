@@ -32,5 +32,15 @@ public interface UserRepository extends JpaRepository<User,String> {
 
     Page<User> findByEmailContainingIgnoreCaseOrFullNameContainingIgnoreCase(String email, String fullName, Pageable pageable);
 
-    void deleteByEmail(String email);
+    @Query(
+            value = """
+                    SELECT 
+                        COUNT(*) AS total_users,
+                        SUM(CASE WHEN enabled = true THEN 1 ELSE 0 END) AS active_users,
+                        SUM(CASE WHEN enabled = false THEN 1 ELSE 0 END) AS inactive_users
+                    FROM users
+                    """,
+            nativeQuery = true
+    )
+    Object getUserStatisticsRaw();
 }

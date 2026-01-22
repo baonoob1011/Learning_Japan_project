@@ -1,8 +1,10 @@
 package com.example.learningApp.service.user;
 
 import com.example.learningApp.common.PageResponse;
+import com.example.learningApp.dto.request.user.DeleteUsersRequest;
 import com.example.learningApp.dto.response.user.UserForAdminResponse;
 import com.example.learningApp.dto.response.user.UserResponse;
+import com.example.learningApp.dto.response.user.UserStatsResponse;
 import com.example.learningApp.entity.Role;
 import com.example.learningApp.entity.User;
 import com.example.learningApp.mapper.UserMapper;
@@ -244,6 +246,37 @@ public class UserService {
         } catch (Exception e) {
             throw new RuntimeException("Delete user failed", e);
         }
+    }
+
+    public void deleteUsers(DeleteUsersRequest request) {
+        for (String email : request.getEmails()) {
+            try {
+                // Tái sử dụng hàm delete đơn lẻ ở trên
+                deleteUser(email);
+            } catch (Exception e) {
+                // Log lỗi nếu cần, nhưng tiếp tục xóa người tiếp theo
+                System.err.println("Lỗi khi xóa user " + email + ": " + e.getMessage());
+                // Tùy nghiệp vụ: Bạn có thể throw lỗi để dừng hẳn hoặc bỏ qua để xóa tiếp
+            }
+        }
+    }
+
+    // UserService.java
+    public UserStatsResponse getUserStats() {
+        Object result = userRepository.getUserStatisticsRaw();
+
+        // Vì query aggregate trả về 1 dòng duy nhất nên ta ép kiểu sang Object[]
+        if (result instanceof Object[] row) {
+
+            // Cách an toàn nhất là ép về Number rồi lấy longValue().
+            long total = ((Number) row[0]).longValue();
+            long active = ((Number) row[1]).longValue();
+            long banned = ((Number) row[2]).longValue();
+
+            return new UserStatsResponse(total, active, banned);
+        }
+
+        return new UserStatsResponse(0, 0, 0);
     }
 
     //============== USER ==================

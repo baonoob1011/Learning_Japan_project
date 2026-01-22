@@ -2,8 +2,10 @@ package com.example.learningApp.controller.user;
 
 import com.example.learningApp.common.PageResponse;
 import com.example.learningApp.dto.ApiResponse;
+import com.example.learningApp.dto.request.user.DeleteUsersRequest;
 import com.example.learningApp.dto.response.user.UserForAdminResponse;
 import com.example.learningApp.dto.response.user.UserResponse;
+import com.example.learningApp.dto.response.user.UserStatsResponse;
 import com.example.learningApp.service.user.UserService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +13,8 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/admin/users")
@@ -48,6 +52,12 @@ public class AdminUserController {
         return ResponseEntity.ok(ApiResponse.success("Account deleted permanently", null));
     }
 
+    @DeleteMapping("/delete-accounts")
+    public ResponseEntity<ApiResponse<String>> deleteManyUsers(@RequestBody DeleteUsersRequest emails) {
+        userService.deleteUsers(emails);
+        return ResponseEntity.ok(ApiResponse.success("Accounts deleted permanently", null));
+    }
+
     @PostMapping("/ban/{email}")
     public ResponseEntity<ApiResponse<String>> banUser(@PathVariable String email) {
         userService.banUser(email);
@@ -58,5 +68,11 @@ public class AdminUserController {
     public ResponseEntity<ApiResponse<String>> unbanUser(@PathVariable String email) {
         userService.unbanUser(email);
         return ResponseEntity.ok(ApiResponse.success("User unbanned successfully", null));
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<UserStatsResponse>> getUserStatistics() {
+        UserStatsResponse response = userService.getUserStats();
+        return ResponseEntity.ok(ApiResponse.success("User statistics retrieved successfully", response));
     }
 }
