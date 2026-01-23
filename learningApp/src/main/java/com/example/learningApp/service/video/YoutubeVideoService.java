@@ -1,6 +1,7 @@
 package com.example.learningApp.service.video;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.example.learningApp.common.EntityFinder;
 import com.example.learningApp.component.kafka.Producer;
 import com.example.learningApp.dto.cache.VocabCache;
 import com.example.learningApp.dto.event.YoutubeTranscribeMessage;
@@ -65,6 +66,7 @@ public class YoutubeVideoService {
     @Value("${aws.region-nam}")
     private String awsRegion;
 
+    private final EntityFinder finder;
     private final Producer producer;
     private final YoutubeVideoRepository youtubeVideoRepository;
     private final YoutubeVideoMapper youtubeVideoMapper;
@@ -109,11 +111,8 @@ public class YoutubeVideoService {
 
     public void saveVideoForUser(String videoId) {
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String userId = authentication.getName();
+        var user = finder.userById();
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
         YoutubeVideo video = youtubeVideoRepository.findById(videoId)
                 .orElseThrow(() -> new RuntimeException("Video not found"));
 
@@ -165,8 +164,7 @@ public class YoutubeVideoService {
     // Lấy video theo ID
     public Void getVideoById(String id) {
         // Lấy video, nếu không tồn tại thì throw
-        YoutubeVideo video = youtubeVideoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Video not found with id: " + id));
+        var video = finder.videoById(id);
 
         // Lấy vocab liên quan và cache từng vocab riêng lẻ
         List<Vocab> vocabList = vocabRepository.findAllByVideoId(id);

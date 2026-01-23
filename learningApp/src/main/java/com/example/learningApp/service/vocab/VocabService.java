@@ -1,5 +1,6 @@
 package com.example.learningApp.service.vocab;
 
+import com.example.learningApp.common.EntityFinder;
 import com.example.learningApp.dto.cache.VocabCache;
 import com.example.learningApp.dto.request.vocab.CreateVocabRequest;
 import com.example.learningApp.dto.request.vocab.UpdateVocabRequest;
@@ -34,6 +35,7 @@ import java.util.List;
 public class VocabService {
     VocabRepository vocabRepository;
     VocabMapper vocabMapper;
+    EntityFinder finder;
     YoutubeVideoRepository youtubeVideoRepository;
     TranslateService translateService;
     UserRepository userRepository;
@@ -58,8 +60,8 @@ public class VocabService {
     public void createVocab(CreateVocabRequest request) {
         Vocab vocab = vocabMapper.toVocab(request);
 
-        YoutubeVideo video = youtubeVideoRepository.findById(request.getVideoId())
-                .orElseThrow(() -> new RuntimeException("Video not found"));
+        var video = finder.videoById(request.getVideoId());
+
 
         Vocab savedVocab = vocabRepository.findBySurface(vocab.getSurface())
                 .orElseGet(() -> vocabRepository.save(vocab));
@@ -136,12 +138,8 @@ public class VocabService {
     }
     public Void saveVocabForCurrentUser(String surface) {
 
-        // 1️⃣ Lấy userId từ sub
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String userId = authentication.getName();
+        var user = finder.userById();
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
 
         Vocab vocab = vocabRepository.findBySurface(surface)
                 .orElseThrow(() -> new RuntimeException("Vocab not found"));
@@ -159,12 +157,8 @@ public class VocabService {
     }
 
     public List<VocabResponse> getSavedVocabsOfCurrentUser() {
+        var user = finder.userById();
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String userId = authentication.getName();
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
 
         return user.getSavedVocabs()
                 .stream()
@@ -175,12 +169,8 @@ public class VocabService {
     @Transactional
     public void removeVocabForCurrentUser(String surface) {
 
-        // 1️⃣ Lấy user hiện tại
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String userId = authentication.getName();
+        var user = finder.userById();
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
 
         // 2️⃣ Tìm vocab
         Vocab vocab = vocabRepository.findBySurface(surface)

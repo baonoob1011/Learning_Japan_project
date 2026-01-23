@@ -31,4 +31,12 @@ public class Vocab {
     @ManyToMany(mappedBy = "savedVocabs")
     private Set<User> users = new HashSet<>();
 
+    // ===== Vocab learning progress =====
+    @OneToMany(
+            mappedBy = "vocab",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    private Set<UserVocabProgress> vocabProgresses = new HashSet<>();
 }
