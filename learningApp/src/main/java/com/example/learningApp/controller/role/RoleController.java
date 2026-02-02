@@ -1,8 +1,7 @@
 package com.example.learningApp.controller.role;
 
-import com.example.learningApp.dto.ApiResponse;
+import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.request.role.AssignRoleRequest;
-import com.example.learningApp.dto.request.role.CreateRoleRequest;
 import com.example.learningApp.service.role.RoleService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;

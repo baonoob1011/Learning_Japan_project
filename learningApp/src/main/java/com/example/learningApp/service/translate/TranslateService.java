@@ -1,213 +1,154 @@
 package com.example.learningApp.service.translate;
 
 import com.atilika.kuromoji.ipadic.Token;
-import com.atilika.kuromoji.ipadic.Tokenizer;
-import com.example.learningApp.component.kafka.Producer;
+import com.example.learningApp.common.cache.CacheService;
+import com.example.learningApp.common.kafka.Producer;
 import com.example.learningApp.dto.cache.VocabCache;
+import com.example.learningApp.dto.request.translate.TranslateRequest;
 import com.example.learningApp.dto.request.vocab.CreateVocabRequest;
 import com.example.learningApp.dto.response.translate.TranslateResponse;
-import com.example.learningApp.repository.VocabRepository;
-import com.example.learningApp.service.cloud.S3Service;
-import com.example.learningApp.service.vocab.VocabService;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.learningApp.service.translate.interfaces.AudioService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-import software.amazon.awssdk.core.ResponseBytes;
-import software.amazon.awssdk.services.polly.PollyClient;
-import software.amazon.awssdk.services.polly.model.OutputFormat;
-import software.amazon.awssdk.services.polly.model.SynthesizeSpeechRequest;
-import software.amazon.awssdk.services.polly.model.SynthesizeSpeechResponse;
-import software.amazon.awssdk.services.translate.TranslateClient;
-import software.amazon.awssdk.services.translate.model.TranslateTextRequest;
-import software.amazon.awssdk.services.translate.model.TranslateTextResponse;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
+import java.util.concurrent.CompletableFuture;
 @Service
 @RequiredArgsConstructor
 public class TranslateService {
 
-    private final TranslateClient translateClient;
-    private final PollyClient pollyClient;
-    private final S3Service s3Service;
-    private final Producer producer;
-    private final Tokenizer tokenizer = new Tokenizer();
-    private final RedisTemplate<String, Object> redisTemplate;
-
     private static final String VOCAB_TOPIC = "create-vocab";
 
-    public TranslateResponse translate(String videoId, String text, String source, String target)
-            throws IOException, InterruptedException {
+    private final SentenceTranslateService sentenceTranslateService;
+    private final TokenizeService tokenizeService;
+    private final RomajiService romajiService;
+    private final AudioService audioService;
+    private final CacheService<VocabCache> vocabCacheService;
+    private final Producer producer;
 
-        // 1️⃣ Dịch cả câu
-        TranslateTextResponse sentenceTranslate =
-                translateClient.translateText(
-                        TranslateTextRequest.builder()
-                                .text(text)
-                                .sourceLanguageCode(source)
-                                .targetLanguageCode(target)
-                                .build()
+    public TranslateResponse translate(TranslateRequest request) {
+
+        /*
+         * 1️⃣ Dịch toàn bộ câu
+         * - Chạy async để không block thread chính
+         * - Độc lập hoàn toàn với tokenize & audio
+         */
+        CompletableFuture<String> sentenceTranslatedFuture =
+                CompletableFuture.supplyAsync(() ->
+                        sentenceTranslateService.translate(
+                                request.getText(),
+                                request.getSourceLang(),
+                                request.getTargetLang()
+                        )
                 );
 
-        // 2️⃣ Tokenize
-        List<Token> tokens = tokenizer.tokenize(text);
-        Token token = tokens.get(0);
+        /*
+         * 2️⃣ Tokenize câu (lấy token đầu tiên)
+         * - Là nền tảng cho các bước phía sau (dịch từ + audio)
+         */
+        CompletableFuture<Token> tokenFuture =
+                CompletableFuture.supplyAsync(() ->
+                        tokenizeService.firstToken(request.getText())
+                );
+
+        /*
+         * 3️⃣ Dịch nghĩa của từ (surface)
+         * - Phụ thuộc token nên dùng thenApplyAsync
+         * - Chỉ chạy khi tokenFuture hoàn thành
+         */
+        CompletableFuture<String> targetDefsFuture =
+                tokenFuture.thenApplyAsync(token ->
+                        sentenceTranslateService.translate(
+                                token.getSurface(),
+                                request.getSourceLang(),
+                                request.getTargetLang()
+                        )
+                );
+
+        /*
+         * 4️⃣ Tạo audio cho từ
+         * - Cũng phụ thuộc token
+         * - Chạy song song với targetDefsFuture
+         */
+        CompletableFuture<String> audioFuture =
+                tokenFuture.thenApplyAsync(token ->
+                        audioService.generateAudio(token.getSurface())
+                );
+
+        /*
+         * 5️⃣ Đồng bộ
+         * - Đợi TẤT CẢ future hoàn thành
+         * - Nếu 1 task fail → throw exception tại đây
+         */
+        CompletableFuture.allOf(
+                sentenceTranslatedFuture,
+                tokenFuture,
+                targetDefsFuture,
+                audioFuture
+        ).join();
+
+        /*
+         * 6️⃣ Lấy kết quả từ các Future
+         * - join() an toàn vì đã allOf phía trên
+         */
+        Token token = tokenFuture.join();
 
         String surface = token.getSurface();
         String reading = token.getReading() != null ? token.getReading() : surface;
-        String romaji = toRomaji(reading);
+        String romaji = romajiService.toRomaji(reading);
         String partOfSpeech = token.getPartOfSpeechLevel1();
 
-        // 3️⃣ targetDefs = nghĩa của từ
-        TranslateTextResponse defTranslate =
-                translateClient.translateText(
-                        TranslateTextRequest.builder()
-                                .text(surface)
-                                .sourceLanguageCode("ja")
-                                .targetLanguageCode(target)
-                                .build()
-                );
+        String sentenceTranslated = sentenceTranslatedFuture.join();
+        String targetDefs = targetDefsFuture.join();
+        String audioUrl = audioFuture.join();
 
-        String targetDefs = defTranslate.translatedText();
-
-        // 4️⃣ Polly audio
-        byte[] audioBytes;
-        try (var res = pollyClient.synthesizeSpeech(
-                SynthesizeSpeechRequest.builder()
-                        .text(surface)
-                        .voiceId("Mizuki")
-                        .outputFormat(OutputFormat.MP3)
-                        .build()
-        )) {
-            audioBytes = res.readAllBytes();
-        }
-
-        String audioUrl = s3Service.uploadBytes(audioBytes, "tts", ".mp3");
-
-        // 5️⃣ Kafka
-        CreateVocabRequest vocab = CreateVocabRequest.builder()
-                .videoId(videoId)
+        /*
+         * 7️⃣ Gửi Kafka để tạo vocab
+         * - Xử lý async ở service khác
+         */
+        CreateVocabRequest vocabRequest = CreateVocabRequest.builder()
+                .videoId(request.getVideoId())
                 .surface(surface)
                 .reading(reading)
                 .romaji(romaji)
-                .translated(sentenceTranslate.translatedText())
+                .translated(sentenceTranslated)
                 .partOfSpeech(partOfSpeech)
                 .targetDefs(targetDefs)
                 .audioUrl(audioUrl)
                 .build();
 
-        producer.send(VOCAB_TOPIC, videoId, vocab);
+        producer.send(VOCAB_TOPIC, request.getVideoId(), vocabRequest);
 
-        // 6️⃣ Redis cache
+        /*
+         * 8️⃣ Cache Redis
+         * - Giúp lần sau load nhanh, không cần dịch + audio lại
+         */
         VocabCache cache = new VocabCache(
-                videoId + "_" + surface,
+                request.getVideoId() + "_" + surface,
                 surface,
                 romaji,
-                sentenceTranslate.translatedText(),
+                sentenceTranslated,
                 reading,
                 targetDefs,
                 partOfSpeech,
                 audioUrl
         );
 
-        redisTemplate.opsForValue().set(
-                "vocabCache:" + videoId + "_" + surface,
-                cache,
-                Duration.ofHours(1)
-        );
+        vocabCacheService.save(request.getVideoId() + "_" + surface, cache);
 
-        // 7️⃣ Response
+        /*
+         * 9️⃣ Trả response cho client
+         * - Chỉ trả khi tất cả xử lý đã hoàn thành
+         */
         return new TranslateResponse(
-                videoId,
+                request.getVideoId(),
                 surface,
-                sentenceTranslate.translatedText(),
+                sentenceTranslated,
                 reading,
                 romaji,
                 partOfSpeech,
                 targetDefs,
                 audioUrl
         );
-    }
-
-
-//    // ================= JISHO =================
-//
-//    private String getExplainFromJisho(String surface) throws IOException, InterruptedException {
-//        String url = "https://jisho.org/api/v1/search/words?keyword=" +
-//                URLEncoder.encode(surface, StandardCharsets.UTF_8);
-//
-//        HttpClient client = HttpClient.newHttpClient();
-//        HttpRequest request = HttpRequest.newBuilder()
-//                .uri(URI.create(url))
-//                .timeout(Duration.ofSeconds(10))
-//                .GET()
-//                .build();
-//
-//        HttpResponse<String> response =
-//                client.send(request, HttpResponse.BodyHandlers.ofString());
-//
-//        JsonNode data = objectMapper.readTree(response.body()).get("data");
-//        if (data == null || data.isEmpty()) {
-//            return "Không tìm thấy giải thích";
-//        }
-//
-//        for (JsonNode entry : data) {
-//            for (JsonNode jp : entry.get("japanese")) {
-//                if (jp.has("word") && surface.equals(jp.get("word").asText())
-//                        || jp.has("reading") && surface.equals(jp.get("reading").asText())) {
-//
-//                    JsonNode senses = entry.get("senses");
-//                    if (senses != null && senses.size() > 0) {
-//                        JsonNode sense = senses.get(0);
-//                        return sense.get("english_definitions")
-//                                .elements()
-//                                .next()
-//                                .asText();
-//                    }
-//                }
-//            }
-//        }
-//
-//        return surface.matches("[ァ-ヴー]+")
-//                ? "Danh từ mượn từ tiếng Anh"
-//                : "Không tìm thấy nghĩa phù hợp";
-//    }
-
-
-    private String toRomaji(String katakana) {
-        return katakana
-                .replace("ア", "a").replace("イ", "i").replace("ウ", "u")
-                .replace("エ", "e").replace("オ", "o")
-                .replace("カ", "ka").replace("キ", "ki").replace("ク", "ku")
-                .replace("ケ", "ke").replace("コ", "ko")
-                .replace("サ", "sa").replace("シ", "shi").replace("ス", "su")
-                .replace("セ", "se").replace("ソ", "so")
-                .replace("タ", "ta").replace("チ", "chi").replace("ツ", "tsu")
-                .replace("テ", "te").replace("ト", "to")
-                .replace("ナ", "na").replace("ニ", "ni").replace("ヌ", "nu")
-                .replace("ネ", "ne").replace("ノ", "no")
-                .replace("ハ", "ha").replace("ヒ", "hi").replace("フ", "fu")
-                .replace("ヘ", "he").replace("ホ", "ho")
-                .replace("マ", "ma").replace("ミ", "mi").replace("ム", "mu")
-                .replace("メ", "me").replace("モ", "mo")
-                .replace("ヤ", "ya").replace("ユ", "yu").replace("ヨ", "yo")
-                .replace("ラ", "ra").replace("リ", "ri").replace("ル", "ru")
-                .replace("レ", "re").replace("ロ", "ro")
-                .replace("ワ", "wa").replace("ヲ", "wo").replace("ン", "n");
     }
 }
+

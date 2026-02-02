@@ -1,4 +1,4 @@
-package com.example.learningApp.dto;
+package com.example.learningApp.common;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

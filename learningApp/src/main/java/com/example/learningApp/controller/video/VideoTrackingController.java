@@ -1,6 +1,6 @@
 package com.example.learningApp.controller.video;
 
-import com.example.learningApp.dto.ApiResponse;
+import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.request.video.VideoProgressRequest;
 import com.example.learningApp.dto.response.video.VideoProgressResponse;
 import com.example.learningApp.service.video.UserVideoTrackingService;

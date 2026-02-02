@@ -1,6 +1,6 @@
 package com.example.learningApp.controller.auth;
 
-import com.example.learningApp.dto.ApiResponse;
+import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.request.auth.LogoutRequest;
 import com.example.learningApp.dto.request.auth.RefreshTokenRequest;
 import com.example.learningApp.dto.request.auth.UserLoginRequest;

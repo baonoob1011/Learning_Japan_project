@@ -1,6 +1,6 @@
 package com.example.learningApp.controller.pronunciation;
 
-import com.example.learningApp.dto.ApiResponse;
+import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.response.pronunciation.PronunciationResultResponse;
 import com.example.learningApp.service.pronunciation.PronunciationService;
 import lombok.AccessLevel;

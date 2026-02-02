@@ -1,6 +1,6 @@
 package com.example.learningApp.controller.prgress;
 
-import com.example.learningApp.dto.ApiResponse;
+import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.response.progress.DailyProgressResponse;
 import com.example.learningApp.service.progress.UserLearningProgressService;
 import com.example.learningApp.dto.response.dashboard.UserLearningDashboardResponse;
@@ -11,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.file.attribute.UserPrincipal;
 import java.util.List;
 
 @RestController

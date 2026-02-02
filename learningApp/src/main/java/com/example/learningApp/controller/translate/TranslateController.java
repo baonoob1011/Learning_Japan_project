@@ -1,9 +1,8 @@
 package com.example.learningApp.controller.translate;
 
-import com.example.learningApp.dto.ApiResponse;
+import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.request.translate.TranslateRequest;
 import com.example.learningApp.dto.response.translate.TranslateResponse;
-import com.example.learningApp.service.translate.TranslateService;
 import com.example.learningApp.service.vocab.VocabService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,10 +26,7 @@ public class TranslateController {
             @RequestBody @Valid TranslateRequest request
     ) throws IOException, InterruptedException {
         TranslateResponse result = vocabService.findOrTranslate(
-                request.getVideoId(),
-                request.getText(),
-                request.getSourceLang(),
-                request.getTargetLang()
+                request
         );
 
         return ResponseEntity.ok(

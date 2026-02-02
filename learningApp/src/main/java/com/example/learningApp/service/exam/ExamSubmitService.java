@@ -1,6 +1,6 @@
 package com.example.learningApp.service.exam;
 
-import com.example.learningApp.component.kafka.Producer;
+import com.example.learningApp.common.kafka.Producer;
 import com.example.learningApp.dto.cache.QuestionCache;
 import com.example.learningApp.dto.cache.SectionCache;
 import com.example.learningApp.dto.request.exam.SubmitExamRequest;
@@ -9,10 +9,8 @@ import com.example.learningApp.dto.response.exam.SubmitExamResponse;
 import com.example.learningApp.dto.response.exam.UserExamResultResponse;
 import com.example.learningApp.entity.ExamParticipant;
 import com.example.learningApp.entity.ExamSection;
-import com.example.learningApp.entity.UserExamResult;
 import com.example.learningApp.enums.AssessmentType;
 import com.example.learningApp.repository.ExamParticipantRepository;
-import com.example.learningApp.repository.UserExamResultRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;

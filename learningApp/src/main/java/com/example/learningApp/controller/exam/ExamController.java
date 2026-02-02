@@ -1,6 +1,6 @@
 package com.example.learningApp.controller.exam;
 
-import com.example.learningApp.dto.ApiResponse;
+import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.request.exam.CreateExamRequest;
 import com.example.learningApp.dto.request.exam.StartExamRequest;
 import com.example.learningApp.dto.request.exam.SubmitExamRequest;

@@ -1,7 +1,7 @@
 package com.example.learningApp.controller.transcrip;
 
 
-import com.example.learningApp.dto.ApiResponse;
+import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.response.video.YoutubeTranscriptResponse;
 import com.example.learningApp.service.transcrip.TranscriptService;
 import lombok.RequiredArgsConstructor;

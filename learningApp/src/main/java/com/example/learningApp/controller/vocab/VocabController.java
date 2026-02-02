@@ -1,6 +1,6 @@
 package com.example.learningApp.controller.vocab;
 
-import com.example.learningApp.dto.ApiResponse;
+import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.request.vocab.CreateVocabRequest;
 import com.example.learningApp.dto.request.vocab.UpdateVocabRequest;
 import com.example.learningApp.dto.response.vocab.VocabResponse;

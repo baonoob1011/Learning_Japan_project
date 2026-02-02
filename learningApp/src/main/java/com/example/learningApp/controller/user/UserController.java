@@ -1,6 +1,6 @@
 package com.example.learningApp.controller.user;
 
-import com.example.learningApp.dto.ApiResponse;
+import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.request.user.ChangePasswordRequest;
 import com.example.learningApp.dto.request.user.CreateUserRequest;
 import com.example.learningApp.dto.request.user.ForgotPasswordRequest;

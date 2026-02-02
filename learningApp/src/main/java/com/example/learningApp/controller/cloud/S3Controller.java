@@ -1,8 +1,6 @@
 package com.example.learningApp.controller.cloud;
 
-import com.amazonaws.services.s3.model.ListObjectsV2Request;
-import com.amazonaws.services.s3.model.ListObjectsV2Result;
-import com.example.learningApp.dto.ApiResponse;
+import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.service.cloud.S3Service;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;

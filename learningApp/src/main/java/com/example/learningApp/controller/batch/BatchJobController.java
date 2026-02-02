@@ -1,6 +1,6 @@
 package com.example.learningApp.controller.batch;
 
-import com.example.learningApp.dto.ApiResponse;
+import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.enums.BatchJobType;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;

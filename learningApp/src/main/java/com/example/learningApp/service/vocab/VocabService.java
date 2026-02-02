@@ -2,6 +2,7 @@ package com.example.learningApp.service.vocab;
 
 import com.example.learningApp.common.EntityFinder;
 import com.example.learningApp.dto.cache.VocabCache;
+import com.example.learningApp.dto.request.translate.TranslateRequest;
 import com.example.learningApp.dto.request.vocab.CreateVocabRequest;
 import com.example.learningApp.dto.request.vocab.UpdateVocabRequest;
 import com.example.learningApp.dto.response.translate.TranslateResponse;
@@ -28,6 +29,8 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+
+import static java.awt.SystemColor.text;
 
 @Service
 @RequiredArgsConstructor
@@ -78,8 +81,8 @@ public class VocabService {
     }
 
 
-    public TranslateResponse findOrTranslate(String videoId, String text, String source, String target) throws IOException, InterruptedException {
-        String redisKey = "vocabCache:" + videoId + ":" + text.toLowerCase();
+    public TranslateResponse findOrTranslate(TranslateRequest request) throws IOException, InterruptedException {
+        String redisKey = "vocabCache:" + request.getVideoId() + ":" + request.getText().toLowerCase();
         Object cached = redisTemplate.opsForValue().get(redisKey);
         VocabCache cache = null;
 
@@ -92,7 +95,7 @@ public class VocabService {
         if (cache != null) {
             // Nếu tìm thấy trong Redis
             return new TranslateResponse(
-                    videoId,
+                    request.getVideoId(),
                     cache.getSurface(),
                     cache.getTranslated(),
                     cache.getReading(),
@@ -104,7 +107,7 @@ public class VocabService {
         }
 
         // Nếu không có trong Redis -> tìm trong DB
-        var optionalVocab = vocabRepository.findBySurface(text);
+        var optionalVocab = vocabRepository.findBySurface(request.getText());
         if (optionalVocab.isPresent()) {
             Vocab vocab = optionalVocab.get();
 
@@ -122,7 +125,7 @@ public class VocabService {
             redisTemplate.opsForValue().set(redisKey, newCache, Duration.ofHours(1));
 
             return new TranslateResponse(
-                    videoId,
+                    request.getVideoId(),
                     vocab.getSurface(),
                     vocab.getTranslated(),
                     vocab.getReading(),
@@ -134,7 +137,7 @@ public class VocabService {
         }
 
         // Nếu không tìm thấy -> gọi TranslateService
-        return translateService.translate(videoId, text, source, target);
+        return translateService.translate(request);
     }
     public Void saveVocabForCurrentUser(String surface) {
 

@@ -1,6 +1,6 @@
 package com.example.learningApp.exception;
 
-import com.example.learningApp.dto.ApiResponse;
+import com.example.learningApp.common.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.http.HttpStatus;

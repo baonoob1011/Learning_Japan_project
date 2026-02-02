@@ -1,6 +1,6 @@
 package com.example.learningApp.controller.prgress;
 
-import com.example.learningApp.dto.ApiResponse;
+import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.response.progress.AdminUserProgressResponse;
 import com.example.learningApp.dto.response.progress.DailyProgressResponse;
 import com.example.learningApp.service.progress.AdminLearningService;

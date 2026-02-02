@@ -1,4 +1,4 @@
-package com.example.learningApp.component.kafka;
+package com.example.learningApp.common.kafka;
 
 
 import com.example.learningApp.dto.request.progress.UpdateUserLearningProgressRequest;

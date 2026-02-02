@@ -105,10 +105,6 @@ public class YoutubeTranscribeConsumer {
                     .build();
 
             youtubeVideoSearchRepository.save(document);
-
-
-
-
             youtubeVideoService.deleteFromS3(s3Key);
 
         } catch (Exception e) {

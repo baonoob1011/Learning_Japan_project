@@ -1,11 +1,8 @@
 package com.example.learningApp.controller.exam;
 
-import com.example.learningApp.dto.ApiResponse;
+import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.request.exam.CreateQuestionRequest;
-import com.example.learningApp.dto.request.exam.CreateSectionRequest;
 import com.example.learningApp.dto.response.exam.QuestionResponse;
-import com.example.learningApp.dto.response.exam.SectionResponse;
-import com.example.learningApp.service.exam.ExamSectionService;
 import com.example.learningApp.service.exam.QuestionService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
