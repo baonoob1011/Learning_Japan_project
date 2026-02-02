@@ -1,20 +1,19 @@
-package com.example.learningApp.service.translate;
+package com.example.learningApp.service.vocab;
 
 import com.example.learningApp.common.AbstractRedisCacheService;
+import com.example.learningApp.common.cache.CacheService;
 import com.example.learningApp.dto.cache.VocabCache;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 
-/**
- * Redis implementation for caching vocabulary data.
- */
 @Service
-public class RedisVocabCacheService
+public class VocabCacheRedisService
         extends AbstractRedisCacheService<VocabCache> {
 
-    public RedisVocabCacheService(RedisTemplate<String, Object> redisTemplate) {
+    public VocabCacheRedisService(RedisTemplate<String, Object> redisTemplate) {
         super(redisTemplate);
     }
 
@@ -33,3 +32,5 @@ public class RedisVocabCacheService
         return VocabCache.class;
     }
 }
+
+

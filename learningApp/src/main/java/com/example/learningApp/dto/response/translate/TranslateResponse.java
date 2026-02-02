@@ -20,4 +20,5 @@ public class TranslateResponse {
     private String targetDefs;    // nghĩa ngôn ngữ đích
     private String audioUrl;   // audio lưu đường dẫn s3
 
+
 }

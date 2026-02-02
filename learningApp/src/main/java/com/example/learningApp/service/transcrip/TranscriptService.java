@@ -1,7 +1,9 @@
 package com.example.learningApp.service.transcrip;
 
+import com.example.learningApp.common.EntityFinder;
 import com.example.learningApp.dto.response.video.YoutubeTranscriptResponse;
 import com.example.learningApp.entity.YoutubeVideo;
+import com.example.learningApp.exception.NotFoundException;
 import com.example.learningApp.repository.YoutubeVideoRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -14,18 +16,19 @@ import software.amazon.awssdk.services.transcribe.model.TranscribeException;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class TranscriptService {
 
-    YoutubeVideoRepository youtubeVideoRepository;
- TranscribeClient transcribeClient;
+    TranscribeClient transcribeClient;
+    EntityFinder finder;
+
     public YoutubeTranscriptResponse getTranscriptsByVideoId(String videoId) {
         // Lấy video
-        YoutubeVideo video = youtubeVideoRepository.findById(videoId)
-                .orElseThrow(() -> new RuntimeException("Video not found with id: " + videoId));
+        var video = finder.videoById(videoId);
 
         // Sắp xếp transcript theo startOffset
         List<YoutubeTranscriptResponse.transcriptsDTO> transcriptDTOs = video.getYoutubeTranscripts().stream()
@@ -49,6 +52,7 @@ public class TranscriptService {
                 .transcriptsDTOS(transcriptDTOs)
                 .build();
     }
+
     public void deleteTranscriptionJob(String jobName) {
         try {
             DeleteTranscriptionJobRequest request = DeleteTranscriptionJobRequest.builder()

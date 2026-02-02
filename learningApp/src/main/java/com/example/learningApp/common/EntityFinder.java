@@ -4,6 +4,7 @@ package com.example.learningApp.common;
 import com.example.learningApp.entity.User;
 import com.example.learningApp.entity.Vocab;
 import com.example.learningApp.entity.YoutubeVideo;
+import com.example.learningApp.exception.NotFoundException;
 import com.example.learningApp.repository.UserRepository;
 import com.example.learningApp.repository.VocabRepository;
 import com.example.learningApp.repository.YoutubeVideoRepository;
@@ -29,22 +30,28 @@ public class EntityFinder {
         return findOrThrow(
                 userRepository,
                 SecurityContextHolder.getContext().getAuthentication().getName(),
-                () -> new RuntimeException("User not found")
+                () -> new NotFoundException("User not found")
         );
     }
+    public Vocab vocabBySurface(String surface) {
+        return vocabRepository.findBySurface(surface)
+                .orElseThrow(() ->
+                        new NotFoundException("Vocab not found: " + surface)
+                );
+    }
 
-    public YoutubeVideo videoById(String videoId) {
+    public YoutubeVideo videoById(String surface) {
         return findOrThrow(
                 youtubeVideoRepository,
-                videoId,
-                () -> new RuntimeException("Video not found")
+                surface,
+                () -> new NotFoundException("Video not found")
         );
     }
     public Vocab vocabId(String vocabId) {
         return findOrThrow(
                 vocabRepository,
                 vocabId,
-                () -> new RuntimeException("Vocab not found")
+                () -> new NotFoundException("Vocab not found")
         );
     }
 }

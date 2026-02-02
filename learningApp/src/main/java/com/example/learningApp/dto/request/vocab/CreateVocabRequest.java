@@ -19,4 +19,5 @@ public class CreateVocabRequest {
     private String targetDefs;    // nghĩa ngôn ngữ đích
     private String explain;      // đường dẫn audio S3 (nếu đã tạo sẵn)
     private String audioUrl;      // đường dẫn audio S3 (nếu đã tạo sẵn)
+
 }
