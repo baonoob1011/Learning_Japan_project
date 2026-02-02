@@ -1,0 +1,37 @@
+package com.example.learningApp.controller.vocab;
+
+import com.example.learningApp.common.ApiResponse;
+import com.example.learningApp.dto.request.vocab.MarkVocabRequest;
+import com.example.learningApp.service.vocab.TrackingVocabLearningService;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/v1/learning")
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public class TrackingVocabLearningController {
+
+    TrackingVocabLearningService learningService;
+
+    /**
+     * ✅ User đánh dấu từ vựng: thuộc / chưa thuộc
+     * UI: nút "Chưa thuộc" / "Thuộc"
+     */
+    @PostMapping("/vocab/mark")
+    public ResponseEntity<ApiResponse<Void>> markVocab(
+            @RequestBody MarkVocabRequest request
+    ) {
+        learningService.markVocab(request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Marked vocab learning status successfully",
+                        null
+                )
+        );
+    }
+}

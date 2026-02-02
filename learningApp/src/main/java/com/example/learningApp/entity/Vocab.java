@@ -38,5 +38,5 @@ public class Vocab {
             orphanRemoval = true,
             fetch = FetchType.LAZY
     )
-    private Set<UserVocabProgress> vocabProgresses = new HashSet<>();
+    private Set<UserVocabProgress> vocabProgresses;
 }

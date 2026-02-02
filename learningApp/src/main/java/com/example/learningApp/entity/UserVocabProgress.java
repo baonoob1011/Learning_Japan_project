@@ -1,5 +1,6 @@
 package com.example.learningApp.entity;
 
+import com.example.learningApp.enums.LearningStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,38 +17,20 @@ public class UserVocabProgress {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    // ===== User =====
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id")
     private User user;
 
-    // ===== Vocab =====
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "vocab_id", nullable = false)
+    @JoinColumn(name = "vocab_id")
     private Vocab vocab;
 
-    // ===== Progress =====
-    @Builder.Default
-    @Column(nullable = false)
-    private Integer reviewCount = 0;
+    @Enumerated(EnumType.STRING)
+    private LearningStatus status = LearningStatus.NOT_LEARNED;
 
+    private int reviewCount = 0;
 
-    @Column(nullable = false)
-    private Boolean mastered = false; // user tự đánh dấu
+    private LocalDateTime lastReviewedAt;
+    private LocalDateTime nextReminderAt;
 
-    private LocalDateTime nextReviewAt;
-
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = createdAt;
-    }
-
-    @PreUpdate
-    void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

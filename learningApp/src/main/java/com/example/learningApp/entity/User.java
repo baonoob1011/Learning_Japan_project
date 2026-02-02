@@ -39,13 +39,6 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @OneToMany(
-            mappedBy = "user",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true,
-            fetch = FetchType.LAZY
-    )
-    private Set<UserVocabProgress> vocabProgresses = new HashSet<>();
 
     @OneToMany(
             mappedBy = "user",
@@ -78,6 +71,14 @@ public class User {
             fetch = FetchType.LAZY
     )
     private Set<UserExamResult> userExamResults;
+
+    @OneToMany(
+            mappedBy = "user",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    private Set<UserVocabProgress> vocabProgresses;
 
     @OneToMany(
             mappedBy = "user",
