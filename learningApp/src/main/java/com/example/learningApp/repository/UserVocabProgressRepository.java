@@ -13,29 +13,20 @@ import java.util.Optional;
 public interface UserVocabProgressRepository extends JpaRepository<UserVocabProgress, Long> {
 
     Optional<UserVocabProgress> findByUserAndVocab(User user, Vocab vocab);
-    // tìm tiến trình học của 1 từ theo user
-    List<UserVocabProgress>
-    findByUserAndLastReviewedAtLessThanEqualAndStatusNot(
-            User user,
-            LocalDateTime time,
-            LearningStatus status
-    );
-    List<UserVocabProgress>
-    findByLastReviewedAtLessThanEqualAndStatusIn(
-            LocalDateTime time,
-            List<LearningStatus> statuses
-    );
+
+    List<UserVocabProgress> findByStatusIn(List<LearningStatus> statuses);
+
     // ===== dùng khi user bấm nút =====
     Optional<UserVocabProgress> findByUserAndVocab_Id(
             User user,
             String vocabId
     );
 
-    // ===== scheduler: quá 3 ngày chưa học + chưa KNOWN =====
-    List<UserVocabProgress> findByLastReviewedAtLessThanEqualAndStatusNot(
-            LocalDateTime time,
-            LearningStatus status
+    List<UserVocabProgress> findByStatusAndLastReviewedAtLessThanEqual(
+            LearningStatus status,
+            LocalDateTime time
     );
+
 
 }
 

@@ -23,25 +23,21 @@ public class VocabReminderScheduler {
     private final UserVocabProgressRepository progressRepo;
     private final NotificationService notificationService;
 
-    // test: 10s | prod: 5–15 phút
+    // test: 10s | prod: 1 lần / ngày
     @Scheduled(fixedDelay = 10 * 1000)
     @Transactional
     public void remindForgottenVocabs() {
 
-        LocalDateTime threeDaysAgo = LocalDateTime.now().minusDays(3);
         LocalDateTime oneDayAgo = LocalDateTime.now().minusDays(1);
 
-        // 🔥 chỉ tính vocab CHƯA THUỘC
         List<LearningStatus> NEED_REVIEW =
                 List.of(LearningStatus.FORGOTTEN, LearningStatus.LEARNING);
 
+        // 🔥 LẤY TOÀN BỘ vocab chưa thuộc
         List<UserVocabProgress> dueList =
-                progressRepo.findByLastReviewedAtLessThanEqualAndStatusIn(
-                        threeDaysAgo,
-                        NEED_REVIEW
-                );
+                progressRepo.findByStatusIn(NEED_REVIEW);
 
-        // 🔥 lọc chống spam + group theo user
+        // 🔥 chống spam + group theo user
         Map<User, List<UserVocabProgress>> byUser =
                 dueList.stream()
                         .filter(p ->
@@ -60,21 +56,18 @@ public class VocabReminderScheduler {
 
             if (count == 0) continue;
 
-            // 🔔 1 NOTIFICATION / USER
             notificationService.create(
                     user,
                     "📚 Nhắc ôn từ vựng",
                     "Bạn có " + count + " từ chưa thuộc cần ôn hôm nay"
             );
 
-            // ⏰ cập nhật lastReminderSentAt cho toàn bộ vocab
             LocalDateTime now = LocalDateTime.now();
             list.forEach(p -> p.setLastReminderSentAt(now));
-
             progressRepo.saveAll(list);
 
             System.out.println(
-                    "🔔 Reminder sent | user=" + user.getId()
+                    "🔔 Daily reminder | user=" + user.getId()
                             + " | count=" + count
             );
         }
