@@ -12,12 +12,14 @@ import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
@@ -27,6 +29,15 @@ public class UserController {
     AuthService authService;
     UserService userService;
     AvatarService avatarService;
+
+
+//    @PostMapping("/online")
+//    public ResponseEntity<ApiResponse<Void>> userOnline() {
+//        vocabLoginReminderService.remindWhenUserOnline();
+//        log.info("co duoc goi");
+//        return ResponseEntity.ok(ApiResponse.success("User online processed", null));
+//    }
+
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<UserResponse>> registerUser(@RequestBody @Valid CreateUserRequest request) {

@@ -1,12 +1,11 @@
 package com.example.learningApp.service.vocab;
 
-
-import com.example.learningApp.common.CurrentUserService;
 import com.example.learningApp.common.EntityFinder;
 import com.example.learningApp.dto.request.vocab.MarkVocabRequest;
-import com.example.learningApp.entity.*;
+import com.example.learningApp.entity.User;
+import com.example.learningApp.entity.UserVocabProgress;
+import com.example.learningApp.entity.Vocab;
 import com.example.learningApp.enums.LearningStatus;
-import com.example.learningApp.repository.UserRepository;
 import com.example.learningApp.repository.UserVocabProgressRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,44 +20,53 @@ public class TrackingVocabLearningService {
     private final EntityFinder finder;
 
     public void markVocab(MarkVocabRequest request) {
-        var user=finder.userById();
-        var vocab=finder.vocabId(request.getVocabId());
-        UserVocabProgress progress =
-                progressRepo.findByUserAndVocab(user, vocab)
-                        .orElseGet(() -> createNewProgress(user, vocab));
 
-        progress.setLastReviewedAt(LocalDateTime.now());
-        progress.setReviewCount(progress.getReviewCount() + 1);
+        User user = finder.userById();
+        Vocab vocab = finder.vocabId(request.getVocabId());
+
+        UserVocabProgress progress = progressRepo
+                .findByUserAndVocab_Id(user, vocab.getId())
+                .orElseGet(() -> createNewProgress(user, vocab));
+
+        LocalDateTime now = LocalDateTime.now();
+        progress.setLastReviewedAt(now);
 
         if (request.isRemembered()) {
-            if (progress.getReviewCount() >= 3) {
-                progress.setStatus(LearningStatus.MASTERED);
-                progress.setNextReminderAt(null);
-            } else {
-                progress.setStatus(LearningStatus.LEARNING);
-                progress.setNextReminderAt(nextReminder(progress.getReviewCount()));
-            }
+            handleRemembered(progress);
         } else {
-            progress.setStatus(LearningStatus.LEARNING);
-            progress.setNextReminderAt(nextReminder(progress.getReviewCount()));
+            handleForgotten(progress);
         }
 
         progressRepo.save(progress);
     }
 
-    private UserVocabProgress createNewProgress(User user, Vocab vocab) {
-        UserVocabProgress p = new UserVocabProgress();
-        p.setUser(user);
-        p.setVocab(vocab);
-        return p;
+    // ================= PRIVATE =================
+
+    private void handleRemembered(UserVocabProgress p) {
+
+        p.setReviewCount(p.getReviewCount() + 1);
+
+        if (p.getReviewCount() >= 3) {
+            p.setStatus(LearningStatus.KNOWN);
+        } else {
+            p.setStatus(LearningStatus.LEARNING);
+        }
     }
 
-    private LocalDateTime nextReminder(int count) {
-        return switch (count) {
-            case 1 -> LocalDateTime.now().plusHours(6);
-            case 2 -> LocalDateTime.now().plusDays(1);
-            case 3 -> LocalDateTime.now().plusDays(3);
-            default -> LocalDateTime.now().plusDays(7);
-        };
+    private void handleForgotten(UserVocabProgress p) {
+
+        p.setForgottenCount(p.getForgottenCount() + 1);
+        p.setStatus(LearningStatus.FORGOTTEN);
+    }
+
+    private UserVocabProgress createNewProgress(User user, Vocab vocab) {
+        return UserVocabProgress.builder()
+                .user(user)
+                .vocab(vocab)
+                .status(LearningStatus.NEW)
+                .reviewCount(0)
+                .forgottenCount(0)
+                .lastReviewedAt(LocalDateTime.now())
+                .build();
     }
 }

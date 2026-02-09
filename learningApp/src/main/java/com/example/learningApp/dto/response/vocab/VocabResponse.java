@@ -1,5 +1,6 @@
 package com.example.learningApp.dto.response.vocab;
 
+import com.example.learningApp.enums.LearningStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

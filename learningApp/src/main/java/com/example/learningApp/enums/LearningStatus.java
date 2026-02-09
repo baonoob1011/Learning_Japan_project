@@ -1,7 +1,8 @@
 package com.example.learningApp.enums;
 
 public enum LearningStatus {
-    NOT_LEARNED,
-    LEARNING,
-    MASTERED
+    NEW,        // chưa học
+    LEARNING,   // đang học
+    KNOWN,      // đã thuộc
+    FORGOTTEN   // quên
 }

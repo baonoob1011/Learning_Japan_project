@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class UserVocabProgress {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
@@ -26,11 +27,18 @@ public class UserVocabProgress {
     private Vocab vocab;
 
     @Enumerated(EnumType.STRING)
-    private LearningStatus status = LearningStatus.NOT_LEARNED;
+    private LearningStatus status = LearningStatus.NEW;
 
-    private int reviewCount = 0;
+    private int reviewCount;       // số lần bấm THUỘC
+    private int forgottenCount;    // số lần bấm CHƯA THUỘC
 
+    private LocalDateTime createdAt;
     private LocalDateTime lastReviewedAt;
-    private LocalDateTime nextReminderAt;
 
+    private LocalDateTime lastReminderSentAt;
+
+    @PrePersist
+    void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 }

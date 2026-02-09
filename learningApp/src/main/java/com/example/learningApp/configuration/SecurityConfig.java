@@ -41,8 +41,12 @@ public class SecurityConfig {
     CorsConfig corsConfig;
     CustomAccessDeniedHandler accessDeniedHandler;
     private final String[] PUBLIC_ENDPOINTS = {
-       "/api/v1/auth/**",
-       "/api/v1/users/register", "/api/v1/users/forgot-password", "/api/v1/users/confirm-forgot-password",
+            "/api/v1/auth/**",
+            "/api/v1/users/register",
+            "/api/v1/users/forgot-password",
+            "/api/v1/users/online",
+            "/api/v1/users/confirm-forgot-password",
+            "/ws/**","/app/**"
     };
 
 

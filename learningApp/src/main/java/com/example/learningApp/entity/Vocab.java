@@ -1,5 +1,6 @@
 package com.example.learningApp.entity;
 
+import com.example.learningApp.enums.LearningStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
