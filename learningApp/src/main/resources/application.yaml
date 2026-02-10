@@ -98,7 +98,7 @@ google:
   redirect-uri: ${REDICT_URI}
   api-key: ${GOOGLE_API_KEY}
 gemini:
-  api-key: AIzaSyABXMeAgXRGZ2uNmKzoCE55jxoWOoCcHJA
+  api-key: ${GEMINI_API_KEY}
 
 jwt:
   secret-key: ${JWT_SECRET}

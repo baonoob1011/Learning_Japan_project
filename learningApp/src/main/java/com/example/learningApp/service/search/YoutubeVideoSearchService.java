@@ -21,29 +21,51 @@ public class YoutubeVideoSearchService {
 
     public List<YoutubeVideoSummaryResponse> searchSuggest(String keyword) {
 
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return List.of();
+        }
+
+        final String q = keyword.trim().toLowerCase();
+        final int size = q.length() == 1 ? 3 : q.length() == 2 ? 5 : 10;
+
         try {
             var response = elasticsearchClient.search(s -> s
                             .index("youtube_videos")
-                            .size(10)
-                            .query(q -> q.bool(b -> {
+                            .size(size)
+                            .query(query -> query.bool(b -> {
 
-                                // 🔥 AUTOCOMPLETE 1 KÝ TỰ
-                                if (keyword.length() >= 1) {
-                                    b.should(s1 -> s1.match(m -> m
-                                            .field("title.autocomplete")
-                                            .query(keyword)
+                                /* =========================
+                                   🔍 1 KÝ TỰ → PREFIX (RẤT CHẶT)
+                                ========================== */
+                                if (q.length() == 1) {
+                                    b.must(m -> m.prefix(p -> p
+                                            .field("title")
+                                            .value(q)
+                                            .caseInsensitive(true)
                                     ));
+                                    return b;
                                 }
 
-                                // 🔥 FUZZY (SAI ~2–3 KÝ TỰ CẢM GIÁC)
-                                if (keyword.length() >= 2) {
+                                /* =========================
+                                   🔍 2 KÝ TỰ → AUTOCOMPLETE
+                                ========================== */
+                                b.must(m -> m.match(mt -> mt
+                                        .field("title.autocomplete")
+                                        .query(q)
+                                ));
+
+                                /* =========================
+                                   🔥 ≥ 3 → FUZZY GỢI Ý
+                                ========================== */
+                                if (q.length() >= 3) {
                                     b.should(s2 -> s2.match(m -> m
                                             .field("title")
-                                            .query(keyword)
-                                            .fuzziness("AUTO")       // max = 2
-                                            .prefixLength(0)         // cho sai từ đầu
-                                            .maxExpansions(100)      // mở rộng match
+                                            .query(q)
+                                            .fuzziness("AUTO")
+                                            .prefixLength(1)
+                                            .maxExpansions(20)
                                     ));
+                                    b.minimumShouldMatch("0");
                                 }
 
                                 return b;
