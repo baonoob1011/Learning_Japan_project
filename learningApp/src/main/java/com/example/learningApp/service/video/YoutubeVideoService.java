@@ -50,8 +50,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class YoutubeVideoService {
 
-    @Value("${openai.api-key}")
-    private String openAiApiKey;
+
     @Value("${aws.s3.bucket-nam}")
     private String s3Bucket;
 

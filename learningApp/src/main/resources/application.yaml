@@ -97,8 +97,8 @@ aws:
 google:
   redirect-uri: ${REDICT_URI}
   api-key: ${GOOGLE_API_KEY}
-openai:
-  api-key: ${OPEN_AI_API_KEY}
+gemini:
+  api-key: AIzaSyABXMeAgXRGZ2uNmKzoCE55jxoWOoCcHJA
 
 jwt:
   secret-key: ${JWT_SECRET}
