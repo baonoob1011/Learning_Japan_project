@@ -1,13 +1,9 @@
 package com.example.learningApp.common;
 
 
-import com.example.learningApp.entity.User;
-import com.example.learningApp.entity.Vocab;
-import com.example.learningApp.entity.YoutubeVideo;
+import com.example.learningApp.entity.*;
 import com.example.learningApp.exception.NotFoundException;
-import com.example.learningApp.repository.UserRepository;
-import com.example.learningApp.repository.VocabRepository;
-import com.example.learningApp.repository.YoutubeVideoRepository;
+import com.example.learningApp.repository.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -24,6 +20,11 @@ public class EntityFinder {
     UserRepository userRepository;
     YoutubeVideoRepository youtubeVideoRepository;
     VocabRepository vocabRepository;
+    CourseRepository courseRepository;
+    LessonRepository lessonRepository;
+    SectionRepository sectionRepository;
+    LessonPartRepository lessonPartRepository;
+    LessonDocumentRepository lessonDocumentRepository;
 
     public User userById() {
 
@@ -45,6 +46,46 @@ public class EntityFinder {
                 youtubeVideoRepository,
                 surface,
                 () -> new NotFoundException("Video not found")
+        );
+    }
+
+    public LessonDocument lessonDocumentId(String lessonDocumentId) {
+        return findOrThrow(
+                lessonDocumentRepository,
+                lessonDocumentId,
+                () -> new NotFoundException("lesson Document not found")
+        );
+    }
+
+    public LessonPart lessonPartId(String lessonPartId) {
+        return findOrThrow(
+                lessonPartRepository,
+                lessonPartId,
+                () -> new NotFoundException("lessonPart not found")
+        );
+    }
+
+    public Course courseById(String courseId) {
+        return findOrThrow(
+                courseRepository,
+                courseId,
+                () -> new NotFoundException("Course not found")
+        );
+    }
+
+    public Lesson lessonId(String lessonId) {
+        return findOrThrow(
+                lessonRepository,
+                lessonId,
+                () -> new NotFoundException("Lesson not found")
+        );
+    }
+
+    public Section sectionId(String sectionId) {
+        return findOrThrow(
+                sectionRepository,
+                sectionId,
+                () -> new NotFoundException("Section not found")
         );
     }
     public Vocab vocabId(String vocabId) {

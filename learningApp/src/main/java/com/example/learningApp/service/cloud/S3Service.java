@@ -115,4 +115,42 @@ public class S3Service {
                 + amazonS3.getRegionName()
                 + ".amazonaws.com/" + key;
     }
+    public String uploadLessonDocument(
+            MultipartFile file,
+            String title
+    ) throws IOException {
+
+        String folder = "lessons/documents"; // ✅ default
+
+        String extension = getExtension(file.getOriginalFilename());
+        if (!Set.of("pdf", "doc", "docx", "ppt", "pptx").contains(extension)) {
+            throw new RuntimeException("Only document files are allowed");
+        }
+
+        String safeTitle = title
+                .toLowerCase()
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("(^-|-$)", "");
+
+        String fileName =
+                folder + "/" + safeTitle + "-" + UUID.randomUUID() + "." + extension;
+
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(file.getSize());
+        metadata.setContentType(file.getContentType());
+
+        amazonS3.putObject(bucketName, fileName, file.getInputStream(), metadata);
+
+        return buildPublicUrl(fileName);
+    }
+
+
+    private String getExtension(String filename) {
+        if (filename == null || !filename.contains(".")) {
+            throw new RuntimeException("Invalid file name");
+        }
+        return filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();
+    }
+
+
 }

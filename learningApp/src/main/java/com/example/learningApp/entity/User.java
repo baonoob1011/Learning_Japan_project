@@ -50,6 +50,13 @@ public class User {
     )
     Set<UserVideoTracking> videoTrackings;
 
+    @OneToMany(
+            mappedBy = "createdBy",
+            cascade = CascadeType.ALL,
+            fetch = FetchType.LAZY
+    )
+    Set<Course> courses;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "user_roles",

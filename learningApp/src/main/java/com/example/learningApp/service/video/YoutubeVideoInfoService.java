@@ -26,6 +26,16 @@ public class YoutubeVideoInfoService {
     private final YoutubeVideoRepository youtubeVideoRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    public String extractVideoId(String url) {
+        if (url.contains("v=")) {
+            return url.substring(url.indexOf("v=") + 2);
+        }
+        if (url.contains("youtu.be/")) {
+            return url.substring(url.lastIndexOf("/") + 1);
+        }
+        throw new RuntimeException("Invalid YouTube URL");
+    }
+
     public YoutubeVideo fetchAndSaveVideoInfo(String youtubeUrl,String videoId) throws IOException, InterruptedException {
 
         // 1️⃣ Gọi YouTube API
