@@ -3,6 +3,7 @@ package com.example.learningApp.controller.user;
 import com.example.learningApp.common.PageResponse;
 import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.request.user.DeleteUsersRequest;
+import com.example.learningApp.dto.response.user.UserChatResponse;
 import com.example.learningApp.dto.response.user.UserForAdminResponse;
 import com.example.learningApp.dto.response.user.UserStatsResponse;
 import com.example.learningApp.service.user.UserService;
@@ -12,6 +13,8 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/admin/users")
@@ -72,4 +75,5 @@ public class AdminUserController {
         UserStatsResponse response = userService.getUserStats();
         return ResponseEntity.ok(ApiResponse.success("User statistics retrieved successfully", response));
     }
+
 }

@@ -4,6 +4,7 @@ import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.request.user.ChangePasswordRequest;
 import com.example.learningApp.dto.request.user.CreateUserRequest;
 import com.example.learningApp.dto.request.user.ForgotPasswordRequest;
+import com.example.learningApp.dto.response.user.UserChatResponse;
 import com.example.learningApp.dto.response.user.UserResponse;
 import com.example.learningApp.service.auth.AuthService;
 import com.example.learningApp.service.user.AvatarService;
@@ -14,10 +15,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -80,5 +83,17 @@ public class UserController {
         userService.updateAvatarUrl(url);
 
         return ResponseEntity.ok(ApiResponse.success("Upload success", url));
+    }
+    @GetMapping("/search")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<List<UserChatResponse>>> searchUsers(
+            @RequestParam String keyword
+    ) {
+
+        List<UserChatResponse> response = userService.searchUsersForChat(keyword);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Users found", response)
+        );
     }
 }
