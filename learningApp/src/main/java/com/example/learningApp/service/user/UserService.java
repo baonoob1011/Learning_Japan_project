@@ -2,6 +2,7 @@ package com.example.learningApp.service.user;
 
 import com.example.learningApp.common.PageResponse;
 import com.example.learningApp.dto.request.user.DeleteUsersRequest;
+import com.example.learningApp.dto.response.user.UserChatResponse;
 import com.example.learningApp.dto.response.user.UserForAdminResponse;
 import com.example.learningApp.dto.response.user.UserResponse;
 import com.example.learningApp.dto.response.user.UserStatsResponse;
@@ -259,6 +260,29 @@ public class UserService {
                 // Tùy nghiệp vụ: Bạn có thể throw lỗi để dừng hẳn hoặc bỏ qua để xóa tiếp
             }
         }
+    }
+    // ============== SEARCH USER FOR CHAT =================
+    public List<UserChatResponse> searchUsersForChat(String keyword) {
+
+        var context = SecurityContextHolder.getContext();
+        String currentUserId = context.getAuthentication().getName();
+
+        Pageable pageable = PageRequest.of(0, 20); // giới hạn 20 user
+
+        List<User> users = userRepository
+                .findByFullNameContainingIgnoreCaseOrEmailContainingIgnoreCaseAndEnabledTrue(
+                        keyword, keyword, pageable
+                );
+
+        return users.stream()
+                .filter(user -> !user.getId().equals(currentUserId)) // không hiện chính mình
+                .map(user -> UserChatResponse.builder()
+                        .id(user.getId())
+                        .fullName(user.getFullName())
+                        .avatarUrl(user.getAvatarUrl())
+                        .build()
+                )
+                .toList();
     }
 
     // UserService.java

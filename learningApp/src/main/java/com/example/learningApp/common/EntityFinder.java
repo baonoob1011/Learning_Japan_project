@@ -25,6 +25,7 @@ public class EntityFinder {
     SectionRepository sectionRepository;
     LessonPartRepository lessonPartRepository;
     LessonDocumentRepository lessonDocumentRepository;
+    ChatRoomRepository chatRoomRepository;
 
     public User userById() {
 
@@ -39,6 +40,22 @@ public class EntityFinder {
                 .orElseThrow(() ->
                         new NotFoundException("Vocab not found: " + surface)
                 );
+    }
+
+    public User userId(String userId) {
+        return findOrThrow(
+                userRepository,
+                userId,
+                () -> new NotFoundException("User not found")
+        );
+    }
+
+    public ChatRoom chatRoomById(String chatRoomId) {
+        return findOrThrow(
+                chatRoomRepository,
+                chatRoomId,
+                () -> new NotFoundException("Room not found")
+        );
     }
 
     public YoutubeVideo videoById(String surface) {
