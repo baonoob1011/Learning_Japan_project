@@ -8,5 +8,6 @@ import java.util.List;
 
 public interface LessonPartRepository extends JpaRepository<LessonPart, String> {
     List<LessonPart> findByLesson(Lesson lesson);
+    List<LessonPart> findByLessonId(String lessonId);
 
 }
