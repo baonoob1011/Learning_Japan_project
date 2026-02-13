@@ -17,10 +17,14 @@ public interface UserLessonPartProgressRepository
 
     // 🔥 Tính trung bình progress của lesson
     @Query("""
-        SELECT AVG(p.progressPercent)
-        FROM UserLessonPartProgress p
-        WHERE p.user.id = :userId
-        AND p.lessonPart.lesson.id = :lessonId
-    """)
+    SELECT 
+        (SUM(COALESCE(ulp.progressPercent, 0)) / COUNT(lp))
+    FROM LessonPart lp
+    LEFT JOIN UserLessonPartProgress ulp
+        ON ulp.lessonPart.id = lp.id
+        AND ulp.user.id = :userId
+    WHERE lp.lesson.id = :lessonId
+""")
     Double calculateLessonPercent(String userId, String lessonId);
+
 }

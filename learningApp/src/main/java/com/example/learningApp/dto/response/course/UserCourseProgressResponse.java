@@ -9,8 +9,10 @@ import java.time.LocalDateTime;
 @Builder
 public class UserCourseProgressResponse {
 
-    private String courseId;
+    private String id;
     private double percent;
     private boolean completed;
     private LocalDateTime completedAt;
+
+    private CourseResponse course;
 }

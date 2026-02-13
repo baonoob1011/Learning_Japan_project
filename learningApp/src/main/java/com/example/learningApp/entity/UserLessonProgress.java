@@ -5,7 +5,13 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "user_lesson_progress")
+@Table(
+        name = "user_lesson_progress",
+        uniqueConstraints = @UniqueConstraint(
+                columnNames = {"user_id", "lesson_id"}
+        )
+)
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -22,6 +28,9 @@ public class UserLessonProgress {
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Lesson lesson;
+
+    @Column(nullable = false)
+    private Double progressPercent;
 
     private Boolean completed;
 

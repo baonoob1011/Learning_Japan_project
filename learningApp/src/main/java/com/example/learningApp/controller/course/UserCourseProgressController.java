@@ -19,25 +19,15 @@ import org.springframework.web.bind.annotation.*;
 public class UserCourseProgressController {
 
     private final UserCourseProgressService userCourseProgressService;
-    private final CourseRepository courseRepository;
-    private final UserRepository userRepository;
+
 
     @GetMapping("/{courseId}/progress")
     public ResponseEntity<ApiResponse<UserCourseProgressResponse>> getCourseProgress(
-            @PathVariable String courseId,
-            @AuthenticationPrincipal Jwt jwt
+            @PathVariable String courseId
     ) {
 
-        String userId = jwt.getSubject();
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new RuntimeException("Course not found"));
-
         UserCourseProgressResponse response =
-                userCourseProgressService.getCourseProgress(user, course);
+                userCourseProgressService.getCourseProgress(courseId);
 
         return ResponseEntity.ok(
                 ApiResponse.success("Get course progress successfully", response)

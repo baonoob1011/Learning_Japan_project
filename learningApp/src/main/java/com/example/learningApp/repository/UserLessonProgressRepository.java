@@ -9,12 +9,13 @@ import java.util.Optional;
 public interface UserLessonProgressRepository
         extends JpaRepository<UserLessonProgress, String> {
     @Query("""
-    SELECT AVG(
-        CASE WHEN p.completed = true THEN 100.0 ELSE 0.0 END
-    )
-    FROM UserLessonProgress p
-    WHERE p.user.id = :userId
-    AND p.lesson.section.id = :sectionId
+    SELECT 
+        (SUM(COALESCE(ulp.progressPercent, 0)) / COUNT(l))
+    FROM Lesson l
+    LEFT JOIN UserLessonProgress ulp
+        ON ulp.lesson.id = l.id
+        AND ulp.user.id = :userId
+    WHERE l.section.id = :sectionId
 """)
     Double calculateSectionPercent(String userId, String sectionId);
 

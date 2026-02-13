@@ -6,12 +6,19 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "user_course_progress")
+@Table(
+        name = "user_course_progress",
+        uniqueConstraints = @UniqueConstraint(
+                columnNames = {"user_id", "course_id"}
+        )
+)
+
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+
 public class UserCourseProgress {
 
     @Id
@@ -27,6 +34,9 @@ public class UserCourseProgress {
     private Course course;
 
     private Boolean completed;
+
+    @Column(nullable = false)
+    private Double progressPercent;
 
     private LocalDateTime completedAt;
 }

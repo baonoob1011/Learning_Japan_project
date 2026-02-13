@@ -31,6 +31,8 @@ public class UserSectionProgressService {
             sectionPercent = 0.0;
         }
 
+        sectionPercent = Math.round(sectionPercent * 100.0) / 100.0;
+
         UserSectionProgress sectionProgress =
                 userSectionProgressRepository
                         .findByUserIdAndSectionId(user.getId(), section.getId())
@@ -38,19 +40,29 @@ public class UserSectionProgressService {
                                 UserSectionProgress.builder()
                                         .user(user)
                                         .section(section)
+                                        .progressPercent(0.0)
                                         .completed(false)
                                         .build()
                         );
 
-        if (sectionPercent >= 90
-                && !Boolean.TRUE.equals(sectionProgress.getCompleted())) {
+        // 🔥 THÊM
+        sectionProgress.setProgressPercent(sectionPercent);
 
+        boolean shouldBeCompleted = sectionPercent >= 90;
+
+        if (shouldBeCompleted) {
             sectionProgress.setCompleted(true);
-            sectionProgress.setCompletedAt(LocalDateTime.now());
+            if (sectionProgress.getCompletedAt() == null) {
+                sectionProgress.setCompletedAt(LocalDateTime.now());
+            }
+        } else {
+            sectionProgress.setCompleted(false);
+            sectionProgress.setCompletedAt(null);
         }
 
         userSectionProgressRepository.save(sectionProgress);
-        userCourseProgressService.updateCourseProgress(user, section.getCourse());
 
+        userCourseProgressService.updateCourseProgress(user, section.getCourse());
     }
+
 }

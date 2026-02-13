@@ -31,6 +31,8 @@ public class UserLessonProgressService {
             lessonPercent = 0.0;
         }
 
+        lessonPercent = Math.round(lessonPercent * 100.0) / 100.0;
+
         UserLessonProgress lessonProgress =
                 userLessonProgressRepository
                         .findByUserIdAndLessonId(user.getId(), lesson.getId())
@@ -38,25 +40,29 @@ public class UserLessonProgressService {
                                 UserLessonProgress.builder()
                                         .user(user)
                                         .lesson(lesson)
+                                        .progressPercent(0.0)
                                         .completed(false)
                                         .build()
                         );
 
+        // 🔥 THÊM DÒNG NÀY
+        lessonProgress.setProgressPercent(lessonPercent);
+
         boolean shouldBeCompleted = lessonPercent >= 90;
 
-        if (shouldBeCompleted && !Boolean.TRUE.equals(lessonProgress.getCompleted())) {
+        if (shouldBeCompleted) {
             lessonProgress.setCompleted(true);
-            lessonProgress.setCompletedAt(LocalDateTime.now());
-        }
-
-        if (!shouldBeCompleted && Boolean.TRUE.equals(lessonProgress.getCompleted())) {
+            if (lessonProgress.getCompletedAt() == null) {
+                lessonProgress.setCompletedAt(LocalDateTime.now());
+            }
+        } else {
             lessonProgress.setCompleted(false);
             lessonProgress.setCompletedAt(null);
         }
 
         userLessonProgressRepository.save(lessonProgress);
 
-        // Cascade update Section
         userSectionProgressService.updateSectionProgress(user, lesson.getSection());
     }
+
 }
