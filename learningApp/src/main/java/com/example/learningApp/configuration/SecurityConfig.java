@@ -45,6 +45,7 @@ public class SecurityConfig {
             "/api/v1/users/register",
             "/api/v1/users/forgot-password",
             "/api/v1/users/online",
+            "/api/v1/payments/**",
             "/api/v1/users/confirm-forgot-password",
             "/ws/**",
             "/test-noti/**"
