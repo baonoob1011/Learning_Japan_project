@@ -65,6 +65,38 @@ public class RoleService {
         roleRepository.save(role);
         log.info("✅ Role '{}' saved in DB", roleName);
     }
+    @Transactional
+    public void changeUserRole(String userId, String oldRoleName, String newRoleName) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalStateException("User not found"));
+
+        Role oldRole = roleRepository.findByRoleName(oldRoleName)
+                .orElseThrow(() -> new IllegalStateException("Old role not found"));
+
+        Role newRole = roleRepository.findByRoleName(newRoleName)
+                .orElseThrow(() -> new IllegalStateException("New role not found"));
+
+        // ===== 1️⃣ Remove old role in Cognito =====
+        cognitoClient.adminRemoveUserFromGroup(builder -> builder
+                .userPoolId(userPoolId)
+                .username(user.getEmail())
+                .groupName(oldRoleName)
+        );
+
+        // ===== 2️⃣ Add new role in Cognito =====
+        cognitoClient.adminAddUserToGroup(builder -> builder
+                .userPoolId(userPoolId)
+                .username(user.getEmail())
+                .groupName(newRoleName)
+        );
+
+        // ===== 3️⃣ Update DB =====
+        user.getRoles().remove(oldRole);
+        user.getRoles().add(newRole);
+
+        userRepository.save(user);
+    }
 
     public void assignRoleToUser(AssignRoleRequest request) {
 

@@ -31,6 +31,10 @@ public class User {
     @Column(name = "avatar_url", length = 255)
     private String avatarUrl;
 
+    @Column(name = "vip_expired_at")
+    private LocalDateTime vipExpiredAt;
+
+
     @Column(nullable = false)
     private Boolean enabled = true;
 

@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,6 +37,7 @@ public interface UserRepository extends JpaRepository<User,String> {
     );    Optional<User> findByEmail(String email);
 
     Page<User> findByEmailContainingIgnoreCaseOrFullNameContainingIgnoreCase(String email, String fullName, Pageable pageable);
+    List<User> findByVipExpiredAtBefore(LocalDateTime time);
 
     @Query(
             value = """

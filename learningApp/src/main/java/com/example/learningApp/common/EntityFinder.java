@@ -26,6 +26,7 @@ public class EntityFinder {
     LessonPartRepository lessonPartRepository;
     LessonDocumentRepository lessonDocumentRepository;
     ChatRoomRepository chatRoomRepository;
+    VipPackageRepository vipPackageRepository;
 
     public User userById() {
 
@@ -58,6 +59,13 @@ public class EntityFinder {
         );
     }
 
+    public VipPackage vipPackageById(String vipPackageById) {
+        return findOrThrow(
+                vipPackageRepository,
+                vipPackageById,
+                () -> new NotFoundException("Vip Package not found")
+        );
+    }
 
 
     public YoutubeVideo videoById(String surface) {

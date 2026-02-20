@@ -1,71 +1,73 @@
 package com.example.learningApp.controller.payment;
 
+import com.example.learningApp.common.ApiResponse;
+import com.example.learningApp.dto.request.payment.CreateVnPayRequest;
+import com.example.learningApp.dto.response.order.OrderSuccessResponse;
 import com.example.learningApp.service.payment.VnPayService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/payments")
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class VnPayController {
 
-    private final VnPayService vnPayService;
+    VnPayService vnPayService;
 
-    /*
-     =====================================
-     ============== CREATE ===============
-     =====================================
-     */
+    /* ===================== CREATE ===================== */
+
     @PostMapping("/vnpay/create")
-    public ResponseEntity<Map<String, Object>> createPayment(
-            @RequestParam String amount
+    public ResponseEntity<ApiResponse<Map<String, Object>>> createPayment(
+            @RequestBody CreateVnPayRequest request
     ) {
-
-        String orderId = String.valueOf(System.currentTimeMillis());
 
         Map<String, Object> response =
-                vnPayService.createPaymentRequest(amount, orderId);
+                vnPayService.createPaymentRequest(
+                        request.getVipPackageId()
+                );
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Create VNPAY payment successfully",
+                        response
+                )
+        );
     }
 
-    /*
-     =====================================
-     ===== RETURN (User Redirect) ========
-     =====================================
-     */
+    /* ===================== RETURN ===================== */
     @GetMapping("/vnpay/return")
-    public ResponseEntity<Map<String, String>> paymentReturn(
-            HttpServletRequest request
-    ) {
+    public void paymentReturn(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws IOException {
 
         Map<String, String> params = new HashMap<>();
         request.getParameterMap()
                 .forEach((k, v) -> params.put(k, v[0]));
 
-        boolean success = vnPayService.handleVnPayReturn(params);
+        OrderSuccessResponse order =
+                vnPayService.handleVnPayReturn(params);
 
-        if (!success) {
-            return ResponseEntity.badRequest().body(
-                    Map.of("message", "Thanh toan that bai hoac sai checksum")
-            );
-        }
+        // Redirect về FE kèm orderId
+        String redirectUrl = "http://localhost:3000/video";
 
-        return ResponseEntity.ok(
-                Map.of("message", "Thanh toan thanh cong")
-        );
+        response.sendRedirect(redirectUrl);
     }
 
-    /*
-     =====================================
-     ============== IPN ==================
-     =====================================
-     */
+
+
+    /* ===================== IPN ===================== */
+
     @GetMapping("/vnpay/ipn")
     public ResponseEntity<Map<String, String>> paymentIPN(
             HttpServletRequest request
@@ -75,16 +77,19 @@ public class VnPayController {
         request.getParameterMap()
                 .forEach((k, v) -> params.put(k, v[0]));
 
-        boolean success = vnPayService.handleVnPayReturn(params);
+        try {
+            vnPayService.handleVnPayIpn(params);
 
-        if (!success) {
+            return ResponseEntity.ok(
+                    Map.of("RspCode", "00", "Message", "Confirm Success")
+            );
+
+        } catch (Exception e) {
+
             return ResponseEntity.ok(
                     Map.of("RspCode", "97", "Message", "Invalid Checksum")
             );
         }
-
-        return ResponseEntity.ok(
-                Map.of("RspCode", "00", "Message", "Confirm Success")
-        );
     }
+
 }

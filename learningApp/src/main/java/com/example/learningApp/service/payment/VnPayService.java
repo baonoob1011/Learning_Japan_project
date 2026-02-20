@@ -1,5 +1,9 @@
 package com.example.learningApp.service.payment;
 
+import com.example.learningApp.common.EntityFinder;
+import com.example.learningApp.dto.response.order.OrderSuccessResponse;
+import com.example.learningApp.service.order.OrderService;
+import com.example.learningApp.service.vipPackage.VipPurchaseService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +33,8 @@ public class VnPayService {
 
     @Value("${vnpay.return-url}")
     private String vnp_ReturnUrl;
+    private final OrderService orderService;
+    private final EntityFinder finder;
 
     /*
      ============================================
@@ -36,21 +42,33 @@ public class VnPayService {
      ============================================
      */
     @Transactional
-    public Map<String, Object> createPaymentRequest(String amountVND, String orderId) {
+    public Map<String, Object> createPaymentRequest(
+            String vipPackageId
+    ) {
+        var user = finder.userById();
+        var vipPackage = finder.vipPackageById(vipPackageId);
 
         try {
-            long amount = Long.parseLong(amountVND) * 100; // VNPay requires smallest unit
-            String vnp_TxnRef = orderId + "_" + UUID.randomUUID();
+//            long realAmount = Long.parseLong(amountVND);
+//            long amount = Long.parseLong(amountVND) * 100; // VNPay requires smallest unit
+            String vnp_TxnRef = user.getId() + "_" + UUID.randomUUID();
+
+            // ✅ Lưu order PENDING
+            var order = orderService.createPendingOrder(
+                    vipPackageId,
+                    vnp_TxnRef,
+                    vipPackage.getPrice()
+            );
 
             Map<String, String> vnp_Params = new HashMap<>();
 
             vnp_Params.put("vnp_Version", "2.1.0");
             vnp_Params.put("vnp_Command", "pay");
             vnp_Params.put("vnp_TmnCode", vnp_TmnCode);
-            vnp_Params.put("vnp_Amount", String.valueOf(amount));
+            vnp_Params.put("vnp_Amount", String.valueOf(vipPackage.getPrice() * 100));
             vnp_Params.put("vnp_CurrCode", "VND");
             vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
-            vnp_Params.put("vnp_OrderInfo", "Thanh toan don hang " + orderId);
+            vnp_Params.put("vnp_OrderInfo", "Thanh toan don hang " + vipPackage.getName());
             vnp_Params.put("vnp_OrderType", "other");
             vnp_Params.put("vnp_Locale", "vn");
             vnp_Params.put("vnp_ReturnUrl", vnp_ReturnUrl);
@@ -95,7 +113,7 @@ public class VnPayService {
 
             return Map.of(
                     "paymentUrl", paymentUrl,
-                    "orderId", orderId,
+                    "orderId", order.getId(),
                     "gateway", "VNPAY"
             );
 
@@ -110,25 +128,51 @@ public class VnPayService {
      ============================================
      */
     @Transactional
-    public boolean handleVnPayReturn(Map<String, String> vnpResponse) {
+    public OrderSuccessResponse handleVnPayReturn(Map<String, String> vnpResponse) {
+        log.info("🔥 RETURN CALLED - FULL PARAMS: {}", vnpResponse);
 
         String txnRef = vnpResponse.get("vnp_TxnRef");
         String responseCode = vnpResponse.get("vnp_ResponseCode");
+        String transactionNo = vnpResponse.get("vnp_TransactionNo");
         String receivedSecureHash = vnpResponse.get("vnp_SecureHash");
 
         if (!validateSecureHash(vnpResponse, receivedSecureHash)) {
             log.error("Secure Hash validation FAILED for txnRef: {}", txnRef);
-            return false;
+            orderService.markOrderFailed(txnRef);
+            throw new RuntimeException("Invalid secure hash");
+        }
+
+        if (!"00".equals(responseCode)) {
+            orderService.markOrderFailed(txnRef);
+            throw new RuntimeException("Payment failed");
+        }
+
+        // ✅ Update order SUCCESS
+        OrderSuccessResponse response =
+                orderService.markOrderSuccess(txnRef, transactionNo);
+
+        return response;
+    }
+
+    @Transactional
+    public void handleVnPayIpn(Map<String, String> vnpResponse) {
+
+        String txnRef = vnpResponse.get("vnp_TxnRef");
+        String responseCode = vnpResponse.get("vnp_ResponseCode");
+        String transactionNo = vnpResponse.get("vnp_TransactionNo");
+        String receivedSecureHash = vnpResponse.get("vnp_SecureHash");
+
+        if (!validateSecureHash(vnpResponse, receivedSecureHash)) {
+            throw new RuntimeException("Invalid checksum");
         }
 
         if ("00".equals(responseCode)) {
-            log.info("Transaction {} completed successfully", txnRef);
-            return true;
+            orderService.markOrderSuccess(txnRef, transactionNo);
         } else {
-            log.warn("Transaction {} failed with code {}", txnRef, responseCode);
-            return false;
+            orderService.markOrderFailed(txnRef);
         }
     }
+
 
     /*
      ============================================
