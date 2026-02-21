@@ -20,9 +20,6 @@ public class KanjiController {
 
     private final KanjiService kanjiService;
 
-    // =================================================
-    // 1️⃣ Get Kanji By ID
-    // =================================================
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<KanjiResponse>> getKanji(
@@ -36,41 +33,6 @@ public class KanjiController {
         );
     }
 
-    // =================================================
-    // 2️⃣ Check Kanji Writing
-    // =================================================
-
-    @PostMapping("/check")
-    public ResponseEntity<ApiResponse<KanjiCheckResponse>> checkKanji(
-            @AuthenticationPrincipal(expression = "id") String userId,
-            @RequestBody KanjiStrokeRequest request
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Kanji checked successfully",
-                        kanjiService.checkKanji(userId, request)
-                )
-        );
-    }
-
-    // =================================================
-    // GET ALL
-    // =================================================
-
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<KanjiResponse>>> getAllKanji() {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Kanji list fetched successfully",
-                        kanjiService.getAllKanji()
-                )
-        );
-    }
-
-    // =================================================
-    // CREATE
-    // =================================================
-
     @PostMapping
     public ResponseEntity<ApiResponse<KanjiResponse>> createKanji(
             @RequestBody CreateKanjiRequest request
@@ -79,6 +41,15 @@ public class KanjiController {
                 ApiResponse.success(
                         "Kanji created successfully",
                         kanjiService.createKanji(request)
+                )
+        );
+    }
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<KanjiResponse>>> getAllKanji() {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Kanji list fetched successfully",
+                        kanjiService.getAllKanji()
                 )
         );
     }

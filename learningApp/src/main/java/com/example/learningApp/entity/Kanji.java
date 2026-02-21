@@ -22,7 +22,7 @@ public class Kanji {
     private String onyomi;
     private String kunyomi;
 
-    @Lob
     @Column(columnDefinition = "TEXT")
-    private String strokeData;  // JSON chuẩn stroke
+    private String svgStrokes;
+
 }

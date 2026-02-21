@@ -17,5 +17,7 @@ public class KanjiResponse {
     private String onyomi;
     private String kunyomi;
 
-    private List<List<PointDTO>> strokes; // parse từ JSON
+    // Danh sách nét gốc
+    private List<String> svgStrokes;
+
 }
