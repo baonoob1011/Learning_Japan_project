@@ -20,7 +20,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class YoutubeVideoInfoService {
 
-    @Value("${google.api.key}")
+    @Value("${google.api-key}")
     private String youtubeApiKey;
 
     private final YoutubeVideoRepository youtubeVideoRepository;

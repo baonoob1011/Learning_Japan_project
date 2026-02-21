@@ -30,12 +30,13 @@ public class PronunciationService {
 
     @Value("${aws.s3.bucket-nam}") private String s3Bucket;
     @Value("${aws.region-nam}") private String awsRegion;
-
+    private final S3Client s3Client;
+    private final TranscribeClient transcribeClient;
     private final ConcurrentHashMap<String, PronunciationResultResponse> resultMap = new ConcurrentHashMap<>();
 
     // =================== SUBMIT AUDIO ===================
     public String submitPronunciation(MultipartFile audioFile, String expectedText) {
-        // Normalize expected text
+
         String normalizedText = normalizeTextForJapanese(expectedText);
 
         File file = convertToFile(audioFile);
@@ -51,62 +52,57 @@ public class PronunciationService {
         return jobName;
     }
 
-    // =================== GET RESULT ===================
     public PronunciationResultResponse getResult(String jobName) {
         return resultMap.get(jobName);
     }
 
     // =================== TRANSCRIBE ===================
     private void startTranscribeJob(String jobName, String s3Key, String expectedText) {
-        try (TranscribeClient client = TranscribeClient.builder().region(Region.of(awsRegion)).build()) {
+        try {
 
-            log.info("🔹 Starting transcription job {} for S3 key: {}", jobName, s3Key);
-            log.info("Expected text (normalized): {}", expectedText);
-
-            client.startTranscriptionJob(
+            transcribeClient.startTranscriptionJob(
                     StartTranscriptionJobRequest.builder()
                             .transcriptionJobName(jobName)
                             .languageCode("ja-JP")
-                            .media(Media.builder().mediaFileUri("s3://" + s3Bucket + "/" + s3Key).build())
+                            .media(Media.builder()
+                                    .mediaFileUri("s3://" + s3Bucket + "/" + s3Key)
+                                    .build())
                             .mediaFormat(MediaFormat.WAV)
                             .build()
             );
 
             TranscriptionJob job;
+
             while (true) {
-                job = client.getTranscriptionJob(
-                        GetTranscriptionJobRequest.builder().transcriptionJobName(jobName).build()
+
+                job = transcribeClient.getTranscriptionJob(
+                        GetTranscriptionJobRequest.builder()
+                                .transcriptionJobName(jobName)
+                                .build()
                 ).transcriptionJob();
 
-                log.info("⏳ Job {} status: {}", jobName, job.transcriptionJobStatus());
-
                 if (job.transcriptionJobStatus() == TranscriptionJobStatus.COMPLETED) {
+
                     String recognizedRaw = fetchTranscript(job.transcript().transcriptFileUri());
 
-                    // ✅ Normalize both expected and recognized text for comparison
                     String recognizedNormalized = normalizeForCompare(recognizedRaw);
                     String expectedNormalized = normalizeForCompare(expectedText);
 
                     double accuracy = SimilarityUtil.similarityPercent(expectedNormalized, recognizedNormalized);
 
-                    log.info("🎤 Recognized raw text: {}", recognizedRaw);
-                    log.info("🎤 Recognized normalized text: {}", recognizedNormalized);
-                    log.info("Expected normalized text: {}", expectedNormalized);
-                    log.info("📊 Calculated accuracy: {}%", accuracy);
-
-                    PronunciationResultResponse result = PronunciationResultResponse.builder()
-                            .expectedText(expectedText)
-                            .recognizedText(recognizedRaw)
-                            .accuracy(accuracy)
-                            .feedback(accuracy >= 80 ? "Phát âm tốt 👍"
-                                    : accuracy >= 50 ? "Tạm ổn, cần luyện thêm ⚠️"
-                                    : "Phát âm chưa đúng ❌")
-                            .build();
+                    PronunciationResultResponse result =
+                            PronunciationResultResponse.builder()
+                                    .expectedText(expectedText)
+                                    .recognizedText(recognizedRaw)
+                                    .accuracy(accuracy)
+                                    .feedback(accuracy >= 80 ? "Phát âm tốt 👍"
+                                            : accuracy >= 50 ? "Tạm ổn, cần luyện thêm ⚠️"
+                                            : "Phát âm chưa đúng ❌")
+                                    .build();
 
                     resultMap.put(jobName, result);
 
                     deleteFromS3(s3Key);
-                    log.info("✅ Job {} completed successfully", jobName);
                     break;
                 }
 
@@ -137,12 +133,22 @@ public class PronunciationService {
             File normalized = File.createTempFile("pron_", ".wav");
             multipartFile.transferTo(raw);
 
+            // 🔥 Lấy đường dẫn tuyệt đối tới tool/ffmpeg.exe
+            String ffmpegPath = new File("tool/ffmpeg.exe").getAbsolutePath();
+
             ProcessBuilder pb = new ProcessBuilder(
-                    "ffmpeg", "-y", "-i", raw.getAbsolutePath(),
-                    "-ac", "1", "-ar", "16000", "-vn", "-acodec", "pcm_s16le",
+                    ffmpegPath,
+                    "-y",
+                    "-i", raw.getAbsolutePath(),
+                    "-ac", "1",
+                    "-ar", "16000",
+                    "-vn",
+                    "-acodec", "pcm_s16le",
                     normalized.getAbsolutePath()
             );
+
             pb.redirectErrorStream(true);
+
             int exit = pb.start().waitFor();
             if (exit != 0) throw new RuntimeException("ffmpeg convert failed");
 
@@ -155,24 +161,41 @@ public class PronunciationService {
     }
 
     private void uploadToS3(File file, String key) {
-        try (S3Client s3 = S3Client.builder().region(Region.of(awsRegion)).build()) {
-            s3.putObject(PutObjectRequest.builder()
-                            .bucket(s3Bucket).key(key).contentType("audio/wav").build(),
+        try {
+
+            s3Client.putObject(
+                    PutObjectRequest.builder()
+                            .bucket(s3Bucket)
+                            .key(key)
+                            .contentType("audio/wav")
+                            .build(),
                     file.toPath()
             );
+
             log.info("✅ Uploaded audio to S3: {}", key);
+
+        } catch (Exception e) {
+            log.error("❌ S3 Upload error", e);
+            throw e;
         }
     }
 
     private void deleteFromS3(String key) {
-        try (S3Client s3 = S3Client.builder().region(Region.of(awsRegion)).build()) {
-            s3.deleteObject(DeleteObjectRequest.builder().bucket(s3Bucket).key(key).build());
+        try {
+
+            s3Client.deleteObject(
+                    DeleteObjectRequest.builder()
+                            .bucket(s3Bucket)
+                            .key(key)
+                            .build()
+            );
+
             log.info("🗑️ Deleted audio from S3: {}", key);
+
         } catch (Exception e) {
             log.error("❌ Failed to delete S3 file: {}", key, e);
         }
     }
-
     private String fetchTranscript(String transcriptUrl) throws Exception {
         HttpResponse<String> response = java.net.http.HttpClient.newHttpClient()
                 .send(HttpRequest.newBuilder().uri(URI.create(transcriptUrl)).GET().build(),

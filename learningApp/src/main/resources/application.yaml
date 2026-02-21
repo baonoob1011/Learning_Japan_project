@@ -101,7 +101,7 @@ aws:
     bucket: ${AWS_S3_BUCKET_NAME}
     bucket-nam: ${AWS_S3_BUCKET_NAME_V2}
 google:
-  redirect-uri: ${REDICT_URI}
+#  redirect-uri: ${REDICT_URI}
   api-key: ${GOOGLE_API_KEY}
 gemini:
   api-key: ${GEMINI_API_KEY}

@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -38,11 +39,13 @@ public class AwsConfig {
 
     @Bean
     public S3Client s3Client() {
+        AwsCredentials creds = DefaultCredentialsProvider.create().resolveCredentials();
+        System.out.println("AccessKeyNam: " + accessKeyNam);
         return S3Client.builder()
-                .region(Region.AP_SOUTHEAST_1)
+                .region(Region.US_EAST_1)
                 .credentialsProvider(
                         StaticCredentialsProvider.create(
-                                AwsBasicCredentials.create(accessKey, secretKey)
+                                AwsBasicCredentials.create(accessKeyNam, secretKeyNam)
                         )
                 )
                 .build();
@@ -63,6 +66,8 @@ public class AwsConfig {
     }
     @Bean
     public AmazonS3 amazonS3() {
+        AwsCredentials creds = DefaultCredentialsProvider.create().resolveCredentials();
+        System.out.println("AccessKeyNam: " + accessKey);
         BasicAWSCredentials awsCreds = new BasicAWSCredentials(accessKey, secretKey);
         return AmazonS3ClientBuilder.standard()
                 .withRegion(Regions.fromName(region))
