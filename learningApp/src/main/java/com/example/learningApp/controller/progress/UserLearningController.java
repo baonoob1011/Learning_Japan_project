@@ -1,4 +1,4 @@
-package com.example.learningApp.controller.prgress;
+package com.example.learningApp.controller.progress;
 
 import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.response.progress.DailyProgressResponse;
