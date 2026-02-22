@@ -13,6 +13,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/courses")
 @RequiredArgsConstructor
@@ -31,6 +33,16 @@ public class UserCourseProgressController {
 
         return ResponseEntity.ok(
                 ApiResponse.success("Get course progress successfully", response)
+        );
+    }
+
+    @GetMapping("/my-progress")
+    public ResponseEntity<ApiResponse<List<UserCourseProgressResponse>>> getMyCourseProgress() {
+        List<UserCourseProgressResponse> responses =
+                userCourseProgressService.getAllCourseProgressByUserId();
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Get my course progress successfully", responses)
         );
     }
 }

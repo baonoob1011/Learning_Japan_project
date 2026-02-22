@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -94,6 +95,28 @@ public class UserCourseProgressService {
                 .build();
     }
 
+    @Transactional
+    public List<UserCourseProgressResponse> getAllCourseProgressByUserId() {
 
+        User user = finder.userById(); // nếu đã có method này
+        // hoặc nếu muốn lấy user hiện tại:
+        // User user = finder.userById();
+
+        List<UserCourseProgress> progressList =
+                userCourseProgressRepository.findByUserId(user.getId());
+
+        return progressList.stream()
+                .map(progress -> UserCourseProgressResponse.builder()
+                        .id(progress.getId())
+                        .percent(progress.getProgressPercent() != null
+                                ? progress.getProgressPercent()
+                                : 0.0)
+                        .completed(Boolean.TRUE.equals(progress.getCompleted()))
+                        .completedAt(progress.getCompletedAt())
+                        .course(courseMapper.toCourseResponse(progress.getCourse()))
+                        .build()
+                )
+                .toList();
+    }
 
 }
