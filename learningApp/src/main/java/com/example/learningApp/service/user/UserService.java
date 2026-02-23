@@ -261,6 +261,18 @@ public class UserService {
             }
         }
     }
+    public UserChatResponse getUserById(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return UserChatResponse.builder()
+                .id(user.getId())
+                .fullName(user.getFullName())
+                .avatarUrl(user.getAvatarUrl())
+                .build();
+    }
+
+
     // ============== SEARCH USER FOR CHAT =================
     public List<UserChatResponse> searchUsersForChat(String keyword) {
 

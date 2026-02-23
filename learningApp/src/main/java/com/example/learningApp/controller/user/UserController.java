@@ -96,4 +96,14 @@ public class UserController {
                 ApiResponse.success("Users found", response)
         );
     }
+    @GetMapping("/chat/{id}")
+    public ResponseEntity<ApiResponse<UserChatResponse>> getUserById(
+            @PathVariable String id
+    ) {
+        UserChatResponse response = userService.getUserById(id);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("User fetched successfully", response)
+        );
+    }
 }
