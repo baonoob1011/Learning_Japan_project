@@ -1,6 +1,7 @@
 package com.example.learningApp.repository;
 
 import com.example.learningApp.entity.ChatRoom;
+import com.example.learningApp.enums.RoomType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -33,5 +34,5 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, String> {
 //            @Param("user2") String user2
 //    );
     Optional<ChatRoom> findByPrivateKey(String privateKey);
-
+    Optional<ChatRoom> findByNameAndRoomType(String name, RoomType roomType);
 }

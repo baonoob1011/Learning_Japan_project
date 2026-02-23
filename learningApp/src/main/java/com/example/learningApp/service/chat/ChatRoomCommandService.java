@@ -15,11 +15,13 @@ import com.example.learningApp.mapper.ChatMessageMapper;
 import com.example.learningApp.repository.ChatMessageRepository;
 import com.example.learningApp.repository.ChatRoomMemberRepository;
 import com.example.learningApp.repository.ChatRoomRepository;
+import com.example.learningApp.repository.UserRepository;
 import com.example.learningApp.service.cloud.S3Service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -39,6 +41,83 @@ public class ChatRoomCommandService {
     private final EntityFinder finder;
     private final S3Service s3Service;
     private final ChatRoomResponseBuilder responseBuilder;
+    private final UserRepository userRepository;
+
+    public void addUserToCommunity(User user) {
+
+        Optional<ChatRoom> communityRoomOpt =
+                chatRoomRepository.findByNameAndRoomType("Cộng đồng", RoomType.GROUP);
+
+        if (communityRoomOpt.isEmpty()) {
+            return; // chưa có phòng cộng đồng thì bỏ qua
+        }
+
+        ChatRoom communityRoom = communityRoomOpt.get();
+
+        // kiểm tra đã là member chưa
+        boolean exists = memberRepository
+                .findByRoomIdAndUserId(communityRoom.getId(), user.getId())
+                .isPresent();
+
+        if (exists) {
+            return;
+        }
+
+        memberRepository.save(
+                ChatRoomMember.builder()
+                        .room(communityRoom)
+                        .user(user)
+                        .joinedAt(LocalDateTime.now())
+                        .isAdmin(false)
+                        .isMuted(false)
+                        .build()
+        );
+    }
+
+    public ChatRoomResponse createCommunityRoom(MultipartFile avatar) throws IOException {
+
+        User currentUser = finder.userById();
+
+        // kiểm tra đã có room cộng đồng chưa
+        Optional<ChatRoom> existingRoom = chatRoomRepository
+                .findByNameAndRoomType("Cộng đồng", RoomType.GROUP);
+
+        if (existingRoom.isPresent()) {
+            return responseBuilder.build(existingRoom.get(), currentUser);
+        }
+
+        String avatarUrl = null;
+        if (avatar != null && !avatar.isEmpty()) {
+            avatarUrl = s3Service.uploadFile(avatar, "chat/community-avatar");
+        }
+
+        ChatRoom room = ChatRoom.builder()
+                .roomType(RoomType.GROUP)
+                .name("Cộng đồng")
+                .avatarUrl(avatarUrl)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        chatRoomRepository.save(room);
+
+        // Lấy tất cả user trong DB
+        List<User> allUsers = userRepository.findAll();
+
+        for (User user : allUsers) {
+            memberRepository.save(
+                    ChatRoomMember.builder()
+                            .room(room)
+                            .user(user)
+                            .joinedAt(LocalDateTime.now())
+                            .isAdmin(user.getId().equals(currentUser.getId()))
+                            .isMuted(false)
+                            .build()
+            );
+        }
+
+        return responseBuilder.build(room, currentUser);
+    }
+
 
     public ChatRoomResponse getOrCreatePrivateRoom(CreatePrivateRoomRequest request) {
 

@@ -6,13 +6,16 @@ import com.example.learningApp.dto.request.chat.CreateGroupRoomRequest;
 import com.example.learningApp.dto.request.chat.CreatePrivateRoomRequest;
 import com.example.learningApp.dto.response.chat.*;
 import com.example.learningApp.dto.response.chat.ChatGroupDetailResponse;
+import com.example.learningApp.service.chat.ChatRoomCommandService;
 import com.example.learningApp.service.chat.ChatRoomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -21,6 +24,7 @@ import java.util.List;
 public class ChatRoomController {
 
     private final ChatRoomService chatRoomService;
+    private final ChatRoomCommandService chatRoomCommandService;
 
     @PostMapping("/private")
     public ResponseEntity<ApiResponse<ChatRoomResponse>> createPrivateRoom(
@@ -33,6 +37,14 @@ public class ChatRoomController {
                 )
         );
     }
+
+    @PostMapping("/community")
+    public ChatRoomResponse createCommunityRoom(
+            @RequestParam(required = false) MultipartFile avatar) throws IOException {
+
+        return chatRoomCommandService.createCommunityRoom(avatar);
+    }
+
     @PostMapping(
             value = "/group",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
@@ -47,6 +59,7 @@ public class ChatRoomController {
                 )
         );
     }
+
     @PostMapping("/group/{roomId}/members")
     public ResponseEntity<ApiResponse<ChatRoomResponse>> addMembers(
             @PathVariable String roomId,
@@ -59,6 +72,7 @@ public class ChatRoomController {
                 )
         );
     }
+
     @GetMapping("/my-rooms")
     public ResponseEntity<ApiResponse<List<ChatRoomResponse>>> getMyRooms() {
         return ResponseEntity.ok(
@@ -90,6 +104,7 @@ public class ChatRoomController {
                 )
         );
     }
+
     @GetMapping("/my-group-rooms")
     public ResponseEntity<ApiResponse<List<ChatGroupBasicResponse>>> getAllMyGroupRooms() {
         return ResponseEntity.ok(

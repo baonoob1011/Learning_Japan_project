@@ -9,6 +9,7 @@ import com.example.learningApp.dto.response.user.UserResponse;
 import com.example.learningApp.entity.User;
 import com.example.learningApp.mapper.UserMapper;
 import com.example.learningApp.repository.UserRepository;
+import com.example.learningApp.service.chat.ChatRoomCommandService;
 import com.example.learningApp.service.role.RoleService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +35,7 @@ public class AuthService {
     CognitoIdentityProviderClient cognitoClient;
     UserMapper userMapper;
     RoleService roleService;
-
+      ChatRoomCommandService chatRoomCommandService;
     @NonFinal
     @Value("${aws.iam.access-key}")
     String accessKey;
@@ -108,6 +109,7 @@ public class AuthService {
             }
 
             // 5️⃣ Success
+            chatRoomCommandService.addUserToCommunity(savedUser);
             return userMapper.toUserResponse(savedUser);
 
         } catch (Exception ex) {
