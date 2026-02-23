@@ -26,50 +26,30 @@ public class YoutubeVideoSearchService {
         }
 
         final String q = keyword.trim().toLowerCase();
-        final int size = q.length() == 1 ? 3 : q.length() == 2 ? 5 : 10;
 
         try {
             var response = elasticsearchClient.search(s -> s
                             .index("youtube_videos")
-                            .size(size)
-                            .query(query -> query.bool(b -> {
+                            .size(10)
+                            .query(query -> query
+                                    .bool(b -> b
 
-                                /* =========================
-                                   🔍 1 KÝ TỰ → PREFIX (RẤT CHẶT)
-                                ========================== */
-                                if (q.length() == 1) {
-                                    b.must(m -> m.prefix(p -> p
-                                            .field("title")
-                                            .value(q)
-                                            .caseInsensitive(true)
-                                    ));
-                                    return b;
-                                }
+                                            // 🔥 Search từng ký tự (R cũng ra)
+                                            .should(sh -> sh.wildcard(w -> w
+                                                    .field("title.keyword") // dùng keyword field
+                                                    .value("*" + q + "*")
+                                                    .caseInsensitive(true)
+                                            ))
 
-                                /* =========================
-                                   🔍 2 KÝ TỰ → AUTOCOMPLETE
-                                ========================== */
-                                b.must(m -> m.match(mt -> mt
-                                        .field("title.autocomplete")
-                                        .query(q)
-                                ));
+                                            // ✅ Giữ nguyên search cũ
+                                            .should(sh -> sh.match(m -> m
+                                                    .field("title")
+                                                    .query(q)
+                                            ))
 
-                                /* =========================
-                                   🔥 ≥ 3 → FUZZY GỢI Ý
-                                ========================== */
-                                if (q.length() >= 3) {
-                                    b.should(s2 -> s2.match(m -> m
-                                            .field("title")
-                                            .query(q)
-                                            .fuzziness("AUTO")
-                                            .prefixLength(1)
-                                            .maxExpansions(20)
-                                    ));
-                                    b.minimumShouldMatch("0");
-                                }
-
-                                return b;
-                            })),
+                                            .minimumShouldMatch("1")
+                                    )
+                            ),
                     YoutubeVideoDocument.class
             );
 
