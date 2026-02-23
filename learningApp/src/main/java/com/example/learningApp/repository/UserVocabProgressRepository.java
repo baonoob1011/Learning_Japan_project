@@ -22,6 +22,7 @@ public interface UserVocabProgressRepository extends JpaRepository<UserVocabProg
             String vocabId
     );
 
+    List<UserVocabProgress> findByUser(User user);
     List<UserVocabProgress> findByStatusAndLastReviewedAtLessThanEqual(
             LearningStatus status,
             LocalDateTime time

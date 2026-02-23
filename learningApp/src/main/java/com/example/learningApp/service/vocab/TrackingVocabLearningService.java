@@ -2,6 +2,7 @@ package com.example.learningApp.service.vocab;
 
 import com.example.learningApp.common.EntityFinder;
 import com.example.learningApp.dto.request.vocab.MarkVocabRequest;
+import com.example.learningApp.dto.response.vocab.UserVocabProgressResponse;
 import com.example.learningApp.entity.User;
 import com.example.learningApp.entity.UserVocabProgress;
 import com.example.learningApp.entity.Vocab;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +40,24 @@ public class TrackingVocabLearningService {
         }
 
         progressRepo.save(progress);
+    }
+
+    public List<UserVocabProgressResponse> getMyLearningProgress() {
+
+        User user = finder.userById();
+
+        return progressRepo.findByUser(user)
+                .stream()
+                .map(p -> UserVocabProgressResponse.builder()
+                        .vocabId(p.getVocab().getId())
+                        .vocabWord(p.getVocab().getSurface())
+                        .status(p.getStatus())
+                        .reviewCount(p.getReviewCount())
+                        .forgottenCount(p.getForgottenCount())
+                        .lastReviewedAt(p.getLastReviewedAt())
+                        .createdAt(p.getCreatedAt())
+                        .build())
+                .toList();
     }
 
     // ================= PRIVATE =================

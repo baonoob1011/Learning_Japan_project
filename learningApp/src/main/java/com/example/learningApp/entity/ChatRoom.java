@@ -30,6 +30,8 @@ public class ChatRoom {
     @Column(unique = true)
     private String privateKey;
 
+    // ✅ Avatar nhóm
+    private String avatarUrl;
 
     // 1 room có nhiều member
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)

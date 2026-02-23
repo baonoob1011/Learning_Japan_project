@@ -2,12 +2,15 @@ package com.example.learningApp.controller.vocab;
 
 import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.request.vocab.MarkVocabRequest;
+import com.example.learningApp.dto.response.vocab.UserVocabProgressResponse;
 import com.example.learningApp.service.vocab.TrackingVocabLearningService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/learning")
@@ -31,6 +34,19 @@ public class TrackingVocabLearningController {
                 ApiResponse.success(
                         "Marked vocab learning status successfully",
                         null
+                )
+        );
+    }
+    @GetMapping("/vocab/progress")
+    public ResponseEntity<ApiResponse<List<UserVocabProgressResponse>>> getMyProgress() {
+
+        List<UserVocabProgressResponse> progressList =
+                learningService.getMyLearningProgress();
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Fetched vocab learning progress successfully",
+                        progressList
                 )
         );
     }
