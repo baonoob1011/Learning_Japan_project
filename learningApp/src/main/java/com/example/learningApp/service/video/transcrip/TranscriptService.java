@@ -1,4 +1,4 @@
-package com.example.learningApp.service.transcrip;
+package com.example.learningApp.service.video.transcrip;
 
 import com.example.learningApp.common.EntityFinder;
 import com.example.learningApp.dto.response.video.YoutubeTranscriptResponse;

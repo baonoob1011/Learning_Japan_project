@@ -1,4 +1,4 @@
-package com.example.learningApp.service.transcrip;
+package com.example.learningApp.service.video.transcrip;
 
 import com.example.learningApp.dto.event.YoutubeTranscribeMessage;
 import com.example.learningApp.entity.YoutubeTranscript;
@@ -12,15 +12,12 @@ import com.example.learningApp.service.video.YoutubeVideoService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.elasticsearch.core.suggest.Completion;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 
 @Slf4j
