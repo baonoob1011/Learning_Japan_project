@@ -1,4 +1,4 @@
-package com.example.learningApp.service.friend;
+package com.example.learningApp.service.chat.friend;
 
 import com.example.learningApp.common.EntityFinder;
 import com.example.learningApp.dto.request.friend.SendFriendRequest;

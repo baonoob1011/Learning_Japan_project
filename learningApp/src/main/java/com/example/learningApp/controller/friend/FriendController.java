@@ -4,7 +4,7 @@ import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.request.friend.SendFriendRequest;
 import com.example.learningApp.dto.request.friend.FriendActionRequest;
 import com.example.learningApp.dto.response.friend.FriendRequestResponse;
-import com.example.learningApp.service.friend.FriendService;
+import com.example.learningApp.service.chat.friend.FriendService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
