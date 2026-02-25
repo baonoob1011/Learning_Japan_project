@@ -1,4 +1,4 @@
-package com.example.learningApp.dto.response.dashboard;
+package com.example.learningApp.dto.response.progress;
 
 import lombok.*;
 

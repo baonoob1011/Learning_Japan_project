@@ -2,8 +2,8 @@ package com.example.learningApp.controller.progress;
 
 import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.response.progress.DailyProgressResponse;
+import com.example.learningApp.dto.response.progress.UserLearningDashboardResponse;
 import com.example.learningApp.service.progress.UserLearningProgressService;
-import com.example.learningApp.dto.response.dashboard.UserLearningDashboardResponse;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;

@@ -1,6 +1,5 @@
 package com.example.learningApp.dto.response.progress;
 
-import com.example.learningApp.dto.response.dashboard.UserLearningDashboardResponse;
 import com.example.learningApp.dto.response.user.UserResponse;
 import lombok.*;
 

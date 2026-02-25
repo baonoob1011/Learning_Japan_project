@@ -3,9 +3,9 @@ package com.example.learningApp.service.progress;
 
 import com.example.learningApp.dto.request.progress.UpdateUserLearningProgressRequest;
 import com.example.learningApp.dto.response.progress.DailyProgressResponse;
+import com.example.learningApp.dto.response.progress.UserLearningDashboardResponse;
 import com.example.learningApp.dto.response.progress.UserLearningProgressResponse;
 import com.example.learningApp.entity.User;
-import com.example.learningApp.dto.response.dashboard.UserLearningDashboardResponse;
 import com.example.learningApp.entity.UserLearningProgress;
 import com.example.learningApp.mapper.UserLearningProgressMapper;
 import com.example.learningApp.repository.UserExamResultRepository;
