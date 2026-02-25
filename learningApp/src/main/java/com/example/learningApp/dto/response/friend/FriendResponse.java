@@ -7,7 +7,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class FriendRequestDTO {
+public class FriendResponse {
     private String requestId;
     private String senderId;
     private String senderName;
