@@ -16,7 +16,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/learning-progress")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('USER_VIP')")
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class UserLearningController {
      UserLearningProgressService service;

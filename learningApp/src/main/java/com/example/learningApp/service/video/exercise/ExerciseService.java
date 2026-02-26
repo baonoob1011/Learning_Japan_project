@@ -31,15 +31,35 @@ public class ExerciseService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /**
+     * Lấy exercise + questions theo videoId
+     * Nếu không có -> trả về null (không throw)
+     */
     @Transactional(readOnly = true)
     public ExerciseDetailResponse getExerciseWithQuestionsByVideoId(String videoId) {
 
         Exercise exercise = exerciseRepository
                 .findFirstByVideoIdOrderByCreatedAtDesc(videoId)
-                .orElseThrow(() -> new RuntimeException("Exercise not found for video"));
+                .orElse(null);
+
+        if (exercise == null) {
+            return null;
+        }
 
         List<QuestionVideoYoutube> questions =
                 questionRepository.findByExerciseId(exercise.getId());
+
+        if (questions == null || questions.isEmpty()) {
+            return ExerciseDetailResponse.builder()
+                    .id(exercise.getId())
+                    .videoId(exercise.getVideo().getId())
+                    .title(exercise.getTitle())
+                    .description(exercise.getDescription())
+                    .totalQuestions(0)
+                    .createdAt(exercise.getCreatedAt())
+                    .questions(List.of())
+                    .build();
+        }
 
         List<QuestionResponse> questionResponses = new ArrayList<>();
 
@@ -47,7 +67,9 @@ public class ExerciseService {
             List<AnswerOption> options =
                     answerOptionRepository.findByQuestionId(q.getId());
 
-            List<OptionResponse> optionResponses = options.stream()
+            List<OptionResponse> optionResponses = options == null
+                    ? List.of()
+                    : options.stream()
                     .map(o -> OptionResponse.builder()
                             .optionIndex(o.getOptionIndex())
                             .content(o.getContent())
@@ -77,13 +99,21 @@ public class ExerciseService {
                 .description(exercise.getDescription())
                 .totalQuestions(exercise.getTotalQuestions())
                 .createdAt(exercise.getCreatedAt())
-                .questions(questionResponses) // <-- gộp tại đây
+                .questions(questionResponses)
                 .build();
     }
+
+    /**
+     * Lấy exercise basic
+     * Nếu không có -> trả null
+     */
     @Transactional(readOnly = true)
     public ExerciseDetailResponse getExercise(String exerciseId) {
-        Exercise exercise = exerciseRepository.findById(exerciseId)
-                .orElseThrow(() -> new RuntimeException("Exercise not found"));
+        Exercise exercise = exerciseRepository.findById(exerciseId).orElse(null);
+
+        if (exercise == null) {
+            return null;
+        }
 
         return ExerciseDetailResponse.builder()
                 .id(exercise.getId())
@@ -92,13 +122,22 @@ public class ExerciseService {
                 .description(exercise.getDescription())
                 .totalQuestions(exercise.getTotalQuestions())
                 .createdAt(exercise.getCreatedAt())
+                .questions(List.of())
                 .build();
     }
 
+    /**
+     * Lấy danh sách câu hỏi theo exercise
+     * Nếu không có -> trả list rỗng
+     */
     @Transactional(readOnly = true)
     public List<QuestionResponse> getQuestionsByExercise(String exerciseId) {
         List<QuestionVideoYoutube> questions =
                 questionRepository.findByExerciseId(exerciseId);
+
+        if (questions == null || questions.isEmpty()) {
+            return List.of();
+        }
 
         List<QuestionResponse> responses = new ArrayList<>();
 
@@ -106,7 +145,9 @@ public class ExerciseService {
             List<AnswerOption> options =
                     answerOptionRepository.findByQuestionId(q.getId());
 
-            List<OptionResponse> optionResponses = options.stream()
+            List<OptionResponse> optionResponses = options == null
+                    ? List.of()
+                    : options.stream()
                     .map(o -> OptionResponse.builder()
                             .optionIndex(o.getOptionIndex())
                             .content(o.getContent())
@@ -131,13 +172,29 @@ public class ExerciseService {
         return responses;
     }
 
+    /**
+     * Generate exercise từ video
+     * Nếu video không tồn tại -> trả response rỗng (không throw)
+     */
     @Transactional
     public ExerciseResponse generateFromVideo(GenerateExerciseRequest request) {
-        YoutubeVideo video = videoRepository.findById(request.getVideoId())
-                .orElseThrow(() -> new RuntimeException("Video not found"));
+        YoutubeVideo video = videoRepository.findById(request.getVideoId()).orElse(null);
+        if (video == null) {
+            return ExerciseResponse.builder()
+                    .exerciseId(null)
+                    .totalQuestions(0)
+                    .build();
+        }
 
         List<YoutubeTranscript> transcripts =
                 transcriptRepository.findByVideoId(request.getVideoId());
+
+        if (transcripts == null || transcripts.isEmpty()) {
+            return ExerciseResponse.builder()
+                    .exerciseId(null)
+                    .totalQuestions(0)
+                    .build();
+        }
 
         Exercise exercise = Exercise.builder()
                 .video(video)
@@ -152,7 +209,6 @@ public class ExerciseService {
 
         for (YoutubeTranscript t : transcripts) {
             try {
-                // 1. Prompt AI
                 String prompt = """
 Bạn là giáo viên tiếng Nhật.
 Từ đoạn transcript sau, hãy tạo 1 câu hỏi trắc nghiệm nghe hiểu.
@@ -174,7 +230,6 @@ Transcript:
 
                 String aiResponse = chatbotService.chat(prompt);
 
-                // 2. Parse JSON
                 Map<String, Object> result =
                         objectMapper.readValue(aiResponse, Map.class);
 
@@ -182,7 +237,6 @@ Transcript:
                 List<String> options = (List<String>) result.get("options");
                 Integer correctIndex = (Integer) result.get("correctIndex");
 
-                // 3. Save Question
                 QuestionVideoYoutube q = QuestionVideoYoutube.builder()
                         .exercise(exercise)
                         .transcript(t)
@@ -194,7 +248,6 @@ Transcript:
 
                 questionRepository.save(q);
 
-                // 4. Save Options
                 List<AnswerOption> optionEntities = new ArrayList<>();
                 for (int i = 0; i < options.size(); i++) {
                     optionEntities.add(
@@ -210,7 +263,6 @@ Transcript:
                 questions.add(q);
 
             } catch (Exception e) {
-                // fallback nếu AI lỗi
                 QuestionVideoYoutube fallback = QuestionVideoYoutube.builder()
                         .exercise(exercise)
                         .transcript(t)
