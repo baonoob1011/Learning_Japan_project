@@ -1,5 +1,6 @@
 package com.example.learningApp.entity;
 
+import com.example.learningApp.enums.JLPTLevel;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -34,6 +35,8 @@ public class User {
     @Column(name = "vip_expired_at")
     private LocalDateTime vipExpiredAt;
 
+    @Enumerated(EnumType.STRING)
+    private JLPTLevel level;
 
     @Column(nullable = false)
     private Boolean enabled = true;

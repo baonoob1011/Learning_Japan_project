@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +27,48 @@ public class OrderService {
     private final EntityFinder finder;
 
     /* ===================== CREATE ORDER ===================== */
+
+    public List<OrderSuccessResponse> getMyOrders() {
+
+        var currentUser = finder.userById();
+
+        return orderRepository
+                .findByUserIdOrderByCreatedAtDesc(currentUser.getId())
+                .stream()
+                .map(order -> OrderSuccessResponse.builder()
+                        .orderId(order.getId())
+                        .orderCode(order.getOrderCode())
+                        .amount(order.getAmount())
+                        .paymentMethod(order.getPaymentMethod())
+                        .transactionNo(order.getTransactionNo())
+                        .paidAt(order.getPaidAt())
+                        .expiredAt(order.getExpiredAt())
+                        .vipPackageId(order.getVipPackage().getId())
+                        .packageName(order.getVipPackage().getName())
+                        .planType(order.getVipPackage().getPlanType().name())
+                        .durationDays(order.getVipPackage().getDurationDays())
+                        .build())
+                .toList();
+    }
+    public OrderSuccessResponse getOrderDetail(String orderCode) {
+
+        Order order = orderRepository.findByOrderCode(orderCode)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        return OrderSuccessResponse.builder()
+                .orderId(order.getId())
+                .orderCode(order.getOrderCode())
+                .amount(order.getAmount())
+                .paymentMethod(order.getPaymentMethod())
+                .transactionNo(order.getTransactionNo())
+                .paidAt(order.getPaidAt())
+                .expiredAt(order.getExpiredAt())
+                .vipPackageId(order.getVipPackage().getId())
+                .packageName(order.getVipPackage().getName())
+                .planType(order.getVipPackage().getPlanType().name())
+                .durationDays(order.getVipPackage().getDurationDays())
+                .build();
+    }
 
     public Order createPendingOrder(
             String vipPackageId,
