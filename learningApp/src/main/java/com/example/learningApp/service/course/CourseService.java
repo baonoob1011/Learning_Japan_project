@@ -33,10 +33,28 @@ public class CourseService {
 
         Course course = courseMapper.toCourse(request);
 
-        // ✅ upload image nếu có
+        /* ================= PAYMENT ================= */
+
+        if (Boolean.TRUE.equals(request.getIsPaid())) {
+
+            if (request.getPrice() == null || request.getPrice() <= 0) {
+                throw new RuntimeException("Price must be greater than 0");
+            }
+
+            course.setIsPaid(true);
+            course.setPrice(request.getPrice());
+
+        } else {
+            course.setIsPaid(false);
+            course.setPrice(0L);
+        }
+
+        /* ================= IMAGE ================= */
+
         if (request.getImage() != null && !request.getImage().isEmpty()) {
             try {
-                String imageUrl = s3Service.uploadFile(request.getImage(), "courses/images");
+                String imageUrl =
+                        s3Service.uploadFile(request.getImage(), "courses/images");
                 course.setImageUrl(imageUrl);
             } catch (IOException e) {
                 throw new RuntimeException("Upload image failed");
@@ -51,7 +69,6 @@ public class CourseService {
 
         return "Create course successfully";
     }
-
 
     /* ===================== GET ALL ===================== */
 

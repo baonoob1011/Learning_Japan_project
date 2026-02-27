@@ -1,6 +1,7 @@
 package com.example.learningApp.controller.order;
 
 import com.example.learningApp.common.ApiResponse;
+import com.example.learningApp.dto.response.order.OrderDetailResponse;
 import com.example.learningApp.dto.response.order.OrderSuccessResponse;
 import com.example.learningApp.service.order.OrderService;
 import lombok.AccessLevel;
@@ -23,7 +24,7 @@ public class UserOrderController {
     /* ===================== GET MY ORDERS ===================== */
 
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<List<OrderSuccessResponse>>> getMyOrders() {
+    public ResponseEntity<ApiResponse<List<OrderDetailResponse>>> getMyOrders() {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "User orders retrieved successfully",
@@ -35,7 +36,7 @@ public class UserOrderController {
     /* ===================== GET ORDER DETAIL ===================== */
 
     @GetMapping("/me/{orderCode}")
-    public ResponseEntity<ApiResponse<OrderSuccessResponse>> getMyOrderDetail(
+    public ResponseEntity<ApiResponse<OrderDetailResponse>> getMyOrderDetail(
             @PathVariable String orderCode
     ) {
         return ResponseEntity.ok(

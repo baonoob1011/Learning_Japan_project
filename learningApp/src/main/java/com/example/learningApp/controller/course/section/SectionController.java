@@ -1,9 +1,9 @@
-package com.example.learningApp.controller.section;
+package com.example.learningApp.controller.course.section;
 
 import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.request.section.CreateSectionRequest;
 import com.example.learningApp.dto.response.section.SectionResponse;
-import com.example.learningApp.service.section.SectionService;
+import com.example.learningApp.service.course.section.SectionService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;

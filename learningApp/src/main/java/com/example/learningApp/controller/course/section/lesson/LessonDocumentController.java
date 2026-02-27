@@ -1,8 +1,8 @@
-package com.example.learningApp.controller.lesson;
+package com.example.learningApp.controller.course.section.lesson;
 
 import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.response.lesson.LessonDocumentResponse;
-import com.example.learningApp.service.lesson.LessonDocumentService;
+import com.example.learningApp.service.course.section.lesson.LessonDocumentService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;

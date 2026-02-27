@@ -1,4 +1,4 @@
-package com.example.learningApp.service.section;
+package com.example.learningApp.service.course.section;
 
 import com.example.learningApp.entity.Section;
 import com.example.learningApp.entity.User;

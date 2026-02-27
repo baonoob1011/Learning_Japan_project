@@ -1,144 +1,192 @@
 package com.example.learningApp.service.order;
 
-
 import com.example.learningApp.common.EntityFinder;
+import com.example.learningApp.dto.response.order.OrderDetailResponse;
 import com.example.learningApp.dto.response.order.OrderSuccessResponse;
+import com.example.learningApp.entity.Enrollment;
 import com.example.learningApp.entity.Order;
+import com.example.learningApp.entity.OrderItem;
 import com.example.learningApp.entity.User;
 import com.example.learningApp.entity.VipPackage;
+import com.example.learningApp.entity.VipSubscription;
 import com.example.learningApp.enums.PaymentStatus;
+import com.example.learningApp.enums.ProductType;
+import com.example.learningApp.mapper.OrderMapper;
+import com.example.learningApp.repository.EnrollmentRepository;
 import com.example.learningApp.repository.OrderRepository;
 import com.example.learningApp.repository.UserRepository;
 import com.example.learningApp.repository.VipPackageRepository;
+import com.example.learningApp.repository.VipSubscriptionRepository;
 import com.example.learningApp.service.vipPackage.VipPurchaseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class OrderService {
 
-    private final OrderRepository orderRepository;
-    private final VipPurchaseService vipPurchaseService;
+        private final OrderRepository orderRepository;
+        private final VipPurchaseService vipPurchaseService;
+        private final EnrollmentRepository enrollmentRepository;
+        private final VipSubscriptionRepository vipSubscriptionRepository;
+        private final OrderMapper orderMapper;
+        private final EntityFinder finder;
 
-    private final EntityFinder finder;
 
-    /* ===================== CREATE ORDER ===================== */
+        public List<OrderDetailResponse> getMyOrders() {
 
-    public List<OrderSuccessResponse> getMyOrders() {
+                var currentUser = finder.userById();
 
-        var currentUser = finder.userById();
+                return orderRepository
+                        .findByUserIdOrderByCreatedAtDesc(currentUser.getId())
+                        .stream()
+                        .map(orderMapper::toOrderDetailResponse)
+                        .toList();
+        }
+        public OrderDetailResponse getOrderDetail(String orderCode) {
 
-        return orderRepository
-                .findByUserIdOrderByCreatedAtDesc(currentUser.getId())
-                .stream()
-                .map(order -> OrderSuccessResponse.builder()
-                        .orderId(order.getId())
-                        .orderCode(order.getOrderCode())
-                        .amount(order.getAmount())
-                        .paymentMethod(order.getPaymentMethod())
-                        .transactionNo(order.getTransactionNo())
-                        .paidAt(order.getPaidAt())
-                        .expiredAt(order.getExpiredAt())
-                        .vipPackageId(order.getVipPackage().getId())
-                        .packageName(order.getVipPackage().getName())
-                        .planType(order.getVipPackage().getPlanType().name())
-                        .durationDays(order.getVipPackage().getDurationDays())
-                        .build())
-                .toList();
-    }
-    public OrderSuccessResponse getOrderDetail(String orderCode) {
+                var currentUser = finder.userById();
 
-        Order order = orderRepository.findByOrderCode(orderCode)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                Order order = orderRepository
+                        .findByOrderCodeAndUserId(orderCode, currentUser.getId())
+                        .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        return OrderSuccessResponse.builder()
-                .orderId(order.getId())
-                .orderCode(order.getOrderCode())
-                .amount(order.getAmount())
-                .paymentMethod(order.getPaymentMethod())
-                .transactionNo(order.getTransactionNo())
-                .paidAt(order.getPaidAt())
-                .expiredAt(order.getExpiredAt())
-                .vipPackageId(order.getVipPackage().getId())
-                .packageName(order.getVipPackage().getName())
-                .planType(order.getVipPackage().getPlanType().name())
-                .durationDays(order.getVipPackage().getDurationDays())
-                .build();
-    }
+                return orderMapper.toOrderDetailResponse(order);
+        }
+        public Order createPendingOrder(
+                String productId,
+                ProductType productType,
+                String orderCode,
+                Long amount) {
 
-    public Order createPendingOrder(
-            String vipPackageId,
-            String orderCode,
-            Long amount
-    ) {
+                var user = finder.userById();
 
-        var user=finder.userById();
-        var vipPackage=finder.vipPackageById(vipPackageId);
+                Order order = Order.builder()
+                        .user(user)
+                        .orderCode(orderCode)
+                        .amount(amount)
+                        .paymentMethod("VNPAY")
+                        .status(PaymentStatus.PENDING)
+                        .createdAt(LocalDateTime.now())
+                        .build();
 
-        Order order = Order.builder()
-                .user(user)
-                .vipPackage(vipPackage)
-                .orderCode(orderCode)
-                .amount(amount)
-                .paymentMethod("VNPAY")
-                .status(PaymentStatus.PENDING)
-                .build();
+                OrderItem orderItem = OrderItem.builder()
+                        .order(order)
+                        .productType(productType)
+                        .price(amount)
+                        .build();
 
-        return orderRepository.save(order);
-    }
+                if (productType == ProductType.VIP_PACKAGE) {
 
-    /* ===================== SUCCESS ===================== */
+                        var vipPackage = finder.vipPackageById(productId);
+                        orderItem.setVipPackage(vipPackage);
 
-    public OrderSuccessResponse markOrderSuccess(
-            String orderCode,
-            String transactionNo
-    ) {
+                } else if (productType == ProductType.COURSE) {
 
-        Order order = orderRepository.findByOrderCode(orderCode)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                        var course = finder.courseById(productId);
 
-        order.setStatus(PaymentStatus.SUCCESS);
-        order.setTransactionNo(transactionNo);
-        order.setPaidAt(LocalDateTime.now());
+                        if (!course.getIsPaid()) {
+                                throw new RuntimeException("This course is free");
+                        }
 
-        Integer duration = order.getVipPackage().getDurationDays();
+                        boolean alreadyEnrolled =
+                                enrollmentRepository.existsByUserIdAndCourseId(
+                                        user.getId(), course.getId());
 
-        if (duration != null) {
-            order.setExpiredAt(LocalDateTime.now().plusDays(duration));
+                        if (alreadyEnrolled) {
+                                throw new RuntimeException("You already enrolled this course");
+                        }
+
+                        orderItem.setCourse(course);
+                }
+
+                order.setOrderItems(List.of(orderItem));
+
+                return orderRepository.save(order);
+        }
+        /* ===================== SUCCESS ===================== */
+
+        public OrderSuccessResponse markOrderSuccess(
+                String orderCode,
+                String transactionNo) {
+
+                Order order = orderRepository.findByOrderCode(orderCode)
+                        .orElseThrow(() -> new RuntimeException("Order not found"));
+
+                // ✅ chống double success
+                if (order.getStatus() == PaymentStatus.SUCCESS) {
+                        return orderMapper.toOrderSuccessResponse(order);
+                }
+
+                order.setStatus(PaymentStatus.SUCCESS);
+                order.setTransactionNo(transactionNo);
+                order.setPaidAt(LocalDateTime.now());
+
+                User user = order.getUser();
+
+                for (OrderItem item : order.getOrderItems()) {
+
+                        /* ================= COURSE ================= */
+                        if (item.getProductType() == ProductType.COURSE) {
+
+                                boolean alreadyEnrolled =
+                                        enrollmentRepository.existsByUserIdAndCourseId(
+                                                user.getId(),
+                                                item.getCourse().getId());
+
+                                if (!alreadyEnrolled) {
+                                        Enrollment enrollment = Enrollment.builder()
+                                                .user(user)
+                                                .course(item.getCourse())
+                                                .enrolledAt(LocalDateTime.now())
+                                                .build();
+
+                                        enrollmentRepository.save(enrollment);
+                                }
+                        }
+
+                        /* ================= VIP ================= */
+                        else if (item.getProductType() == ProductType.VIP_PACKAGE) {
+
+                                // ✅ gọi service chuyên xử lý VIP
+                                vipPurchaseService.purchaseVip(
+                                        item.getVipPackage().getId(),
+                                        user.getId()
+                                );
+
+
+                                // lưu subscription history
+                                VipSubscription subscription = VipSubscription.builder()
+                                        .user(user)
+                                        .vipPackage(item.getVipPackage())
+                                        .startDate(LocalDateTime.now())
+                                        .expiredDate(user.getVipExpiredAt())
+                                        .active(true)
+                                        .build();
+
+                                vipSubscriptionRepository.save(subscription);
+                        }
+                }
+
+                orderRepository.save(order);
+
+                return orderMapper.toOrderSuccessResponse(order);
         }
 
-        orderRepository.save(order);
-        vipPurchaseService.purchaseVip(order.getVipPackage().getId(),order.getUser().getId());
+        /* ===================== FAILED ===================== */
 
-        return OrderSuccessResponse.builder()
-                .orderId(order.getId())
-                .orderCode(order.getOrderCode())
-                .amount(order.getAmount())
-                .paymentMethod(order.getPaymentMethod())
-                .transactionNo(order.getTransactionNo())
-                .paidAt(order.getPaidAt())
-                .expiredAt(order.getExpiredAt())
-                .vipPackageId(order.getVipPackage().getId())
-                .packageName(order.getVipPackage().getName())
-                .planType(order.getVipPackage().getPlanType().name())
-                .durationDays(order.getVipPackage().getDurationDays())
-                .build();
-    }
+        public void markOrderFailed(String orderCode) {
 
+                Order order = orderRepository.findByOrderCode(orderCode)
+                        .orElseThrow(() -> new RuntimeException("Order not found"));
 
-    /* ===================== FAILED ===================== */
+                order.setStatus(PaymentStatus.FAILED);
 
-    public void markOrderFailed(String orderCode) {
-
-        Order order = orderRepository.findByOrderCode(orderCode)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
-
-        order.setStatus(PaymentStatus.FAILED);
-
-        orderRepository.save(order);
-    }
+                orderRepository.save(order);
+        }
 }

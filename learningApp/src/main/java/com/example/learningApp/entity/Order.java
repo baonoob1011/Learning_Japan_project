@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "orders")
@@ -25,9 +27,8 @@ public class Order {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "vip_package_id", nullable = false)
-    private VipPackage vipPackage;
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderItem> orderItems = new ArrayList<>();
 
     /* ===================== PAYMENT INFO ===================== */
 
@@ -50,10 +51,6 @@ public class Order {
     private LocalDateTime createdAt;
 
     private LocalDateTime paidAt;
-
-    private LocalDateTime expiredAt;
-
-    /* ===================== AUTO ===================== */
 
     @PrePersist
     public void prePersist() {

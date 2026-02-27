@@ -18,6 +18,8 @@ public class CourseResponse {
     private JLPTLevel level;
     private LessonProcess lessonProcess;
     private String createdBy;
+    private Boolean isPaid;
+    private Long price;
     private String imageUrl;
     private Boolean isActive;
     private LocalDateTime createdAt;

@@ -2,6 +2,7 @@ package com.example.learningApp.service.payment;
 
 import com.example.learningApp.common.EntityFinder;
 import com.example.learningApp.dto.response.order.OrderSuccessResponse;
+import com.example.learningApp.enums.ProductType;
 import com.example.learningApp.service.order.OrderService;
 import com.example.learningApp.service.vipPackage.VipPurchaseService;
 import jakarta.transaction.Transactional;
@@ -43,83 +44,96 @@ public class VnPayService {
      */
     @Transactional
     public Map<String, Object> createPaymentRequest(
-            String vipPackageId
-    ) {
+            String productId,
+            ProductType productType
+    ) throws Exception {
+
         var user = finder.userById();
-        var vipPackage = finder.vipPackageById(vipPackageId);
 
-        try {
-//            long realAmount = Long.parseLong(amountVND);
-//            long amount = Long.parseLong(amountVND) * 100; // VNPay requires smallest unit
-            String vnp_TxnRef = user.getId() + "_" + UUID.randomUUID();
+        Long amount;
+        String orderInfo;
 
-            // ✅ Lưu order PENDING
-            var order = orderService.createPendingOrder(
-                    vipPackageId,
-                    vnp_TxnRef,
-                    vipPackage.getPrice()
-            );
+        if (productType == ProductType.VIP_PACKAGE) {
 
-            Map<String, String> vnp_Params = new HashMap<>();
+            var vipPackage = finder.vipPackageById(productId);
+            amount = vipPackage.getPrice();
+            orderInfo = "Thanh toan goi VIP " + vipPackage.getName();
 
-            vnp_Params.put("vnp_Version", "2.1.0");
-            vnp_Params.put("vnp_Command", "pay");
-            vnp_Params.put("vnp_TmnCode", vnp_TmnCode);
-            vnp_Params.put("vnp_Amount", String.valueOf(vipPackage.getPrice() * 100));
-            vnp_Params.put("vnp_CurrCode", "VND");
-            vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
-            vnp_Params.put("vnp_OrderInfo", "Thanh toan don hang " + vipPackage.getName());
-            vnp_Params.put("vnp_OrderType", "other");
-            vnp_Params.put("vnp_Locale", "vn");
-            vnp_Params.put("vnp_ReturnUrl", vnp_ReturnUrl);
-            vnp_Params.put("vnp_IpAddr", "127.0.0.1");
+        } else if (productType == ProductType.COURSE) {
 
-            String vnp_CreateDate = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
-            vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
+            var course = finder.courseById(productId);
+            amount = course.getPrice();
+            orderInfo = "Thanh toan khoa hoc " + course.getTitle();
 
-            // Build query & hash
-            List<String> fieldNames = new ArrayList<>(vnp_Params.keySet());
-            Collections.sort(fieldNames);
+        } else {
+            throw new RuntimeException("Invalid product type");
+        }
 
-            StringBuilder hashData = new StringBuilder();
-            StringBuilder query = new StringBuilder();
+        String vnp_TxnRef = user.getId() + "_" + UUID.randomUUID();
 
-            for (Iterator<String> itr = fieldNames.iterator(); itr.hasNext(); ) {
-                String fieldName = itr.next();
-                String fieldValue = vnp_Params.get(fieldName);
+        var order = orderService.createPendingOrder(
+                productId,
+                productType,
+                vnp_TxnRef,
+                amount
+        );
 
-                if (fieldValue != null && !fieldValue.isEmpty()) {
+        Map<String, String> vnp_Params = new HashMap<>();
 
-                    hashData.append(fieldName)
-                            .append("=")
-                            .append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII));
+        vnp_Params.put("vnp_Version", "2.1.0");
+        vnp_Params.put("vnp_Command", "pay");
+        vnp_Params.put("vnp_TmnCode", vnp_TmnCode);
+        vnp_Params.put("vnp_Amount", String.valueOf(amount * 100));
+        vnp_Params.put("vnp_CurrCode", "VND");
+        vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
+        vnp_Params.put("vnp_OrderInfo", orderInfo);
+        vnp_Params.put("vnp_OrderType", "other");
+        vnp_Params.put("vnp_Locale", "vn");
+        vnp_Params.put("vnp_ReturnUrl", vnp_ReturnUrl);
+        vnp_Params.put("vnp_IpAddr", "127.0.0.1");
 
-                    query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII))
-                            .append("=")
-                            .append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII));
+        String vnp_CreateDate =
+                new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+        vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
 
-                    if (itr.hasNext()) {
-                        hashData.append("&");
-                        query.append("&");
-                    }
+        List<String> fieldNames = new ArrayList<>(vnp_Params.keySet());
+        Collections.sort(fieldNames);
+
+        StringBuilder hashData = new StringBuilder();
+        StringBuilder query = new StringBuilder();
+
+        for (Iterator<String> itr = fieldNames.iterator(); itr.hasNext();) {
+            String fieldName = itr.next();
+            String fieldValue = vnp_Params.get(fieldName);
+
+            if (fieldValue != null && !fieldValue.isEmpty()) {
+
+                hashData.append(fieldName)
+                        .append("=")
+                        .append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII));
+
+                query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII))
+                        .append("=")
+                        .append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII));
+
+                if (itr.hasNext()) {
+                    hashData.append("&");
+                    query.append("&");
                 }
             }
-
-            String vnp_SecureHash = hmacSHA512(vnp_HashSecret, hashData.toString());
-
-            String paymentUrl = vnp_PayUrl + "?" + query + "&vnp_SecureHash=" + vnp_SecureHash;
-
-            log.info("VNPay Payment URL created: {}", paymentUrl);
-
-            return Map.of(
-                    "paymentUrl", paymentUrl,
-                    "orderId", order.getId(),
-                    "gateway", "VNPAY"
-            );
-
-        } catch (Exception e) {
-            throw new RuntimeException("Error creating VNPay payment request: " + e.getMessage(), e);
         }
+
+        String vnp_SecureHash =
+                hmacSHA512(vnp_HashSecret, hashData.toString());
+
+        String paymentUrl =
+                vnp_PayUrl + "?" + query + "&vnp_SecureHash=" + vnp_SecureHash;
+
+        return Map.of(
+                "paymentUrl", paymentUrl,
+                "orderId", order.getId(),
+                "gateway", "VNPAY"
+        );
     }
 
     /*

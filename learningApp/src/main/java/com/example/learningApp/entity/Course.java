@@ -46,6 +46,10 @@ public class Course {
     @JoinColumn(name = "created_by_user_id")
     private User createdBy;
 
+    private Boolean isPaid = false;   // true = khóa học trả phí
+
+    private Long price;               // giá gốc (VND)
+
     private Boolean isActive = true;
 
     private LocalDateTime createdAt;

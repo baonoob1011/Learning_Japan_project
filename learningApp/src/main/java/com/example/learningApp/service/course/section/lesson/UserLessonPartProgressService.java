@@ -1,15 +1,12 @@
-package com.example.learningApp.service.lesson;
+package com.example.learningApp.service.course.section.lesson;
 
 import com.example.learningApp.common.EntityFinder;
 import com.example.learningApp.dto.request.lesson.UpdateLessonPartProgressRequest;
 import com.example.learningApp.dto.response.lesson.LessonPartProgressResponse;
-import com.example.learningApp.entity.Lesson;
 import com.example.learningApp.entity.LessonPart;
 import com.example.learningApp.entity.User;
 import com.example.learningApp.entity.UserLessonPartProgress;
-import com.example.learningApp.entity.UserLessonProgress;
 import com.example.learningApp.repository.UserLessonPartProgressRepository;
-import com.example.learningApp.repository.UserLessonProgressRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

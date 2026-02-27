@@ -1,11 +1,11 @@
-package com.example.learningApp.service.lesson;
+package com.example.learningApp.service.course.section.lesson;
 
 import com.example.learningApp.entity.Lesson;
 import com.example.learningApp.entity.User;
 import com.example.learningApp.entity.UserLessonProgress;
 import com.example.learningApp.repository.UserLessonPartProgressRepository;
 import com.example.learningApp.repository.UserLessonProgressRepository;
-import com.example.learningApp.service.section.UserSectionProgressService;
+import com.example.learningApp.service.course.section.UserSectionProgressService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

@@ -20,7 +20,7 @@ public interface OrderRepository extends JpaRepository<Order, String> {
         WHERE o.status = :status
     """)
     Optional<Long> sumAmountByStatus(@Param("status") PaymentStatus status);
-
+    Optional<Order> findByOrderCodeAndUserId(String orderCode, String userId);
 
     @Query("""
         SELECT SUM(o.amount)

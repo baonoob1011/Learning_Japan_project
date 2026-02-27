@@ -1,16 +1,15 @@
-package com.example.learningApp.controller.lesson;
+package com.example.learningApp.controller.course.section.lesson;
 
 import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.request.lesson.CreateLessonRequest;
 import com.example.learningApp.dto.response.lesson.LessonResponse;
-import com.example.learningApp.service.lesson.LessonService;
+import com.example.learningApp.service.course.section.lesson.LessonService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.util.List;
 
 @RestController

@@ -29,11 +29,12 @@ public class VnPayController {
     @PostMapping("/vnpay/create")
     public ResponseEntity<ApiResponse<Map<String, Object>>> createPayment(
             @RequestBody CreateVnPayRequest request
-    ) {
+    ) throws Exception {
 
         Map<String, Object> response =
                 vnPayService.createPaymentRequest(
-                        request.getVipPackageId()
+                        request.getProductId(),
+                        request.getProductType()
                 );
 
         return ResponseEntity.ok(

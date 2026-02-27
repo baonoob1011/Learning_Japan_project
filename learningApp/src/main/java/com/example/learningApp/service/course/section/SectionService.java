@@ -1,4 +1,4 @@
-package com.example.learningApp.service.section;
+package com.example.learningApp.service.course.section;
 
 import com.example.learningApp.common.EntityFinder;
 import com.example.learningApp.dto.request.section.CreateSectionRequest;

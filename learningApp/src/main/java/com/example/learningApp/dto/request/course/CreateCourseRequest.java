@@ -13,7 +13,8 @@ public class CreateCourseRequest {
     private String title;
 
     private String description;
-
+    private Boolean isPaid;
+    private Long price;
     private JLPTLevel level;
     private LessonProcess lessonProcess;
     private MultipartFile image; // ✅ thêm dòng này
