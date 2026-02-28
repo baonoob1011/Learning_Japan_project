@@ -26,14 +26,6 @@ public class CourseController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<String>> createCourse(
             @ModelAttribute CreateCourseRequest request    ) {
-        System.out.println("=== DEBUG START ===");
-        System.out.println("title: " + request.getTitle());
-        System.out.println("level: " + request.getLevel());
-        System.out.println("price: " + request.getPrice());
-        System.out.println("isPaid: " + request.getIsPaid());
-        System.out.println("lessonProcess: " + request.getLessonProcess());
-        System.out.println("image: " + request.getImage());
-        System.out.println("=== DEBUG END ===");
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Create course successfully",

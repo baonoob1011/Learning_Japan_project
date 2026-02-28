@@ -37,6 +37,7 @@ public class TranscriptService {
                         .id(t.getId())
                         .text(t.getText())
                         .startOffset(t.getStartOffset())
+                        .translatedText(t.getTranslatedText())
                         .endOffset(t.getEndOffset())
                         .createdAt(t.getCreatedAt())
                         .build()

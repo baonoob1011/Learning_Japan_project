@@ -27,6 +27,16 @@ public class EntityFinder {
     LessonDocumentRepository lessonDocumentRepository;
     ChatRoomRepository chatRoomRepository;
     VipPackageRepository vipPackageRepository;
+    FeedbackRepository feedbackRepository;
+    VideoCommentRepository videoCommentRepository;
+
+    public Feedback findFeedbackById(String id) {
+        return findOrThrow(
+                feedbackRepository,
+                id,
+                () -> new NotFoundException("User not found")
+        );
+    }
 
     public User userById() {
 
@@ -64,6 +74,14 @@ public class EntityFinder {
                 vipPackageRepository,
                 vipPackageById,
                 () -> new NotFoundException("Vip Package not found")
+        );
+    }
+
+    public VideoComment commentById(String id) {
+        return findOrThrow(
+                videoCommentRepository,
+                id,
+                () -> new NotFoundException("Comment not found")
         );
     }
 
