@@ -9,6 +9,7 @@ import com.example.learningApp.repository.VideoCommentRepository;
 import com.example.learningApp.repository.VideoRatingRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -24,8 +25,7 @@ public class VideoCommentService {
     private final VideoCommentRepository commentRepository;
     private final VideoRatingRepository videoRatingRepository;
     private final EntityFinder entityFinder;
-    private final VideoCommentMapper mapper;
-
+    private final @Qualifier("videoCommentMapper") VideoCommentMapper mapper;
     /* ================= CREATE COMMENT ================= */
     @Transactional
     public VideoCommentResponse createComment(CreateCommentRequest request) {
