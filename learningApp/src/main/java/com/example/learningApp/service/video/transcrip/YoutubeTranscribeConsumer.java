@@ -3,10 +3,8 @@ package com.example.learningApp.service.video.transcrip;
 import com.example.learningApp.dto.event.YoutubeTranscribeMessage;
 import com.example.learningApp.entity.YoutubeTranscript;
 import com.example.learningApp.entity.YoutubeVideo;
-import com.example.learningApp.entity.YoutubeVideoDocument;
 import com.example.learningApp.enums.VideoStatus;
 import com.example.learningApp.repository.YoutubeVideoRepository;
-import com.example.learningApp.repository.YoutubeVideoSearchRepository;
 import com.example.learningApp.service.video.YoutubeVideoInfoService;
 import com.example.learningApp.service.video.YoutubeVideoService;
 import jakarta.transaction.Transactional;
@@ -24,7 +22,6 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class YoutubeTranscribeConsumer {
-    private final YoutubeVideoSearchRepository youtubeVideoSearchRepository;
     private final YoutubeVideoRepository youtubeVideoRepository;
     private final YoutubeVideoInfoService youtubeVideoInfoService;
     private final YoutubeVideoService youtubeVideoService;
@@ -84,24 +81,7 @@ public class YoutubeTranscribeConsumer {
 
             youtubeVideoRepository.save(video);
 
-            YoutubeVideoDocument document = YoutubeVideoDocument.builder()
-                    .id(video.getId())
-                    .title(video.getTitle())
-                    .urlVideo(video.getUrlVideo())
-                    // chuyển enum sang string
-                    .videoTag(video.getVideoTag() != null ? video.getVideoTag().name() : null)
-                    .level(video.getLevel() != null ? video.getLevel().name() : null)
-                    .duration(video.getDuration())
-                    // LocalDateTime -> ISO String
-                    .createdAt(
-                            video.getCreatedAt() != null
-                                    ? video.getCreatedAt().toEpochMilli()
-                                    : Instant.now().toEpochMilli()
-                    )
 
-                    .build();
-
-            youtubeVideoSearchRepository.save(document);
             youtubeVideoService.deleteFromS3(s3Key);
 
         } catch (Exception e) {

@@ -1,4 +1,4 @@
-package com.example.learningApp.service.course.enrollment;
+package com.example.learningApp.service.course.errollment;
 
 import com.example.learningApp.common.EntityFinder;
 import com.example.learningApp.dto.response.course.CourseResponse;

@@ -1,7 +1,6 @@
 package com.example.learningApp.configuration;
 
 import com.example.learningApp.service.init.AdminInitializationService;
-import com.example.learningApp.service.init.ElasticsearchInitializationService;
 import com.example.learningApp.service.init.RoleInitializationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +15,6 @@ public class SystemStartupRunner implements ApplicationRunner {
 
     private final RoleInitializationService roleInitService;
     private final AdminInitializationService adminInitService;
-    private final ElasticsearchInitializationService elasticInitService;
 
     @Override
     public void run(ApplicationArguments args) {
@@ -25,7 +23,6 @@ public class SystemStartupRunner implements ApplicationRunner {
 
         roleInitService.initDefaultRoles();
         adminInitService.initAdminUser();
-        elasticInitService.syncYoutubeVideos();
 
         log.info("✅ System startup completed");
     }
