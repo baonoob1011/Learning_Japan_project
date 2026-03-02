@@ -2,12 +2,14 @@ package com.example.learningApp.dto.cache;
 
 import com.example.learningApp.enums.AssessmentType;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class QuestionCache {
     private String id;
     private AssessmentType questionType;
