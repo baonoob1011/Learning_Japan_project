@@ -26,7 +26,7 @@ public class S3Controller {
     @PostMapping("/upload")
     public ResponseEntity<ApiResponse<String>> uploadFile(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("type") String type // "images", "audios", "videos"
+            @RequestParam("type") String type
     ) {
         try {
             String url = s3Service.uploadFile(file, type);

@@ -2,6 +2,7 @@ package com.example.learningApp.controller.exam;
 
 import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.request.exam.CreateQuestionRequest;
+import com.example.learningApp.dto.request.exam.question.UpdateQuestionRequest;
 import com.example.learningApp.dto.response.exam.QuestionResponse;
 import com.example.learningApp.service.exam.QuestionService;
 import jakarta.validation.Valid;
@@ -38,7 +39,18 @@ public class QuestionController {
     public ApiResponse<List<QuestionResponse>> getAll() {
         return ApiResponse.success(questionService.getAll());
     }
+    @PutMapping("/{questionId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<QuestionResponse>> updateQuestion(
+            @PathVariable String questionId,
+            @RequestBody @Valid UpdateQuestionRequest request
+    ) {
+        QuestionResponse res = questionService.updateQuestion(questionId, request);
 
+        return ResponseEntity.ok(
+                ApiResponse.success("Question updated successfully", res)
+        );
+    }
 
 }
 
