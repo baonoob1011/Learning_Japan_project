@@ -1,4 +1,4 @@
-package com.example.learningApp.service.course.errollment;
+package com.example.learningApp.service.course.enrollment;
 
 import com.example.learningApp.common.EntityFinder;
 import com.example.learningApp.repository.EnrollmentRepository;
@@ -19,7 +19,6 @@ public class EnrollmentCheckService {
         return enrollmentRepository
                 .existsByUserIdAndCourseId(
                         user.getId(),
-                        courseId
-                );
+                        courseId);
     }
 }

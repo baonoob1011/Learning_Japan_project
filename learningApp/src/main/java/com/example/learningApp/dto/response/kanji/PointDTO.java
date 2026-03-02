@@ -1,4 +1,4 @@
-package com.example.learningApp.dto;
+package com.example.learningApp.dto.response.kanji;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

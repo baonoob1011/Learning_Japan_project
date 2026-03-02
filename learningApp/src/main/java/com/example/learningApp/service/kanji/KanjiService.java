@@ -1,9 +1,12 @@
 package com.example.learningApp.service.kanji;
 
 import com.example.learningApp.dto.request.kanji.CreateKanjiRequest;
+import com.example.learningApp.dto.response.kanji.KanjiAiResponse;
 import com.example.learningApp.dto.response.kanji.KanjiResponse;
 import com.example.learningApp.entity.Kanji;
 import com.example.learningApp.repository.KanjiRepository;
+import com.example.learningApp.service.ai.KanjiAiService;
+import com.example.learningApp.service.ai.KanjiStrokeAiService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +21,8 @@ public class KanjiService {
 
     private final KanjiRepository kanjiRepository;
     private final ObjectMapper objectMapper;
-
+    private final KanjiStrokeAiService kanjiStrokeAiService;
+    private  final KanjiAiService kanjiAiService;
     // =================================================
     // GET Kanji by ID
     // =================================================
@@ -40,25 +44,41 @@ public class KanjiService {
     public KanjiResponse createKanji(CreateKanjiRequest request) {
 
         try {
-            Kanji kanji = new Kanji();
-            kanji.setCharacter(request.getCharacter());
-            kanji.setMeaning(request.getMeaning());
-            kanji.setOnyomi(request.getOnyomi());
-            kanji.setKunyomi(request.getKunyomi());
 
-            // Convert List<String> -> JSON string
-            String json = objectMapper.writeValueAsString(request.getSvgStrokes());
-            kanji.setSvgStrokes(json);
+            String character = request.getCharacter();
+
+            // 1️⃣ Generate meaning + tọa độ
+            KanjiAiResponse aiData =
+                    kanjiAiService.generateKanjiData(character);
+
+            // 2️⃣ Generate SVG strokes
+            List<String> svgStrokes =
+                    kanjiStrokeAiService.generateSvgStrokes(character);
+
+            Kanji kanji = new Kanji();
+            kanji.setCharacter(character);
+            kanji.setMeaning(aiData.getMeaning());
+            kanji.setOnyomi(aiData.getOnyomi());
+            kanji.setKunyomi(aiData.getKunyomi());
+
+            // Lưu strokeData dạng JSON
+            String strokeJson =
+                    objectMapper.writeValueAsString(aiData.getStrokeData());
+            kanji.setSvgStrokes(strokeJson);
+
+            // Lưu svgStrokes dạng JSON
+            String svgJson =
+                    objectMapper.writeValueAsString(svgStrokes);
+            kanji.setSvgStrokes(svgJson);
 
             Kanji saved = kanjiRepository.save(kanji);
 
             return mapToResponse(saved);
 
         } catch (Exception e) {
-            throw new RuntimeException("Failed to create Kanji");
+            throw new RuntimeException("Failed to create Kanji", e);
         }
     }
-
     // =================================================
     // GET ALL Kanji
     // =================================================

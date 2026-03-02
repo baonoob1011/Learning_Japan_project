@@ -1,6 +1,6 @@
 package com.example.learningApp.dto.request.kanji;
 
-import com.example.learningApp.dto.PointDTO;
+import com.example.learningApp.dto.response.kanji.PointDTO;
 import lombok.Data;
 
 import java.util.List;

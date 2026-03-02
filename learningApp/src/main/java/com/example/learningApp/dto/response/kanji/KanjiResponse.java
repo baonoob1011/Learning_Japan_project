@@ -1,6 +1,5 @@
 package com.example.learningApp.dto.response.kanji;
 
-import com.example.learningApp.dto.PointDTO;
 import lombok.Builder;
 import lombok.Data;
 

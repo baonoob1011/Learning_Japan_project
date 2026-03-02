@@ -1,7 +1,6 @@
 package com.example.learningApp.service.course.section.lesson;
 
 import com.example.learningApp.common.EntityFinder;
-import com.example.learningApp.dto.request.lesson.CreateLessonDocumentRequest;
 import com.example.learningApp.dto.response.lesson.LessonDocumentResponse;
 import com.example.learningApp.entity.Lesson;
 import com.example.learningApp.entity.LessonDocument;

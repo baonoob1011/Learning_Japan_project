@@ -1,19 +1,16 @@
 package com.example.learningApp.service.course.section.lesson;
 
 import com.example.learningApp.common.EntityFinder;
-import com.example.learningApp.dto.request.lesson.CreateLessonRequest;
+import com.example.learningApp.dto.request.course.section.lesson.CreateLessonRequest;
 import com.example.learningApp.dto.response.lesson.LessonResponse;
 import com.example.learningApp.entity.Lesson;
 import com.example.learningApp.entity.Section;
-import com.example.learningApp.entity.YoutubeVideo;
 import com.example.learningApp.mapper.LessonMapper;
 import com.example.learningApp.repository.LessonRepository;
-import com.example.learningApp.service.video.YoutubeVideoInfoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -57,7 +54,25 @@ public class LessonService {
         Lesson lesson = finder.lessonId(lessonId);
         return lessonMapper.toLessonResponse(lesson);
     }
+    @Transactional
+    public String updateLesson(String lessonId, CreateLessonRequest request) {
 
+        Lesson lesson = finder.lessonId(lessonId);
+
+        // Nếu cho phép đổi section
+        if (request.getSectionId() != null) {
+            Section section = finder.sectionId(request.getSectionId());
+            lesson.setSection(section);
+        }
+
+        lesson.setTitle(request.getTitle());
+        lesson.setDescription(request.getDescription());
+        lesson.setLessonOrder(request.getLessonOrder());
+
+        lessonRepository.save(lesson);
+
+        return "Update lesson successfully";
+    }
     /* ===================== DELETE ===================== */
 
     @Transactional

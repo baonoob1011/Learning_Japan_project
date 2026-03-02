@@ -1,4 +1,4 @@
-package com.example.learningApp.dto.request.lesson;
+package com.example.learningApp.dto.request.course.section.lesson;
 
 import lombok.Getter;
 import lombok.Setter;

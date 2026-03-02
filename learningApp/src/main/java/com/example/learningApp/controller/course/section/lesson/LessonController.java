@@ -1,7 +1,7 @@
 package com.example.learningApp.controller.course.section.lesson;
 
 import com.example.learningApp.common.ApiResponse;
-import com.example.learningApp.dto.request.lesson.CreateLessonRequest;
+import com.example.learningApp.dto.request.course.section.lesson.CreateLessonRequest;
 import com.example.learningApp.dto.response.lesson.LessonResponse;
 import com.example.learningApp.service.course.section.lesson.LessonService;
 import lombok.AccessLevel;
@@ -61,7 +61,19 @@ public class LessonController {
                 )
         );
     }
+    @PutMapping("/{lessonId}")
+    public ResponseEntity<ApiResponse<String>> updateLesson(
+            @PathVariable String lessonId,
+            @RequestBody CreateLessonRequest request
+    ) {
 
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Update lesson successfully",
+                        lessonService.updateLesson(lessonId, request)
+                )
+        );
+    }
     /* ===================== DELETE ===================== */
 
     @DeleteMapping("/{lessonId}")

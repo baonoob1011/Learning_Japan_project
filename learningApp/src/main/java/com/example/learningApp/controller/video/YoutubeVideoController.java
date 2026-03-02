@@ -2,6 +2,7 @@ package com.example.learningApp.controller.video;
 
 import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.request.video.YoutubeVideoRequest;
+import com.example.learningApp.dto.request.video.YoutubeVideoUpdateRequest;
 import com.example.learningApp.dto.response.video.YoutubeVideoSummaryResponse;
 import com.example.learningApp.service.video.YoutubeVideoService;
 import jakarta.validation.Valid;
@@ -28,7 +29,17 @@ public class YoutubeVideoController {
                 ApiResponse.success("Saved video successfully", null)
         );
     }
+    @PutMapping("/{videoId}")
+    public ResponseEntity<ApiResponse<Void>> updateVideo(
+            @PathVariable String videoId,
+            @RequestBody YoutubeVideoUpdateRequest request
+    ) {
+        youtubeVideoService.updateVideo(videoId, request);
 
+        return ResponseEntity.ok(
+                ApiResponse.success("Video updated successfully", null)
+        );
+    }
     @DeleteMapping("/{videoId}")
     public ResponseEntity<ApiResponse<Void>> removeSavedVideo(
             @PathVariable String videoId

@@ -29,6 +29,8 @@ public class EntityFinder {
     VipPackageRepository vipPackageRepository;
     FeedbackRepository feedbackRepository;
     VideoCommentRepository videoCommentRepository;
+    AssessmentItemRepository assessmentItemRepository;
+    ExamSectionRepository examSectionRepository;
 
     public Feedback findFeedbackById(String id) {
         return findOrThrow(
@@ -60,6 +62,23 @@ public class EntityFinder {
                 () -> new NotFoundException("User not found")
         );
     }
+
+    public AssessmentItem assessmentItemId(String assessmentItemId) {
+        return findOrThrow(
+                assessmentItemRepository,
+                assessmentItemId,
+                () -> new NotFoundException("assessmentItem not found")
+        );
+    }
+
+    public ExamSection examSectionId(String examSectionId) {
+        return findOrThrow(
+                examSectionRepository,
+                examSectionId,
+                () -> new NotFoundException("Room not found")
+        );
+    }
+
 
     public ChatRoom chatRoomById(String chatRoomId) {
         return findOrThrow(

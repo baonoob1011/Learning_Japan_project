@@ -1,7 +1,8 @@
 package com.example.learningApp.controller.course.section.lesson;
 
 import com.example.learningApp.common.ApiResponse;
-import com.example.learningApp.dto.request.lesson.CreateLessonPartRequest;
+import com.example.learningApp.dto.request.course.section.lesson.CreateLessonPartRequest;
+import com.example.learningApp.dto.request.course.section.lesson.UpdateLessonPartRequest;
 import com.example.learningApp.dto.response.lesson.LessonPartResponse;
 import com.example.learningApp.service.course.section.lesson.LessonPartService;
 import lombok.AccessLevel;
@@ -35,7 +36,21 @@ public class LessonPartController {
                 )
         );
     }
+    /* ===================== UPDATE ===================== */
 
+    @PutMapping("/{lessonPartId}")
+    public ResponseEntity<ApiResponse<String>> updateLessonPart(
+            @PathVariable String lessonPartId,
+            @RequestBody UpdateLessonPartRequest request
+    ) throws IOException, InterruptedException {
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Update lesson part successfully",
+                        lessonPartService.updateLessonPart(lessonPartId, request)
+                )
+        );
+    }
     /* ===================== GET BY LESSON ===================== */
 
     @GetMapping("/lesson/{lessonId}")

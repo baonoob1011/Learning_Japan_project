@@ -2,6 +2,7 @@ package com.example.learningApp.service.course;
 
 import com.example.learningApp.common.EntityFinder;
 import com.example.learningApp.dto.request.course.CreateCourseRequest;
+import com.example.learningApp.dto.request.course.UpdateCourseRequest;
 import com.example.learningApp.dto.response.course.CourseResponse;
 import com.example.learningApp.entity.Course;
 import com.example.learningApp.mapper.CourseMapper;
@@ -69,7 +70,41 @@ public class CourseService {
 
         return "Create course successfully";
     }
+    @Transactional
+    public String updateCourse(String courseId, UpdateCourseRequest request) {
 
+        Course course = entityFinder.courseById(courseId);
+
+        if (request.getTitle() != null) {
+            course.setTitle(request.getTitle());
+        }
+
+        if (request.getDescription() != null) {
+            course.setDescription(request.getDescription());
+        }
+
+        if (request.getLevel() != null) {
+            course.setLevel(request.getLevel());
+        }
+
+        if (request.getLessonProcess() != null) {
+            course.setLessonProcess(request.getLessonProcess());
+        }
+
+        if (request.getPrice() != null) {
+
+            if (request.getPrice() < 0) {
+                throw new RuntimeException("Price must be >= 0");
+            }
+
+            course.setPrice(request.getPrice());
+
+            // Auto handle isPaid theo price
+            course.setIsPaid(request.getPrice() > 0);
+        }
+
+        return "Update course successfully";
+    }
     /* ===================== GET ALL ===================== */
 
     @Transactional(readOnly = true)

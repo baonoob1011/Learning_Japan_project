@@ -1,8 +1,9 @@
 package com.example.learningApp.service.course.section;
 
 import com.example.learningApp.common.EntityFinder;
-import com.example.learningApp.dto.request.section.CreateSectionRequest;
-import com.example.learningApp.dto.response.section.SectionResponse;
+import com.example.learningApp.dto.request.course.section.CreateSectionRequest;
+import com.example.learningApp.dto.request.course.section.UpdateSectionRequest;
+import com.example.learningApp.dto.response.course.section.SectionResponse;
 import com.example.learningApp.entity.Course;
 import com.example.learningApp.entity.Section;
 import com.example.learningApp.mapper.SectionMapper;
@@ -22,7 +23,23 @@ public class SectionService {
     private final SectionMapper sectionMapper;
 
     /* ===================== CREATE ===================== */
+    /* ===================== UPDATE ===================== */
 
+    @Transactional
+    public String updateSection(String sectionId, UpdateSectionRequest request) {
+
+        Section section = entityFinder.sectionId(sectionId);
+
+        if (request.getTitle() != null) {
+            section.setTitle(request.getTitle());
+        }
+
+        if (request.getLessonLevel() != null) {
+            section.setLessonLevel(request.getLessonLevel());
+        }
+
+        return "Update section successfully";
+    }
     @Transactional
     public String createSection(CreateSectionRequest request) {
 

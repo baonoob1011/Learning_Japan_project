@@ -5,6 +5,7 @@ import com.example.learningApp.common.kafka.Producer;
 import com.example.learningApp.dto.cache.VocabCache;
 import com.example.learningApp.dto.event.YoutubeTranscribeMessage;
 import com.example.learningApp.dto.request.video.YoutubeVideoRequest;
+import com.example.learningApp.dto.request.video.YoutubeVideoUpdateRequest;
 import com.example.learningApp.dto.response.video.YoutubeVideoSummaryResponse;
 import com.example.learningApp.dto.response.vocab.VocabResponse;
 import com.example.learningApp.entity.User;
@@ -99,7 +100,21 @@ public class YoutubeVideoService {
     }
 
 
+    @Transactional
+    public void updateVideo(String videoId, YoutubeVideoUpdateRequest request) {
 
+        YoutubeVideo video = finder.videoById(videoId);
+
+        if (request.getVideoTag() != null) {
+            video.setVideoTag(request.getVideoTag());
+        }
+
+        if (request.getLevel() != null) {
+            video.setLevel(request.getLevel());
+        }
+
+        youtubeVideoRepository.save(video);
+    }
     public void saveVideoForUser(String videoId) {
 
         var user = finder.userById();

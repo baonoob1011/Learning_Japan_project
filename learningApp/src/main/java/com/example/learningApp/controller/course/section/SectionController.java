@@ -1,8 +1,9 @@
 package com.example.learningApp.controller.course.section;
 
 import com.example.learningApp.common.ApiResponse;
-import com.example.learningApp.dto.request.section.CreateSectionRequest;
-import com.example.learningApp.dto.response.section.SectionResponse;
+import com.example.learningApp.dto.request.course.section.CreateSectionRequest;
+import com.example.learningApp.dto.request.course.section.UpdateSectionRequest;
+import com.example.learningApp.dto.response.course.section.SectionResponse;
 import com.example.learningApp.service.course.section.SectionService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +34,20 @@ public class SectionController {
                 )
         );
     }
+    /* ===================== UPDATE ===================== */
 
+    @PutMapping("/{sectionId}")
+    public ResponseEntity<ApiResponse<String>> updateSection(
+            @PathVariable String sectionId,
+            @RequestBody UpdateSectionRequest request
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Update section successfully",
+                        sectionService.updateSection(sectionId, request)
+                )
+        );
+    }
     /* ===================== GET BY COURSE ===================== */
 
     @GetMapping("/course/{courseId}")

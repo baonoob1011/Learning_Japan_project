@@ -1,7 +1,7 @@
 package com.example.learningApp.controller.course.section.lesson;
 
 import com.example.learningApp.common.ApiResponse;
-import com.example.learningApp.dto.request.lesson.UpdateLessonPartProgressRequest;
+import com.example.learningApp.dto.request.course.section.lesson.UpdateLessonPartProgressRequest;
 import com.example.learningApp.dto.response.lesson.LessonPartProgressResponse;
 import com.example.learningApp.service.course.section.lesson.UserLessonPartProgressService;
 import lombok.AccessLevel;

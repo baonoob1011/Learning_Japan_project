@@ -30,15 +30,6 @@ public class BatchJobController {
     @Qualifier("importExamSectionJob")
     Job importExamSectionJob;
 
-    /**
-     * ================= RUN BATCH JOB =================
-     *
-     * jobType = EXAM
-     *  - đọc exam/*.csv từ S3
-     *
-     * jobType = SECTION_ASSESSMENT
-     *  - đọc assessment/*.csv từ S3
-     */
     @PostMapping("/run")
     public ResponseEntity<ApiResponse<String>> runBatchJob(
             @RequestParam("jobType") BatchJobType jobType

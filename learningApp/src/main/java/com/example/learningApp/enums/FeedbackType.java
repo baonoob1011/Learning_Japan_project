@@ -5,4 +5,6 @@ public enum FeedbackType {
     FEATURE_REQUEST,
     UX_IMPROVEMENT,
     CONTENT_REQUEST
+    ,    OTHER               // 💬 Khác
+
 }

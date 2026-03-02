@@ -2,6 +2,7 @@ package com.example.learningApp.controller.course;
 
 import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.request.course.CreateCourseRequest;
+import com.example.learningApp.dto.request.course.UpdateCourseRequest;
 import com.example.learningApp.dto.response.course.CourseResponse;
 import com.example.learningApp.service.course.CourseService;
 import lombok.AccessLevel;
@@ -35,7 +36,21 @@ public class CourseController {
     }
 
     /* ===================== GET ALL ACTIVE ===================== */
+    /* ===================== UPDATE ===================== */
 
+    @PutMapping("/{courseId}")
+    public ResponseEntity<ApiResponse<String>> updateCourse(
+            @PathVariable String courseId,
+            @RequestBody UpdateCourseRequest request
+    ) {
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Update course successfully",
+                        courseService.updateCourse(courseId, request)
+                )
+        );
+    }
     @GetMapping
     public ResponseEntity<ApiResponse<List<CourseResponse>>> getAllCourses() {
         return ResponseEntity.ok(
