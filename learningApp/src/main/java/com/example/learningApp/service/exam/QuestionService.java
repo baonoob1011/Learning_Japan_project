@@ -91,4 +91,13 @@ public class QuestionService {
         return questionMapper.toQuestionResponse(questionRepository.save(questionMapper.toQuestion(request)));
     }
 
+    public List<QuestionResponse> getQuestionsByExamId(String examId) {
+        return questionRepository.findAll()
+                .stream()
+                .filter(q -> q.getExams().stream()
+                        .anyMatch(exam -> exam.getId().equals(examId)))
+                .map(questionMapper::toQuestionResponse)
+                .toList();
+    }
+
 }

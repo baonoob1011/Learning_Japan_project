@@ -17,6 +17,32 @@ public class AssessmentItemController {
 
     private final AssessmentItemService service;
 
+    /* ===================== GET ALL ===================== */
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<AssessmentItemResponse>>> getAll() {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Get all assessment items successfully",
+                        service.getAll()
+                )
+        );
+    }
+
+    /* ===================== GET BY LEVEL ===================== */
+
+    @GetMapping("/level/{level}")
+    public ResponseEntity<ApiResponse<List<AssessmentItemResponse>>> getByLevel(
+            @PathVariable String level
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Get assessment items by level successfully",
+                        service.getByLevel(level)
+                )
+        );
+    }
+
     /* ===================== GET BY SECTION ===================== */
 
     @GetMapping("/section/{sectionId}")

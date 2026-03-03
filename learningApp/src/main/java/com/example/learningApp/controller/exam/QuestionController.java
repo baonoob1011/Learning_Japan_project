@@ -29,6 +29,12 @@ public class QuestionController {
         return ResponseEntity.ok(ApiResponse.success("Questions retrieved", res));
     }
 
+    @GetMapping("/exam/{examId}")
+    public ResponseEntity<ApiResponse<List<QuestionResponse>>> getQuestionsByExamId(@PathVariable String examId) {
+        List<QuestionResponse> res = questionService.getQuestionsByExamId(examId);
+        return ResponseEntity.ok(ApiResponse.success("Questions by exam retrieved successfully", res));
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<QuestionResponse>> createQuestion(@RequestBody @Valid CreateQuestionRequest request) {

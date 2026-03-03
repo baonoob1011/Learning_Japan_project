@@ -8,6 +8,7 @@ import com.example.learningApp.entity.ExamSection;
 import com.example.learningApp.mapper.AssessmentItemMapper;
 import com.example.learningApp.repository.AssessmentItemRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,7 +20,29 @@ public class AssessmentItemService {
 
     private final AssessmentItemRepository repository;
     private final EntityFinder finder;
+    @Qualifier("assessmentItemMapperImpl")
     private final AssessmentItemMapper mapper;
+
+    /* ===================== GET ALL ===================== */
+
+    @Transactional(readOnly = true)
+    public List<AssessmentItemResponse> getAll() {
+        return repository.findAll()
+                .stream()
+                .map(mapper::toResponse)
+                .toList();
+    }
+
+    /* ===================== GET BY LEVEL ===================== */
+
+    @Transactional(readOnly = true)
+    public List<AssessmentItemResponse> getByLevel(String level) {
+        return repository.findAll()
+                .stream()
+                .filter(item -> item.getLevel() != null && item.getLevel().equalsIgnoreCase(level))
+                .map(mapper::toResponse)
+                .toList();
+    }
 
     /* ===================== GET BY SECTION ===================== */
 
