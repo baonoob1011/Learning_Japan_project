@@ -47,6 +47,12 @@ public class ExamItemReader {
         String[] names = {
                 "exam_code", "exam_level", "exam_duration",
                 "section_title", "section_order",
+
+                // 👇 thêm 3 cột này
+                "passage_title",
+                "passage_content",
+                "passage_order",
+
                 "question_type", "question_text",
                 "options", "answer", "explanation",
                 "image_url", "audio_url", "question_order"

@@ -32,11 +32,15 @@ public class ExamItemWriter {
             questionRepository.saveAll(list);
 
             Set<Exam> exams = list.stream()
-                    .flatMap(q -> q.getExams().stream())
+                    .map(Question::getSection)
+                    .flatMap(s -> s.getExams().stream())
                     .collect(Collectors.toSet());
 
             for (Exam exam : exams) {
-                exam.setNumQuestions(exam.getQuestions().size());
+                int totalQuestions = exam.getSections().stream()
+                        .mapToInt(s -> s.getQuestions().size())
+                        .sum();
+                exam.setNumQuestions(totalQuestions);
                 examRepository.save(exam);
             }
         };

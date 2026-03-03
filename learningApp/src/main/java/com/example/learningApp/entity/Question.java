@@ -38,9 +38,9 @@ public class Question {
     @JdbcTypeCode(SqlTypes.JSON)
     private String options;
 
-    @ManyToMany(mappedBy = "questions")
-    @Builder.Default
-    private List<Exam> exams = new ArrayList<>();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "passage_id")
+    private Passage passage;
 
     @Column(columnDefinition = "TEXT")
     private String answer;

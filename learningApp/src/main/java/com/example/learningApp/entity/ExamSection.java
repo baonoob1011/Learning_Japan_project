@@ -29,10 +29,15 @@ public class ExamSection {
     private String level;
 
     @OneToMany(mappedBy = "section", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<AssessmentItem> assessmentItems; // <-- thêm quan hệ với AssessmentItem
+    @Builder.Default
+    private List<AssessmentItem> assessmentItems = new ArrayList<>();
 
-    @OneToMany(mappedBy = "section", cascade = CascadeType.ALL)
-    private List<Question> questions;
+    @OneToMany(mappedBy = "section", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Passage> passages = new ArrayList<>();
 
+    @OneToMany(mappedBy = "section", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Question> questions = new ArrayList<>();
 
 }

@@ -1,16 +1,11 @@
 package com.example.learningApp.service.exam;
 
 import com.example.learningApp.dto.request.exam.CreateQuestionRequest;
-import com.example.learningApp.dto.request.exam.CreateSectionRequest;
 import com.example.learningApp.dto.request.exam.question.UpdateQuestionRequest;
 import com.example.learningApp.dto.response.exam.QuestionResponse;
-import com.example.learningApp.dto.response.exam.SectionResponse;
-import com.example.learningApp.entity.Exam;
 import com.example.learningApp.entity.ExamSection;
 import com.example.learningApp.entity.Question;
-import com.example.learningApp.mapper.ExamSectionMapper;
 import com.example.learningApp.mapper.QuestionMapper;
-import com.example.learningApp.repository.ExamRepository;
 import com.example.learningApp.repository.ExamSectionRepository;
 import com.example.learningApp.repository.QuestionRepository;
 import lombok.AccessLevel;
@@ -19,7 +14,6 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -82,20 +76,19 @@ public class QuestionService {
         questionMapper.updateQuestion(question, request);
 
         return questionMapper.toQuestionResponse(
-                questionRepository.save(question)
-        );
+                questionRepository.save(question));
     }
+
     public QuestionResponse createQuestion(CreateQuestionRequest request) {
-        ExamSection section = sectionRepository.findById(request.getSectionId())
+        sectionRepository.findById(request.getSectionId())
                 .orElseThrow(() -> new IllegalArgumentException("Section not found"));
         return questionMapper.toQuestionResponse(questionRepository.save(questionMapper.toQuestion(request)));
     }
 
     public List<QuestionResponse> getQuestionsByExamId(String examId) {
-        return questionRepository.findAll()
-                .stream()
-                .filter(q -> q.getExams().stream()
-                        .anyMatch(exam -> exam.getId().equals(examId)))
+        return sectionRepository.findAll().stream()
+                .filter(s -> s.getExams().stream().anyMatch(e -> e.getId().equals(examId)))
+                .flatMap(s -> s.getQuestions().stream())
                 .map(questionMapper::toQuestionResponse)
                 .toList();
     }

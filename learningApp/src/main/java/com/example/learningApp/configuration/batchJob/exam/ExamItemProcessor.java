@@ -3,10 +3,12 @@ package com.example.learningApp.configuration.batchJob.exam;
 import com.example.learningApp.configuration.batchJob.BatchUtils;
 import com.example.learningApp.entity.Exam;
 import com.example.learningApp.entity.ExamSection;
+import com.example.learningApp.entity.Passage;
 import com.example.learningApp.entity.Question;
 import com.example.learningApp.enums.AssessmentType;
 import com.example.learningApp.repository.ExamRepository;
 import com.example.learningApp.repository.ExamSectionRepository;
+import com.example.learningApp.repository.PassageRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -28,12 +30,14 @@ public class ExamItemProcessor {
 
     private final ExamRepository examRepository;
     private final ExamSectionRepository sectionRepository;
+    private final PassageRepository passageRepository;
 
     @Bean(name = "examProcessor")
     @StepScope
     public ItemProcessor<Map<String, String>, Question> examProcessor() {
         Map<String, Exam> examCache = new HashMap<>();
         Map<String, ExamSection> sectionCache = new HashMap<>();
+        Map<String, Passage> passageCache = new HashMap<>();
 
         return row -> {
             log.info("--- Bắt đầu xử lý dòng dữ liệu: {}", row);
@@ -62,7 +66,6 @@ public class ExamItemProcessor {
                                                 .level(examLevel)
                                                 .duration(examDuration)
                                                 .sections(new ArrayList<>())
-                                                .questions(new ArrayList<>())
                                                 .numQuestions(0)
                                                 .createdAt(LocalDateTime.now())
                                                 .updatedAt(LocalDateTime.now())
@@ -108,8 +111,29 @@ public class ExamItemProcessor {
                 String answer = Optional.ofNullable(row.get("answer")).orElse("").trim();
                 String optionsParsed = BatchUtils.parseOptions(row.get("options"));
 
+                String passageTitle = Optional.ofNullable(row.get("passage_title")).orElse("").trim();
+                String passageContent = Optional.ofNullable(row.get("passage_content")).orElse("").trim();
+                int passageOrder = BatchUtils.parseIntSafe(row.get("passage_order"), 0);
+
+                Passage passage = null;
+
+                if (!passageTitle.isBlank()) {
+                    String passageKey = section.getId() + "_" + passageOrder;
+                    passage = passageCache.computeIfAbsent(passageKey, key -> {
+                        log.info("Tạo mới Passage: {}", passageTitle);
+                        Passage newPassage = Passage.builder()
+                                .title(passageTitle)
+                                .content(passageContent)
+                                .passageOrder(passageOrder)
+                                .section(section)
+                                .build();
+                        return passageRepository.save(newPassage);
+                    });
+                }
+
                 Question question = Question.builder()
                         .section(section)
+                        .passage(passage)
                         .questionType(questionType)
                         .questionText(row.get("question_text").trim())
                         .options(optionsParsed)
@@ -119,9 +143,6 @@ public class ExamItemProcessor {
                         .audioUrl(row.get("audio_url"))
                         .questionOrder(questionOrder)
                         .build();
-
-                question.getExams().add(exam);
-                exam.getQuestions().add(question);
 
                 log.info("✓ Tạo thành công Question: {}", question.getQuestionText());
                 return question;

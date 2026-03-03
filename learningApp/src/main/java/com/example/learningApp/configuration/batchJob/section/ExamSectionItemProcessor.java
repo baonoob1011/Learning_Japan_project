@@ -57,6 +57,7 @@ public class ExamSectionItemProcessor {
                                 .level(sectionLevel)
                                 .sectionDuration(sectionDuration)
                                 .assessmentItems(new ArrayList<>())
+                                .passages(new ArrayList<>())
                                 .questions(new ArrayList<>())
                                 .build()));
 
