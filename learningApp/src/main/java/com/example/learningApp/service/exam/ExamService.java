@@ -32,7 +32,7 @@ public class ExamService {
     ExamMapper examMapper;
 
 
-    // Method để fetch section + question từ Redis
+    // Method để fetch section + question từ Redis, nếu không có thì tìm từ DB
     public List<SectionWithQuestionsResponse> getSectionAndQuestionByExam(String examId) {
         String examQuestionKey = "exam:" + examId + ":questions";
         String examSectionKey = "exam:" + examId + ":sections";
@@ -42,10 +42,13 @@ public class ExamService {
         Map<String, SectionCache> sectionCacheMap =
                 (Map<String, SectionCache>) redisTemplate.opsForValue().get(examSectionKey);
 
+        // Nếu cache không có, tìm kiếm từ Database
         if (questionCacheMap == null || sectionCacheMap == null) {
-            throw new RuntimeException("Exam questions/sections not found in cache");
+            log.warn("Exam questions/sections not found in cache for examId: {}. Fetching from database...", examId);
+            return getSectionAndQuestionFromDatabase(examId);
         }
 
+        // ...existing code...
         Map<String, List<SectionWithQuestionsResponse.QuestionItem>> sectionQuestionsMap =
                 questionCacheMap.values().stream()
                         .map(q -> {
@@ -74,7 +77,7 @@ public class ExamService {
                         .examId(examId)
                         .title(section.getTitle())
                         .sectionOrder(section.getSectionOrder())
-                        .sectionDuration(section.getSectionDuration()) // ← thêm dòng này
+                        .sectionDuration(section.getSectionDuration())
                         .questions(
                                 sectionQuestionsMap.getOrDefault(section.getId(), List.of())
                                         .stream()
@@ -86,6 +89,43 @@ public class ExamService {
                 .toList();
 
         return result;
+    }
+
+    /**
+     * Fallback method: Tìm kiếm section và question từ Database
+     */
+    private List<SectionWithQuestionsResponse> getSectionAndQuestionFromDatabase(String examId) {
+        Exam exam = examRepository.findById(examId)
+                .orElseThrow(() -> new RuntimeException("Exam not found with id: " + examId));
+
+        return exam.getSections().stream()
+                .map(section -> SectionWithQuestionsResponse.builder()
+                        .id(section.getId())
+                        .examId(examId)
+                        .title(section.getTitle())
+                        .sectionOrder(section.getSectionOrder())
+                        .sectionDuration(section.getSectionDuration())
+                        .questions(
+                                section.getQuestions().stream()
+                                        .map(question -> SectionWithQuestionsResponse.QuestionItem.builder()
+                                                .id(question.getId())
+                                                .sectionOrder(section.getSectionOrder())
+                                                .questionType(question.getQuestionType())
+                                                .questionText(question.getQuestionText())
+                                                .options(question.getOptions())
+                                                .answer(question.getAnswer())
+                                                .imageUrl(question.getImageUrl())
+                                                .audioUrl(question.getAudioUrl())
+                                                .questionOrder(question.getQuestionOrder())
+                                                .build()
+                                        )
+                                        .sorted(Comparator.comparingInt(SectionWithQuestionsResponse.QuestionItem::getQuestionOrder))
+                                        .toList()
+                        )
+                        .build()
+                )
+                .sorted(Comparator.comparingInt(SectionWithQuestionsResponse::getSectionOrder))
+                .toList();
     }
 
     public List<ExamResponse> searchExams(String keyword) {

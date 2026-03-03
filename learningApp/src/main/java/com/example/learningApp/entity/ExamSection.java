@@ -22,11 +22,10 @@ public class ExamSection {
     @ManyToMany(mappedBy = "sections", fetch = FetchType.LAZY)
     private List<Exam> exams = new ArrayList<>();
 
-
     private String title;
     private Integer sectionOrder;
     @Column(nullable = false)
-    private Integer sectionDuration;   // phút
+    private Integer sectionDuration; // phút
     private String level;
 
     @OneToMany(mappedBy = "section", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -34,4 +33,6 @@ public class ExamSection {
 
     @OneToMany(mappedBy = "section", cascade = CascadeType.ALL)
     private List<Question> questions;
+
+
 }

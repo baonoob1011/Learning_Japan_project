@@ -42,7 +42,6 @@ public class Question {
     @Builder.Default
     private List<Exam> exams = new ArrayList<>();
 
-
     @Column(columnDefinition = "TEXT")
     private String answer;
     // 🔹 Thêm giải thích đáp án
