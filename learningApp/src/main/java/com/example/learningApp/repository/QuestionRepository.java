@@ -23,6 +23,15 @@ public interface QuestionRepository extends JpaRepository<Question, String> {
             """)
     Optional<Question> findByIdAndExamId(
             @Param("questionId") String questionId,
-            @Param("examId") String examId
-    );
+            @Param("examId") String examId);
+
+    @Query("""
+                SELECT q FROM Question q
+                LEFT JOIN FETCH q.passage p
+                JOIN q.section s
+                JOIN s.exams e
+                WHERE e.id = :examId
+                ORDER BY s.sectionOrder ASC, q.questionOrder ASC
+            """)
+    List<Question> findAllByExamId(@Param("examId") String examId);
 }

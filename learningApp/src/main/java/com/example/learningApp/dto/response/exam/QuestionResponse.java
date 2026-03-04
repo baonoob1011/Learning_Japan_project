@@ -22,4 +22,5 @@ public class QuestionResponse {
     private String imageUrl;
     private String audioUrl;
     private Integer questionOrder;
+    private PassageResponse passage;
 }

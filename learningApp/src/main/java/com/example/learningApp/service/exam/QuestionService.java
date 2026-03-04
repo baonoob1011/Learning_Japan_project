@@ -86,9 +86,7 @@ public class QuestionService {
     }
 
     public List<QuestionResponse> getQuestionsByExamId(String examId) {
-        return sectionRepository.findAll().stream()
-                .filter(s -> s.getExams().stream().anyMatch(e -> e.getId().equals(examId)))
-                .flatMap(s -> s.getQuestions().stream())
+        return questionRepository.findAllByExamId(examId).stream()
                 .map(questionMapper::toQuestionResponse)
                 .toList();
     }
