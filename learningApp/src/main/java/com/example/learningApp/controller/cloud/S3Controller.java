@@ -1,6 +1,7 @@
 package com.example.learningApp.controller.cloud;
 
 import com.example.learningApp.common.ApiResponse;
+import com.example.learningApp.dto.S3ImageResponse;
 import com.example.learningApp.service.cloud.S3Service;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -84,6 +85,92 @@ public class S3Controller {
                         s3Service.getAllMediaUrls()
                 )
         );
+    }
+    @GetMapping("/images/urls")
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<ApiResponse<List<S3ImageResponse>>> getAllImagesUrls() {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Get all image URLs successfully",
+                        s3Service.getAllImagesUrls()
+                )
+        );
+    }
+
+    @DeleteMapping("/image")
+    public ResponseEntity<ApiResponse<Void>> deleteImage(
+            @RequestParam String key
+    ) {
+        try {
+            s3Service.deleteFile(key);
+            return ResponseEntity.ok(
+                    ApiResponse.success("Image deleted successfully", null)
+            );
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(400, e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(ApiResponse.error(500, "Could not delete image: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/audios/urls")
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<ApiResponse<List<S3ImageResponse>>> getAllAudioUrls() {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Get all audio URLs successfully",
+                        s3Service.getAllAudioUrls()
+                )
+        );
+    }
+
+    @DeleteMapping("/audio")
+    public ResponseEntity<ApiResponse<Void>> deleteAudio(
+            @RequestParam String key
+    ) {
+        try {
+            s3Service.deleteFile(key);
+            return ResponseEntity.ok(
+                    ApiResponse.success("Audio deleted successfully", null)
+            );
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(400, e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(ApiResponse.error(500, "Could not delete audio: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/assessment/urls")
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<ApiResponse<List<S3ImageResponse>>> getAllAssessmentUrls() {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Get all assessment URLs successfully",
+                        s3Service.getAllAssessmentUrls()
+                )
+        );
+    }
+
+    @DeleteMapping("/assessment")
+    public ResponseEntity<ApiResponse<Void>> deleteAssessment(
+            @RequestParam String key
+    ) {
+        try {
+            s3Service.deleteFile(key);
+            return ResponseEntity.ok(
+                    ApiResponse.success("Assessment file deleted successfully", null)
+            );
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(400, e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(ApiResponse.error(500, "Could not delete assessment file: " + e.getMessage()));
+        }
     }
 
 }

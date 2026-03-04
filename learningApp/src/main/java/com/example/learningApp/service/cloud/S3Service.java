@@ -4,6 +4,7 @@ package com.example.learningApp.service.cloud;
 import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.*;
+import com.example.learningApp.dto.S3ImageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -152,5 +153,45 @@ public class S3Service {
         return filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();
     }
 
+    // Lấy hết file trong /images
+    public List<S3ImageResponse> getAllImagesUrls() {
+        return listAllKeys("images/")
+                .stream()
+                .map(key -> S3ImageResponse.builder()
+                        .key(key)
+                        .url(buildPublicUrl(key))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    // Lấy hết file trong /audio
+    public List<S3ImageResponse> getAllAudioUrls() {
+        return listAllKeys("audio/")
+                .stream()
+                .map(key -> S3ImageResponse.builder()
+                        .key(key)
+                        .url(buildPublicUrl(key))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    // Lấy hết file trong /assessment
+    public List<S3ImageResponse> getAllAssessmentUrls() {
+        return listAllKeys("assessment/")
+                .stream()
+                .map(key -> S3ImageResponse.builder()
+                        .key(key)
+                        .url(buildPublicUrl(key))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    // Xóa file trong S3
+    public void deleteFile(String key) {
+        if (key == null || key.trim().isEmpty()) {
+            throw new IllegalArgumentException("File key cannot be empty");
+        }
+        amazonS3.deleteObject(bucketName, key);
+    }
 
 }
