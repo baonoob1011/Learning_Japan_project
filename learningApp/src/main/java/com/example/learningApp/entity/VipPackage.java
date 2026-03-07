@@ -18,7 +18,7 @@ public class VipPackage {
 
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private PlanType planType;   // MONTHLY / YEARLY / LIFETIME
 
     private String name;

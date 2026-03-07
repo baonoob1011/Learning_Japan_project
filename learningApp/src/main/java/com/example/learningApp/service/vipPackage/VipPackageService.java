@@ -2,6 +2,7 @@ package com.example.learningApp.service.vipPackage;
 
 
 import com.example.learningApp.dto.request.vipPackage.CreateVipPackageRequest;
+import com.example.learningApp.dto.request.vipPackage.UpdateVipPackageRequest;
 import com.example.learningApp.dto.response.vipPackage.VipPackageResponse;
 import com.example.learningApp.entity.VipPackage;
 import com.example.learningApp.enums.PlanType;
@@ -24,10 +25,6 @@ public class VipPackageService{
     @Transactional
     public void createVipPackage(CreateVipPackageRequest request) {
 
-        // Check trùng plan type (ví dụ chỉ cho 1 MONTHLY, 1 YEARLY, 1 LIFETIME)
-        if (vipPackageRepository.existsByPlanType(request.getPlanType())) {
-            throw new RuntimeException("Plan type already exists");
-        }
 
         // Nếu là LIFETIME thì duration phải null
         if (request.getPlanType() == PlanType.LIFETIME) {
@@ -59,5 +56,28 @@ public class VipPackageService{
                         .build())
                 .toList();
     }
+    @Transactional
+    public void updateVipPackage(String id, UpdateVipPackageRequest request) {
 
+        VipPackage vipPackage = vipPackageRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("VIP package not found"));
+
+        Integer duration = request.getDurationDays();
+
+        vipPackage.setName(request.getName());
+        vipPackage.setPrice(request.getPrice());
+        vipPackage.setDurationDays(duration);
+        vipPackage.setActive(request.getActive() != null ? request.getActive() : vipPackage.getActive());
+
+        vipPackageRepository.save(vipPackage);
+    }
+    @Transactional
+    public void deleteVipPackage(String id) {
+
+        VipPackage vipPackage = vipPackageRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("VIP package not found"));
+
+        vipPackage.setActive(false);
+        vipPackageRepository.save(vipPackage);
+    }
 }

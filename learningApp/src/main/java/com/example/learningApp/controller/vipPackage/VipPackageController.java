@@ -2,6 +2,7 @@ package com.example.learningApp.controller.vipPackage;
 
 import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.request.vipPackage.CreateVipPackageRequest;
+import com.example.learningApp.dto.request.vipPackage.UpdateVipPackageRequest;
 import com.example.learningApp.dto.response.vipPackage.VipPackageResponse;
 import com.example.learningApp.service.vipPackage.VipPackageService;
 import jakarta.validation.Valid;
@@ -39,6 +40,30 @@ public class VipPackageController {
                         "Get VIP packages successfully",
                         vipPackageService.getAllActivePackages()
                 )
+        );
+    }
+    // UPDATE VIP PACKAGE
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> updateVipPackage(
+            @PathVariable String id,
+            @RequestBody @Valid UpdateVipPackageRequest request) {
+
+        vipPackageService.updateVipPackage(id, request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("VIP package updated successfully", null)
+        );
+    }
+
+    // DELETE VIP PACKAGE (soft delete)
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteVipPackage(
+            @PathVariable String id) {
+
+        vipPackageService.deleteVipPackage(id);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("VIP package deleted successfully", null)
         );
     }
 

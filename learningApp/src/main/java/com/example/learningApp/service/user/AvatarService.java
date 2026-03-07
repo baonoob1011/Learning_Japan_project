@@ -1,14 +1,12 @@
 package com.example.learningApp.service.user;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -16,7 +14,8 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class AvatarService {
-    private final S3Client s3Client;
+
+    private final AmazonS3 amazonS3;
 
     @Value("${aws.s3.bucket}")
     private String bucketName;
@@ -25,15 +24,19 @@ public class AvatarService {
 
         String key = "avatars/" + UUID.randomUUID() + "_" + file.getOriginalFilename();
 
-        PutObjectRequest request = PutObjectRequest.builder()
-                .bucket(bucketName)
-                .key(key)
-                .contentType(file.getContentType())
-                .build();
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentType(file.getContentType());
+        metadata.setContentLength(file.getSize());
 
-        s3Client.putObject(request,
-                RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+        PutObjectRequest request = new PutObjectRequest(
+                bucketName,
+                key,
+                file.getInputStream(),
+                metadata
+        );
 
-        return "https://" + bucketName + ".s3.amazonaws.com/" + key;
+        amazonS3.putObject(request);
+
+        return amazonS3.getUrl(bucketName, key).toString();
     }
 }
