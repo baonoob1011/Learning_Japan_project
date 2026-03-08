@@ -12,5 +12,4 @@ public class CreateSectionRequest {
 
     private String title;
 
-    private LessonLevel lessonLevel;
 }

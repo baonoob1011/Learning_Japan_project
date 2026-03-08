@@ -4,6 +4,7 @@ import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.request.user.ChangePasswordRequest;
 import com.example.learningApp.dto.request.user.CreateUserRequest;
 import com.example.learningApp.dto.request.user.ForgotPasswordRequest;
+import com.example.learningApp.dto.request.user.UpdateUserRequest;
 import com.example.learningApp.dto.response.user.UserChatResponse;
 import com.example.learningApp.dto.response.user.UserResponse;
 import com.example.learningApp.service.auth.AuthService;
@@ -55,7 +56,16 @@ public class UserController {
         userService.changePassword(token, request.getCurrentPassword(), request.getNewPassword());
         return ResponseEntity.ok(ApiResponse.success("Password changed successfully", null));
     }
+    @PutMapping("/me")
+    public ResponseEntity<ApiResponse<UserResponse>> updateMyProfile(
+            @RequestBody @Valid UpdateUserRequest request) {
 
+        UserResponse response = userService.updateMyProfile(request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Profile updated successfully", response)
+        );
+    }
     @PostMapping("/forgot-password")
     public ResponseEntity<ApiResponse<String>> forgetPassword(@RequestParam String email){
         userService.forgetPassword(email);

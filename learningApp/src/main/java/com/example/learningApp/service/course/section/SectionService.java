@@ -47,7 +47,6 @@ public class SectionService {
 
         Section section = sectionMapper.toSection(request);
         section.setCourse(course);
-
         sectionRepository.save(section);
 
         return "Create section successfully";

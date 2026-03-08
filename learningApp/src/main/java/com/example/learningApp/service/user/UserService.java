@@ -2,6 +2,7 @@ package com.example.learningApp.service.user;
 
 import com.example.learningApp.common.PageResponse;
 import com.example.learningApp.dto.request.user.DeleteUsersRequest;
+import com.example.learningApp.dto.request.user.UpdateUserRequest;
 import com.example.learningApp.dto.response.user.UserChatResponse;
 import com.example.learningApp.dto.response.user.UserForAdminResponse;
 import com.example.learningApp.dto.response.user.UserResponse;
@@ -76,7 +77,27 @@ public class UserService {
             throw new RuntimeException("Change password failed", ex);
         }
     }
+    @Transactional
+    public UserResponse updateMyProfile(UpdateUserRequest request) {
 
+        var context = SecurityContextHolder.getContext();
+        String userId = context.getAuthentication().getName();
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (request.getFullName() != null) {
+            user.setFullName(request.getFullName());
+        }
+
+        if (request.getLevel() != null) {
+            user.setLevel(request.getLevel());
+        }
+
+        userRepository.save(user);
+
+        return userMapper.toUserResponse(user);
+    }
     public void forgetPassword(String email) {
         // Implementation for forget password
         try{
