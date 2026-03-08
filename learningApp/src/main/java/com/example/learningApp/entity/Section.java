@@ -26,8 +26,8 @@ public class Section {
     /** N5 – Sơ cấp */
     private String title;
 
-    @Enumerated(EnumType.STRING)
-    private LessonLevel lessonLevel;
+//    @Enumerated(EnumType.STRING)
+//    private LessonLevel lessonLevel;
 
     @OneToMany(
             mappedBy = "section",

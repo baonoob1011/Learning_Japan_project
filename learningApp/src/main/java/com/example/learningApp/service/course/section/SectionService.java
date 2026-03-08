@@ -34,9 +34,7 @@ public class SectionService {
             section.setTitle(request.getTitle());
         }
 
-        if (request.getLessonLevel() != null) {
-            section.setLessonLevel(request.getLessonLevel());
-        }
+
 
         return "Update section successfully";
     }

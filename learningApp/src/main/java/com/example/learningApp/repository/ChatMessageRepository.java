@@ -10,20 +10,21 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.Optional;
 
-
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, String> {
-    Page<ChatMessage> findByRoomId(String roomId, Pageable pageable);
-    Optional<ChatMessage> findTopByRoomIdOrderBySentAtDesc(String roomId);
+        Page<ChatMessage> findByRoomId(String roomId, Pageable pageable);
 
-    @Query("""
-       SELECT COUNT(m)
-       FROM ChatMessage m
-       WHERE m.room.id = :roomId
-       AND m.sender.id <> :userId
-       AND m.isRead = false
-       """)
-    int countUnreadMessages(@Param("roomId") String roomId,
-                            @Param("userId") String userId);
-    long countByRoomIdAndSenderIdNotAndIsReadFalse(String roomId, String userId);
+        Optional<ChatMessage> findTopByRoomIdOrderBySentAtDesc(String roomId);
+
+        @Query("""
+                        SELECT COUNT(m)
+                        FROM ChatMessage m
+                        WHERE m.room.id = :roomId
+                        AND m.sender.id <> :userId
+                        AND m.isRead = false
+                        """)
+        int countUnreadMessages(@Param("roomId") String roomId,
+                        @Param("userId") String userId);
+
+        long countByRoomIdAndSenderIdNotAndIsReadFalse(String roomId, String userId);
 
 }

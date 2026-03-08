@@ -22,219 +22,221 @@ import java.util.*;
 @RequiredArgsConstructor
 public class ChatRoomQueryService {
 
-    private final ChatRoomMemberRepository memberRepository;
-    private final ChatMessageRepository chatMessageRepository;
-    private final EntityFinder finder;
-    private final ChatRoomResponseBuilder responseBuilder;
-    private final ChatRoomRepository chatRoomRepository;
+        private final ChatRoomMemberRepository memberRepository;
+        private final ChatMessageRepository chatMessageRepository;
+        private final EntityFinder finder;
+        private final ChatRoomResponseBuilder responseBuilder;
+        private final ChatRoomRepository chatRoomRepository;
 
-    public List<ChatRoomResponse> getMyRooms() {
-        User currentUser = finder.userById();
+        public List<ChatRoomResponse> getMyRooms() {
+                User currentUser = finder.userById();
 
-        return memberRepository.findByUserId(currentUser.getId())
-                .stream()
-                .map(ChatRoomMember::getRoom)
-                .distinct()
-                .map(room -> responseBuilder.build(room, currentUser))
-                .sorted(this::sortByLastMessage)
-                .toList();
-    }
-
-    public List<ChatGroupBasicResponse> getMyGroupRooms() {
-
-        User currentUser = finder.userById();
-
-        return memberRepository.findByUserId(currentUser.getId())
-                .stream()
-                .map(ChatRoomMember::getRoom)
-                .filter(room -> room.getRoomType() == RoomType.GROUP)
-                .distinct()
-                .map(room -> {
-
-                    // last message
-                    var lastMessage = chatMessageRepository
-                            .findTopByRoomIdOrderBySentAtDesc(room.getId())
-                            .orElse(null);
-
-                    // unread count (tuỳ theo logic của bạn)
-                    int unreadCount = chatMessageRepository
-                            .countUnreadMessages(room.getId(), currentUser.getId());
-
-                    // member count
-                    int memberCount = memberRepository.countByRoomId(room.getId());
-
-                    return ChatGroupBasicResponse.builder()
-                            .id(room.getId())
-                            .roomType(room.getRoomType().name())
-                            .createdAt(room.getCreatedAt())
-                            .name(room.getName())
-                            .avatarUrl(room.getAvatarUrl())
-                            .lastMessage(lastMessage != null ? lastMessage.getContent() : null)
-                            .lastMessageTime(lastMessage != null ? lastMessage.getSentAt() : null)
-                            .unreadCount(unreadCount)
-                            .memberCount(memberCount)
-                            .build();
-                })
-                .sorted((r1, r2) -> {
-                    if (r1.getLastMessageTime() == null) return 1;
-                    if (r2.getLastMessageTime() == null) return -1;
-                    return r2.getLastMessageTime().compareTo(r1.getLastMessageTime());
-                })
-                .toList();
-    }
-
-    public ChatGroupDetailResponse getGroupById(String roomId, String userId) {
-
-        ChatRoom room = finder.chatRoomById(roomId);
-
-        if (room.getRoomType() != RoomType.GROUP) {
-            throw new RuntimeException("Not a group");
+                return memberRepository.findByUserId(currentUser.getId())
+                                .stream()
+                                .map(ChatRoomMember::getRoom)
+                                .distinct()
+                                .map(room -> responseBuilder.build(room, currentUser))
+                                .sorted(this::sortByLastMessage)
+                                .toList();
         }
 
-        if (!memberRepository.existsByRoomIdAndUserId(roomId, userId)) {
-            throw new RuntimeException("Not a member");
+        public List<ChatGroupBasicResponse> getMyGroupRooms() {
+
+                User currentUser = finder.userById();
+
+                return memberRepository.findByUserId(currentUser.getId())
+                                .stream()
+                                .map(ChatRoomMember::getRoom)
+                                .filter(room -> room.getRoomType() == RoomType.GROUP)
+                                .distinct()
+                                .map(room -> {
+
+                                        // last message
+                                        var lastMessage = chatMessageRepository
+                                                        .findTopByRoomIdOrderBySentAtDesc(room.getId())
+                                                        .orElse(null);
+
+                                        // unread count (tuỳ theo logic của bạn)
+                                        int unreadCount = chatMessageRepository
+                                                        .countUnreadMessages(room.getId(), currentUser.getId());
+
+                                        // member count
+                                        int memberCount = memberRepository.countByRoomId(room.getId());
+
+                                        return ChatGroupBasicResponse.builder()
+                                                        .id(room.getId())
+                                                        .roomType(room.getRoomType().name())
+                                                        .createdAt(room.getCreatedAt())
+                                                        .name(room.getName())
+                                                        .avatarUrl(room.getAvatarUrl())
+                                                        .lastMessage(lastMessage != null ? lastMessage.getContent()
+                                                                        : null)
+                                                        .lastMessageTime(lastMessage != null ? lastMessage.getSentAt()
+                                                                        : null)
+                                                        .unreadCount(unreadCount)
+                                                        .memberCount(memberCount)
+                                                        .build();
+                                })
+                                .sorted((r1, r2) -> {
+                                        if (r1.getLastMessageTime() == null)
+                                                return 1;
+                                        if (r2.getLastMessageTime() == null)
+                                                return -1;
+                                        return r2.getLastMessageTime().compareTo(r1.getLastMessageTime());
+                                })
+                                .toList();
         }
 
-        var members = room.getMembers()
-                .stream()
-                .map(member -> ChatGroupDetailResponse.GroupMemberInfo.builder()
-                        .userId(member.getUser().getId())
-                        .fullName(member.getUser().getFullName())
-                        .avatarUrl(member.getUser().getAvatarUrl())
-                        .build()
-                )
-                .toList();
+        public ChatGroupDetailResponse getGroupById(String roomId, String userId) {
 
-        return ChatGroupDetailResponse.builder()
-                .id(room.getId())
-                .name(room.getName())
-                .avatarUrl(room.getAvatarUrl())
-                .createdAt(room.getCreatedAt())
-                .memberCount(members.size())
-                .members(members)
-                .build();
-    }
+                ChatRoom room = finder.chatRoomById(roomId);
 
-    public Page<ChatMessageResponse> getMessages(String roomId, int page, int size) {
+                if (room.getRoomType() != RoomType.GROUP) {
+                        throw new RuntimeException("Not a group");
+                }
 
-        User user = finder.userById();
+                if (!memberRepository.existsByRoomIdAndUserId(roomId, userId)) {
+                        throw new RuntimeException("Not a member");
+                }
 
-        if (!memberRepository.existsByRoomIdAndUserId(roomId, user.getId())) {
-            throw new RuntimeException("Not a member");
+                var members = room.getMembers()
+                                .stream()
+                                .map(member -> ChatGroupDetailResponse.GroupMemberInfo.builder()
+                                                .userId(member.getUser().getId())
+                                                .fullName(member.getUser().getFullName())
+                                                .avatarUrl(member.getUser().getAvatarUrl())
+                                                .build())
+                                .toList();
+
+                return ChatGroupDetailResponse.builder()
+                                .id(room.getId())
+                                .name(room.getName())
+                                .avatarUrl(room.getAvatarUrl())
+                                .createdAt(room.getCreatedAt())
+                                .memberCount(members.size())
+                                .members(members)
+                                .build();
         }
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by("sentAt").descending());
+        public Page<ChatMessageResponse> getMessages(String roomId, int page, int size) {
 
-        return chatMessageRepository
-                .findByRoomId(roomId, pageable)
-                .map(responseBuilder::mapMessage);
-    }
+                User user = finder.userById();
 
-    // ==============================
-// SEARCH MY PRIVATE ROOMS
-// ==============================
-    public List<ChatRoomResponse> searchMyPrivateRooms(String keyword) {
+                if (!memberRepository.existsByRoomIdAndUserId(roomId, user.getId())) {
+                        throw new RuntimeException("Not a member");
+                }
 
-        User currentUser = finder.userById();
+                Pageable pageable = PageRequest.of(page, size, Sort.by("sentAt").descending());
 
-        if (keyword == null || keyword.isBlank()) {
-            return getMyPrivateRooms(currentUser);
+                return chatMessageRepository
+                                .findByRoomId(roomId, pageable)
+                                .map(responseBuilder::mapMessage);
         }
 
-        return memberRepository.findByUserId(currentUser.getId())
-                .stream()
-                .map(ChatRoomMember::getRoom)
-                .filter(room -> room.getRoomType() == RoomType.PRIVATE)
-                .distinct()
-                .map(room -> responseBuilder.build(room, currentUser))
-                .filter(response ->
-                        response.getOtherUserName() != null &&
-                                response.getOtherUserName()
-                                        .toLowerCase()
-                                        .contains(keyword.toLowerCase())
-                )
-                .sorted(this::sortByLastMessage)
-                .toList();
-    }
-    public List<PrivateChatPreviewResponse> getAllOtherUsersInMyRooms() {
+        // ==============================
+        // SEARCH MY PRIVATE ROOMS
+        // ==============================
+        public List<ChatRoomResponse> searchMyPrivateRooms(String keyword) {
 
-        User currentUser = finder.userById();
+                User currentUser = finder.userById();
 
-        return memberRepository
-                .findPrivateChatPreview(currentUser.getId())
-                .stream()
-                .map(obj -> {
+                if (keyword == null || keyword.isBlank()) {
+                        return getMyPrivateRooms(currentUser);
+                }
 
-                    User user = (User) obj[0];
-                    String lastMessage = (String) obj[1];
-                    LocalDateTime lastTime = (LocalDateTime) obj[2];
-                    String roomId = (String) obj[3];
+                return memberRepository.findByUserId(currentUser.getId())
+                                .stream()
+                                .map(ChatRoomMember::getRoom)
+                                .filter(room -> room.getRoomType() == RoomType.PRIVATE)
+                                .distinct()
+                                .map(room -> responseBuilder.build(room, currentUser))
+                                .filter(response -> response.getOtherUserName() != null &&
+                                                response.getOtherUserName()
+                                                                .toLowerCase()
+                                                                .contains(keyword.toLowerCase()))
+                                .sorted(this::sortByLastMessage)
+                                .toList();
+        }
 
-                    return PrivateChatPreviewResponse.builder()
-                            .roomId(roomId)
-                            .userId(user.getId())
-                            .fullName(user.getFullName())
-                            .avatarUrl(user.getAvatarUrl())
-                            .lastMessage(lastMessage)
-                            .lastMessageTime(lastTime)
-                            .build();
-                })
-                .toList();
-    }
+        public List<PrivateChatPreviewResponse> getAllOtherUsersInMyRooms() {
 
-    private int sortByLastMessage(ChatRoomResponse r1, ChatRoomResponse r2) {
-        if (r1.getLastMessageTime() == null) return 1;
-        if (r2.getLastMessageTime() == null) return -1;
-        return r2.getLastMessageTime().compareTo(r1.getLastMessageTime());
-    }
+                User currentUser = finder.userById();
 
-    public List<ChatRoomResponse> getMyPrivateRooms(User currentUser) {
+                return memberRepository
+                                .findPrivateChatPreview(currentUser.getId())
+                                .stream()
+                                .map(obj -> {
 
+                                        User user = (User) obj[0];
+                                        String lastMessage = (String) obj[1];
+                                        LocalDateTime lastTime = (LocalDateTime) obj[2];
+                                        String roomId = (String) obj[3];
 
-        List<ChatRoom> rooms =
-                chatRoomRepository.findPrivateRoomsOfUser(currentUser.getId());
+                                        return PrivateChatPreviewResponse.builder()
+                                                        .roomId(roomId)
+                                                        .userId(user.getId())
+                                                        .fullName(user.getFullName())
+                                                        .avatarUrl(user.getAvatarUrl())
+                                                        .lastMessage(lastMessage)
+                                                        .lastMessageTime(lastTime)
+                                                        .build();
+                                })
+                                .toList();
+        }
 
-        return rooms.stream().map(room -> {
+        private int sortByLastMessage(ChatRoomResponse r1, ChatRoomResponse r2) {
+                if (r1.getLastMessageTime() == null)
+                        return 1;
+                if (r2.getLastMessageTime() == null)
+                        return -1;
+                return r2.getLastMessageTime().compareTo(r1.getLastMessageTime());
+        }
 
-            // 🔹 Lấy user còn lại trong room
-            User otherUser = room.getMembers()
-                    .stream()
-                    .map(ChatRoomMember::getUser)
-                    .filter(u -> !u.getId().equals(currentUser.getId()))
-                    .findFirst()
-                    .orElse(null);
+        public List<ChatRoomResponse> getMyPrivateRooms(User currentUser) {
 
-            // 🔹 Last message
-            ChatMessage lastMessage = room.getMessages()
-                    .stream()
-                    .max(Comparator.comparing(ChatMessage::getSentAt))
-                    .orElse(null);
+                List<ChatRoom> rooms = chatRoomRepository.findPrivateRoomsOfUser(currentUser.getId());
 
-            return ChatRoomResponse.builder()
-                    .id(room.getId())
-                    .roomType(room.getRoomType().name())
-                    .createdAt(room.getCreatedAt())
-                    .name(room.getName())
-                    .avatarUrl(room.getAvatarUrl())
+                return rooms.stream().map(room -> {
 
-                    // display info
-                    .otherUserName(otherUser != null ? otherUser.getFullName() : null)
-                    .otherUserAvatar(otherUser != null ? otherUser.getAvatarUrl() : null)
+                        // 🔹 Lấy user còn lại trong room
+                        User otherUser = room.getMembers()
+                                        .stream()
+                                        .map(ChatRoomMember::getUser)
+                                        .filter(u -> !u.getId().equals(currentUser.getId()))
+                                        .findFirst()
+                                        .orElse(null);
 
-                    // last message
-                    .lastMessage(lastMessage != null ? lastMessage.getContent() : null)
-                    .lastMessageTime(lastMessage != null ? lastMessage.getSentAt() : null)
+                        // 🔹 Last message
+                        ChatMessage lastMessage = room.getMessages()
+                                        .stream()
+                                        .max(Comparator.comparing(ChatMessage::getSentAt))
+                                        .orElse(null);
 
-                    // unread count (giả sử có isRead field)
-                    .unreadCount(
-                            (int) room.getMessages().stream()
-                                    .filter(m -> !m.getSender().getId().equals(currentUser.getId()))
-                                    .filter(m -> !m.getIsRead())
-                                    .count()
-                    )
+                        return ChatRoomResponse.builder()
+                                        .id(room.getId())
+                                        .roomType(room.getRoomType().name())
+                                        .createdAt(room.getCreatedAt())
+                                        .name(room.getName())
+                                        .avatarUrl(room.getAvatarUrl())
 
-                    .build();
+                                        // display info
+                                        .otherUserName(otherUser != null ? otherUser.getFullName() : null)
+                                        .otherUserAvatar(otherUser != null ? otherUser.getAvatarUrl() : null)
 
-        }).toList();
-    }
+                                        // last message
+                                        .lastMessage(lastMessage != null ? lastMessage.getContent() : null)
+                                        .lastMessageTime(lastMessage != null ? lastMessage.getSentAt() : null)
+
+                                        // unread count (giả sử có isRead field)
+                                        .unreadCount(
+                                                        (int) room.getMessages().stream()
+                                                                        .filter(m -> !m.getSender().getId()
+                                                                                        .equals(currentUser.getId()))
+                                                                        .filter(m -> !m.getIsRead())
+                                                                        .count())
+
+                                        .build();
+
+                }).toList();
+        }
 }

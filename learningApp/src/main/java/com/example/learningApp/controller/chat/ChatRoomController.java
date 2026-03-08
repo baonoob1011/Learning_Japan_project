@@ -23,121 +23,94 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ChatRoomController {
 
-    private final ChatRoomService chatRoomService;
-    private final ChatRoomCommandService chatRoomCommandService;
+        private final ChatRoomService chatRoomService;
+        private final ChatRoomCommandService chatRoomCommandService;
 
-    @PostMapping("/private")
-    public ResponseEntity<ApiResponse<ChatRoomResponse>> createPrivateRoom(
-            @RequestBody CreatePrivateRoomRequest request
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Private room ready",
-                        chatRoomService.getOrCreatePrivateRoom(request)
-                )
-        );
-    }
+        @PostMapping("/private")
+        public ResponseEntity<ApiResponse<ChatRoomResponse>> createPrivateRoom(
+                        @RequestBody CreatePrivateRoomRequest request) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Private room ready",
+                                                chatRoomService.getOrCreatePrivateRoom(request)));
+        }
 
-    @PostMapping("/community")
-    public ChatRoomResponse createCommunityRoom(
-            @RequestParam(required = false) MultipartFile avatar) throws IOException {
+        @PostMapping("/community")
+        public ChatRoomResponse createCommunityRoom(
+                        @RequestParam(required = false) MultipartFile avatar) throws IOException {
 
-        return chatRoomCommandService.createCommunityRoom(avatar);
-    }
+                return chatRoomCommandService.createCommunityRoom(avatar);
+        }
 
-    @PostMapping(
-            value = "/group",
-            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
-    )
-    public ResponseEntity<ApiResponse<ChatRoomResponse>> createGroupRoom(
-            @ModelAttribute CreateGroupRoomRequest request
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Group room ready",
-                        chatRoomService.createGroupRoom(request)
-                )
-        );
-    }
+        @PostMapping(value = "/group", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+        public ResponseEntity<ApiResponse<ChatRoomResponse>> createGroupRoom(
+                        @ModelAttribute CreateGroupRoomRequest request) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Group room ready",
+                                                chatRoomService.createGroupRoom(request)));
+        }
 
-    @PostMapping("/group/{roomId}/members")
-    public ResponseEntity<ApiResponse<ChatRoomResponse>> addMembers(
-            @PathVariable String roomId,
-            @RequestBody AddGroupMembersRequest request
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Members added successfully",
-                        chatRoomService.addMembersToGroup(roomId, request)
-                )
-        );
-    }
+        @PostMapping("/group/{roomId}/members")
+        public ResponseEntity<ApiResponse<ChatRoomResponse>> addMembers(
+                        @PathVariable String roomId,
+                        @RequestBody AddGroupMembersRequest request) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Members added successfully",
+                                                chatRoomService.addMembersToGroup(roomId, request)));
+        }
 
-    @GetMapping("/my-rooms")
-    public ResponseEntity<ApiResponse<List<ChatRoomResponse>>> getMyRooms() {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "My rooms fetched successfully",
-                        chatRoomService.getMyRooms()
-                )
-        );
-    }
+        @GetMapping("/my-rooms")
+        public ResponseEntity<ApiResponse<List<ChatRoomResponse>>> getMyRooms() {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "My rooms fetched successfully",
+                                                chatRoomService.getMyRooms()));
+        }
 
-    @GetMapping("/search")
-    public ResponseEntity<ApiResponse<List<ChatRoomResponse>>> searchMyRooms(
-            @RequestParam String keyword
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Search rooms successfully",
-                        chatRoomService.searchMyPrivateRooms(keyword)
-                )
-        );
-    }
+        @GetMapping("/search")
+        public ResponseEntity<ApiResponse<List<ChatRoomResponse>>> searchMyRooms(
+                        @RequestParam String keyword) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Search rooms successfully",
+                                                chatRoomService.searchMyPrivateRooms(keyword)));
+        }
 
-    @GetMapping("/my-users")
-    public ResponseEntity<ApiResponse<List<PrivateChatPreviewResponse>>> getMyChatUsers() {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Chat users fetched successfully",
-                        chatRoomService.getAllOtherUsersInMyRooms()
-                )
-        );
-    }
+        @GetMapping("/my-users")
+        public ResponseEntity<ApiResponse<List<PrivateChatPreviewResponse>>> getMyChatUsers() {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Chat users fetched successfully",
+                                                chatRoomService.getAllOtherUsersInMyRooms()));
+        }
 
-    @GetMapping("/my-group-rooms")
-    public ResponseEntity<ApiResponse<List<ChatGroupBasicResponse>>> getAllMyGroupRooms() {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "My group rooms fetched successfully",
-                        chatRoomService.getAllMyGroupRooms()
-                )
-        );
-    }
+        @GetMapping("/my-group-rooms")
+        public ResponseEntity<ApiResponse<List<ChatGroupBasicResponse>>> getAllMyGroupRooms() {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "My group rooms fetched successfully",
+                                                chatRoomService.getAllMyGroupRooms()));
+        }
 
-    @GetMapping("/group/{roomId}")
-    public ResponseEntity<ApiResponse<ChatGroupDetailResponse>> getGroupById(
-            @PathVariable String roomId
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Group detail fetched successfully",
-                        chatRoomService.getGroupById(roomId)
-                )
-        );
-    }
+        @GetMapping("/group/{roomId}")
+        public ResponseEntity<ApiResponse<ChatGroupDetailResponse>> getGroupById(
+                        @PathVariable String roomId) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Group detail fetched successfully",
+                                                chatRoomService.getGroupById(roomId)));
+        }
 
-    @GetMapping("/{roomId}/messages")
-    public ResponseEntity<ApiResponse<Page<ChatMessageResponse>>> getMessages(
-            @PathVariable String roomId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Messages fetched successfully",
-                        chatRoomService.getMessages(roomId, page, size)
-                )
-        );
-    }
+        @GetMapping("/{roomId}/messages")
+        public ResponseEntity<ApiResponse<Page<ChatMessageResponse>>> getMessages(
+                        @PathVariable String roomId,
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "20") int size) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Messages fetched successfully",
+                                                chatRoomService.getMessages(roomId, page, size)));
+        }
 }

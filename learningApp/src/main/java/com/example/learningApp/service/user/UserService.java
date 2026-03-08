@@ -60,7 +60,7 @@ public class UserService {
     UserLearningProgressRepository userLearningProgressRepository;
 
     public void changePassword(String accessToken, String oldPassword, String newPassword) {
-        try{
+        try {
             ChangePasswordRequest changePasswordRequest = ChangePasswordRequest.builder()
                     .accessToken(accessToken)
                     .previousPassword(oldPassword)
@@ -69,14 +69,15 @@ public class UserService {
 
             // Call Cognito to change the password
             cognitoClient.changePassword(changePasswordRequest);
-        }catch (NotAuthorizedException e) {
+        } catch (NotAuthorizedException e) {
             throw new RuntimeException("Old password is incorrect");
-        }catch (InvalidPasswordException e) {
+        } catch (InvalidPasswordException e) {
             throw new RuntimeException("New password does not meet security policy");
-        }catch (Exception ex) {
+        } catch (Exception ex) {
             throw new RuntimeException("Change password failed", ex);
         }
     }
+
     @Transactional
     public UserResponse updateMyProfile(UpdateUserRequest request) {
 
@@ -98,24 +99,25 @@ public class UserService {
 
         return userMapper.toUserResponse(user);
     }
+
     public void forgetPassword(String email) {
         // Implementation for forget password
-        try{
+        try {
             ForgotPasswordRequest forgotPasswordRequest = ForgotPasswordRequest.builder()
                     .clientId(clientId)
                     .username(email)
                     .secretHash(calculateSecretHash(email, clientId, clientSecret))
                     .build();
             cognitoClient.forgotPassword(forgotPasswordRequest);
-        }catch (UserNotFoundException e) {
+        } catch (UserNotFoundException e) {
             log.warn("Forgot password requested for non-existing user");
-        }catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException("Forget password failed", e);
         }
     }
 
     public void confirmForgotPassword(String email, String confirmationCode, String newPassword) {
-        try{
+        try {
             ConfirmForgotPasswordRequest confirmForgotPasswordRequest = ConfirmForgotPasswordRequest.builder()
                     .clientId(clientId)
                     .username(email)
@@ -135,17 +137,18 @@ public class UserService {
         }
     }
 
-    public PageResponse<UserForAdminResponse> getAllUsersManager(int page, int size, String search){
+    public PageResponse<UserForAdminResponse> getAllUsersManager(int page, int size, String search) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<User> userPage;
         if (search == null) {
             userPage = userRepository.findAll(pageable);
-        }else {
+        } else {
             userPage = userRepository.findByEmailContainingIgnoreCaseOrFullNameContainingIgnoreCase(
                     search, search, pageable);
         }
 
-        List<UserForAdminResponse> userForAdminResponse = userPage.getContent().stream().map(this::mapToUserResponse).toList();
+        List<UserForAdminResponse> userForAdminResponse = userPage.getContent().stream().map(this::mapToUserResponse)
+                .toList();
         return PageResponse.<UserForAdminResponse>builder()
                 .page(page)
                 .totalPages(userPage.getTotalPages())
@@ -162,7 +165,7 @@ public class UserService {
         Page<User> userPage;
         if (search == null) {
             userPage = userRepository.findAll(pageable);
-        }else {
+        } else {
             userPage = userRepository.findByEmailContainingIgnoreCaseOrFullNameContainingIgnoreCase(
                     search, search, pageable);
         }
@@ -179,8 +182,8 @@ public class UserService {
                 response.setLevel(progress.getLevel()); // Set Level
 
                 // Tính % hoàn thành (ví dụ đơn giản)
-                int percent = (progress.getTotalQuestionsDone() == 0) ? 0 :
-                        (int) ((double) progress.getCorrectQuestions() / progress.getTotalQuestionsDone() * 100);
+                int percent = (progress.getTotalQuestionsDone() == 0) ? 0
+                        : (int) ((double) progress.getCorrectQuestions() / progress.getTotalQuestionsDone() * 100);
                 response.setProcessPercent(percent);
 
                 // Set Stage (Ví dụ: Nếu làm > 10 bài thi là giai đoạn Exam, ngược lại là Junbi)
@@ -193,7 +196,8 @@ public class UserService {
             }
 
             // Set Premium (giả sử User entity có field này hoặc check role)
-            // response.setPremium(user.getRoles().stream().anyMatch(r -> r.getName().equals("ROLE_PREMIUM")));
+            // response.setPremium(user.getRoles().stream().anyMatch(r ->
+            // r.getName().equals("ROLE_PREMIUM")));
 
             return response;
         }).collect(Collectors.toList());
@@ -282,6 +286,7 @@ public class UserService {
             }
         }
     }
+
     public UserChatResponse getUserById(String userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -293,7 +298,6 @@ public class UserService {
                 .build();
     }
 
-
     // ============== SEARCH USER FOR CHAT =================
     public List<UserChatResponse> searchUsersForChat(String keyword) {
 
@@ -304,8 +308,7 @@ public class UserService {
 
         List<User> users = userRepository
                 .findByFullNameContainingIgnoreCaseOrEmailContainingIgnoreCaseAndEnabledTrue(
-                        keyword, keyword, pageable
-                );
+                        keyword, keyword, pageable);
 
         return users.stream()
                 .filter(user -> !user.getId().equals(currentUserId)) // không hiện chính mình
@@ -313,8 +316,7 @@ public class UserService {
                         .id(user.getId())
                         .fullName(user.getFullName())
                         .avatarUrl(user.getAvatarUrl())
-                        .build()
-                )
+                        .build())
                 .toList();
     }
 
@@ -336,7 +338,7 @@ public class UserService {
         return new UserStatsResponse(0, 0, 0);
     }
 
-    //============== USER ==================
+    // ============== USER ==================
     public UserResponse getMyInfo() {
         var context = SecurityContextHolder.getContext();
         String userId = context.getAuthentication().getName();

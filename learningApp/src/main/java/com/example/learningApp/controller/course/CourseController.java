@@ -93,7 +93,7 @@ public class CourseController {
 
     /* ===================== TOGGLE ACTIVE ===================== */
 
-    @PatchMapping("/{courseId}/toggle")
+    @PutMapping("/{courseId}/toggle")
     public ResponseEntity<ApiResponse<Void>> toggleCourse(
             @PathVariable String courseId
     ) {

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class ChatRoomService {
@@ -46,7 +47,7 @@ public class ChatRoomService {
     public ChatGroupDetailResponse getGroupById(String roomId) {
         User currentUser = finder.userById();
 
-        return queryService.getGroupById(roomId,currentUser.getId());
+        return queryService.getGroupById(roomId, currentUser.getId());
     }
 
     public Page<ChatMessageResponse> getMessages(String roomId, int page, int size) {
@@ -58,7 +59,7 @@ public class ChatRoomService {
     }
 
     public ChatRoomResponse addMembersToGroup(String roomId, AddGroupMembersRequest request) {
-        return commandService.addMembersToGroup(roomId,request);
+        return commandService.addMembersToGroup(roomId, request);
     }
 
     public ChatRoomResponse createGroupRoom(CreateGroupRoomRequest request) {

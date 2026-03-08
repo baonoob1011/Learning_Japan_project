@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 public class FriendService {
@@ -24,23 +25,19 @@ public class FriendService {
     private final EntityFinder finder;
     private final SimpMessagingTemplate messagingTemplate;
 
-
     public List<FriendRequestResponse> getPendingRequests() {
 
         User currentUser = finder.userById();
 
-        List<Friendship> pendingList =
-                friendshipRepository.findByUser2AndStatus(
-                        currentUser,
-                        FriendRequestStatus.PENDING
-                );
+        List<Friendship> pendingList = friendshipRepository.findByUser2AndStatus(
+                currentUser,
+                FriendRequestStatus.PENDING);
 
         return pendingList.stream().map(friendship -> {
 
-            User sender =
-                    friendship.getUser1().equals(currentUser)
-                            ? friendship.getUser2()
-                            : friendship.getUser1();
+            User sender = friendship.getUser1().equals(currentUser)
+                    ? friendship.getUser2()
+                    : friendship.getUser1();
 
             return FriendRequestResponse.builder()
                     .requestId(friendship.getId())
@@ -104,20 +101,19 @@ public class FriendService {
         FriendRequestResponse response = FriendRequestResponse.builder()
                 .requestId(friendship.getId())
                 .senderId(sender.getId())
-                .senderName(sender.getFullName())        // đổi theo field của bạn
-                .senderAvatar(sender.getAvatarUrl())    // đổi theo field của bạn
+                .senderName(sender.getFullName()) // đổi theo field của bạn
+                .senderAvatar(sender.getAvatarUrl()) // đổi theo field của bạn
                 .receiverId(receiver.getId())
                 .receiverName(receiver.getFullName())
                 .receiverAvatar(receiver.getAvatarUrl())
                 .status(friendship.getStatus().name())
-                .createdAt(friendship.getCreatedAt())   // nếu entity có field này
+                .createdAt(friendship.getCreatedAt()) // nếu entity có field này
                 .build();
 
         // gửi realtime cho người nhận
         messagingTemplate.convertAndSend(
                 "/topic/friend-request/" + receiver.getId(),
-                response
-        );
+                response);
 
         return response;
     }
@@ -149,8 +145,7 @@ public class FriendService {
 
         messagingTemplate.convertAndSend(
                 "/topic/friend-accepted/" + currentUser.getId(),
-                Map.of("status", "ACCEPTED")
-        );
+                Map.of("status", "ACCEPTED"));
     }
 
     // =========================

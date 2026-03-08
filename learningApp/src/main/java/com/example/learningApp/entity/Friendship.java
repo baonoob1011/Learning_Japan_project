@@ -5,9 +5,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+
 @Entity
-@Table(name = "friendships",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"user1_id", "user2_id"}))
+@Table(name = "friendships", uniqueConstraints = @UniqueConstraint(columnNames = { "user1_id", "user2_id" }))
 @Getter
 @Setter
 @NoArgsConstructor
