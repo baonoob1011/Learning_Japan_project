@@ -26,6 +26,7 @@ public interface QuestionMapper {
     /* ================= RESPONSE ================= */
 
     @Mapping(target = "options", source = "options")
+    @Mapping(target = "sectionOrder", source = "section.sectionOrder")
     QuestionResponse toQuestionResponse(Question question);
 
     PassageResponse toPassageResponse(Passage passage);

@@ -18,39 +18,31 @@ import java.util.List;
 @RequiredArgsConstructor
 public class KanjiController {
 
-    private final KanjiService kanjiService;
+        private final KanjiService kanjiService;
 
+        @GetMapping("/{id}")
+        public ResponseEntity<ApiResponse<KanjiResponse>> getKanji(
+                        @PathVariable String id) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Kanji fetched successfully",
+                                                kanjiService.getKanjiById(id)));
+        }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<KanjiResponse>> getKanji(
-            @PathVariable String id
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Kanji fetched successfully",
-                        kanjiService.getKanjiById(id)
-                )
-        );
-    }
+        @PostMapping
+        public ResponseEntity<ApiResponse<KanjiResponse>> createKanji(
+                        @RequestBody CreateKanjiRequest request) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Kanji created successfully",
+                                                kanjiService.createKanji(request)));
+        }
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<KanjiResponse>> createKanji(
-            @RequestBody CreateKanjiRequest request
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Kanji created successfully",
-                        kanjiService.createKanji(request)
-                )
-        );
-    }
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<KanjiResponse>>> getAllKanji() {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Kanji list fetched successfully",
-                        kanjiService.getAllKanji()
-                )
-        );
-    }
+        @GetMapping
+        public ResponseEntity<ApiResponse<List<KanjiResponse>>> getAllKanji() {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Kanji list fetched successfully",
+                                                kanjiService.getAllKanji()));
+        }
 }

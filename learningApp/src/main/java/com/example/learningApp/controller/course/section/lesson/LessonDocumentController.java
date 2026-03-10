@@ -7,6 +7,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,7 +23,7 @@ public class LessonDocumentController {
     LessonDocumentService lessonDocumentService;
 
     /* ===================== CREATE ===================== */
-
+@PreAuthorize("hasRole('ADMIN')")
     @PostMapping(consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<String>> create(
             @RequestParam String lessonId,

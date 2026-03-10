@@ -91,7 +91,17 @@ public class KanjiService {
                 .map(this::mapToResponse)
                 .toList();
     }
+    // =================================================
+// DELETE Kanji
+// =================================================
+    @Transactional
+    public void deleteKanji(String id) {
 
+        Kanji kanji = kanjiRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Kanji not found"));
+
+        kanjiRepository.delete(kanji);
+    }
     // =================================================
     // Mapper Entity -> Response
     // =================================================

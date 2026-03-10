@@ -17,78 +17,71 @@ import java.util.List;
 @RequiredArgsConstructor
 public class YoutubeVideoController {
 
-    private final YoutubeVideoService youtubeVideoService;
+        private final YoutubeVideoService youtubeVideoService;
 
+        @PostMapping("/{videoId}")
+        public ResponseEntity<ApiResponse<Void>> saveVideo(
+                        @PathVariable String videoId) {
+                youtubeVideoService.saveVideoForUser(videoId);
+                return ResponseEntity.ok(
+                                ApiResponse.success("Saved video successfully", null));
+        }
 
-    @PostMapping("/{videoId}")
-    public ResponseEntity<ApiResponse<Void>> saveVideo(
-            @PathVariable String videoId
-    ) {
-        youtubeVideoService.saveVideoForUser(videoId);
-        return ResponseEntity.ok(
-                ApiResponse.success("Saved video successfully", null)
-        );
-    }
-    @PutMapping("/{videoId}")
-    public ResponseEntity<ApiResponse<Void>> updateVideo(
-            @PathVariable String videoId,
-            @RequestBody YoutubeVideoUpdateRequest request
-    ) {
-        youtubeVideoService.updateVideo(videoId, request);
+        @PutMapping("/{videoId}")
+        public ResponseEntity<ApiResponse<Void>> updateVideo(
+                        @PathVariable String videoId,
+                        @RequestBody YoutubeVideoUpdateRequest request) {
+                youtubeVideoService.updateVideo(videoId, request);
 
-        return ResponseEntity.ok(
-                ApiResponse.success("Video updated successfully", null)
-        );
-    }
-    @DeleteMapping("/{videoId}")
-    public ResponseEntity<ApiResponse<Void>> removeSavedVideo(
-            @PathVariable String videoId
-    ) {
-        youtubeVideoService.removeSavedVideo(videoId);
-        return ResponseEntity.ok(
-                ApiResponse.success("Removed video successfully", null)
-        );
-    }
-    @GetMapping("/me")
-    public ResponseEntity<ApiResponse<List<YoutubeVideoSummaryResponse>>> getMySavedVideos() {
+                return ResponseEntity.ok(
+                                ApiResponse.success("Video updated successfully", null));
+        }
 
-        List<YoutubeVideoSummaryResponse> videos =
-                youtubeVideoService.getMySavedVideos();
+        @DeleteMapping("/{videoId}")
+        public ResponseEntity<ApiResponse<Void>> removeSavedVideo(
+                        @PathVariable String videoId) {
+                youtubeVideoService.removeSavedVideo(videoId);
+                return ResponseEntity.ok(
+                                ApiResponse.success("Removed video successfully", null));
+        }
 
-        return ResponseEntity.ok(
-                ApiResponse.success("Get my saved videos successfully", videos)
-        );
-    }
-    @PostMapping("/upload")
-    public ResponseEntity<ApiResponse<Void>> uploadYoutubeVideo(
-            @RequestBody @Valid YoutubeVideoRequest request
-    ) {
-        youtubeVideoService.saveYoutubeTranscriptAws(request);
+        @GetMapping("/me")
+        public ResponseEntity<ApiResponse<List<YoutubeVideoSummaryResponse>>> getMySavedVideos() {
 
-        return ResponseEntity.ok(
-                ApiResponse.success("Video uploaded successfully with transcript", null)
-        );
+                List<YoutubeVideoSummaryResponse> videos = youtubeVideoService.getMySavedVideos();
 
-    }
+                return ResponseEntity.ok(
+                                ApiResponse.success("Get my saved videos successfully", videos));
+        }
 
+        @PostMapping("/upload")
+        public ResponseEntity<ApiResponse<Void>> uploadYoutubeVideo(
+                        @RequestBody @Valid YoutubeVideoRequest request) {
+                youtubeVideoService.saveYoutubeTranscriptAws(request);
 
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<YoutubeVideoSummaryResponse>>> getAllVideos() {
-        List<YoutubeVideoSummaryResponse> videos = youtubeVideoService.getAllVideos();
-        return ResponseEntity.ok(ApiResponse.success("All videos retrieved", videos));
-    }
+                return ResponseEntity.ok(
+                                ApiResponse.success("Video uploaded successfully with transcript", null));
 
-    @GetMapping("/vocab")
-    public ResponseEntity<ApiResponse<List<YoutubeVideoSummaryResponse>>> getAllVideoByVocab() {
-        List<YoutubeVideoSummaryResponse> videos = youtubeVideoService.getAllVideoByVocab();
-        return ResponseEntity.ok(ApiResponse.success("All videos by vocab", videos));
-    }
+        }
 
-    /**
-     * Lấy video theo ID, trả về chi tiết
-     */
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> getVideoById(@PathVariable String id) {
-        return ResponseEntity.ok(ApiResponse.success("Video retrieved successfully", youtubeVideoService.getVideoById(id)));
-    }
+        @GetMapping
+        public ResponseEntity<ApiResponse<List<YoutubeVideoSummaryResponse>>> getAllVideos() {
+                List<YoutubeVideoSummaryResponse> videos = youtubeVideoService.getAllVideos();
+                return ResponseEntity.ok(ApiResponse.success("All videos retrieved", videos));
+        }
+
+        @GetMapping("/vocab")
+        public ResponseEntity<ApiResponse<List<YoutubeVideoSummaryResponse>>> getAllVideoByVocab() {
+                List<YoutubeVideoSummaryResponse> videos = youtubeVideoService.getAllVideoByVocab();
+                return ResponseEntity.ok(ApiResponse.success("All videos by vocab", videos));
+        }
+
+        /**
+         * Lấy video theo ID, trả về chi tiết
+         */
+        @GetMapping("/{id}")
+        public ResponseEntity<ApiResponse<Void>> getVideoById(@PathVariable String id) {
+                return ResponseEntity.ok(ApiResponse.success("Video retrieved successfully",
+                                youtubeVideoService.getVideoById(id)));
+        }
 }

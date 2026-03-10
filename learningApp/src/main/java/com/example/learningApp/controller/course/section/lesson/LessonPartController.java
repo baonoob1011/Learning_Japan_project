@@ -9,6 +9,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -20,76 +21,62 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class LessonPartController {
 
-    LessonPartService lessonPartService;
+        LessonPartService lessonPartService;
 
-    /* ===================== CREATE ===================== */
+        /* ===================== CREATE ===================== */
+        @PreAuthorize("hasRole('ADMIN')")
+        @PostMapping
+        public ResponseEntity<ApiResponse<String>> createLessonPart(
+                        @RequestBody CreateLessonPartRequest request) throws IOException, InterruptedException {
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<String>> createLessonPart(
-            @RequestBody CreateLessonPartRequest request
-    ) throws IOException, InterruptedException {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Create lesson part successfully",
+                                                lessonPartService.createLessonPart(request)));
+        }
+        /* ===================== UPDATE ===================== */
 
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Create lesson part successfully",
-                        lessonPartService.createLessonPart(request)
-                )
-        );
-    }
-    /* ===================== UPDATE ===================== */
+        @PutMapping("/{lessonPartId}")
+        public ResponseEntity<ApiResponse<String>> updateLessonPart(
+                        @PathVariable String lessonPartId,
+                        @RequestBody UpdateLessonPartRequest request) throws IOException, InterruptedException {
 
-    @PutMapping("/{lessonPartId}")
-    public ResponseEntity<ApiResponse<String>> updateLessonPart(
-            @PathVariable String lessonPartId,
-            @RequestBody UpdateLessonPartRequest request
-    ) throws IOException, InterruptedException {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Update lesson part successfully",
+                                                lessonPartService.updateLessonPart(lessonPartId, request)));
+        }
+        /* ===================== GET BY LESSON ===================== */
 
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Update lesson part successfully",
-                        lessonPartService.updateLessonPart(lessonPartId, request)
-                )
-        );
-    }
-    /* ===================== GET BY LESSON ===================== */
+        @GetMapping("/lesson/{lessonId}")
+        public ResponseEntity<ApiResponse<List<LessonPartResponse>>> getByLesson(
+                        @PathVariable String lessonId) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Get lesson parts successfully",
+                                                lessonPartService.getByLesson(lessonId)));
+        }
 
-    @GetMapping("/lesson/{lessonId}")
-    public ResponseEntity<ApiResponse<List<LessonPartResponse>>> getByLesson(
-            @PathVariable String lessonId
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Get lesson parts successfully",
-                        lessonPartService.getByLesson(lessonId)
-                )
-        );
-    }
+        /* ===================== GET DETAIL ===================== */
 
-    /* ===================== GET DETAIL ===================== */
+        @GetMapping("/{lessonPartId}")
+        public ResponseEntity<ApiResponse<LessonPartResponse>> getDetail(
+                        @PathVariable String lessonPartId) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Get lesson part successfully",
+                                                lessonPartService.getDetail(lessonPartId)));
+        }
 
-    @GetMapping("/{lessonPartId}")
-    public ResponseEntity<ApiResponse<LessonPartResponse>> getDetail(
-            @PathVariable String lessonPartId
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Get lesson part successfully",
-                        lessonPartService.getDetail(lessonPartId)
-                )
-        );
-    }
+        /* ===================== DELETE ===================== */
 
-    /* ===================== DELETE ===================== */
+        @DeleteMapping("/{lessonPartId}")
+        public ResponseEntity<ApiResponse<Void>> delete(
+                        @PathVariable String lessonPartId) {
 
-    @DeleteMapping("/{lessonPartId}")
-    public ResponseEntity<ApiResponse<Void>> delete(
-            @PathVariable String lessonPartId
-    ) {
+                lessonPartService.deleteLessonPart(lessonPartId);
 
-        lessonPartService.deleteLessonPart(lessonPartId);
-
-        return ResponseEntity.ok(
-                ApiResponse.success("Delete lesson part successfully", null)
-        );
-    }
+                return ResponseEntity.ok(
+                                ApiResponse.success("Delete lesson part successfully", null));
+        }
 }

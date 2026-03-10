@@ -8,6 +8,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,72 +19,59 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class LessonController {
 
-    LessonService lessonService;
+        LessonService lessonService;
 
-    /* ===================== CREATE ===================== */
+        /* ===================== CREATE ===================== */
+        @PreAuthorize("hasRole('ADMIN')")
+        @PostMapping
+        public ResponseEntity<ApiResponse<String>> createLesson(
+                        @RequestBody CreateLessonRequest request) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Create lesson successfully",
+                                                lessonService.createLesson(request)));
+        }
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<String>> createLesson(
-            @RequestBody CreateLessonRequest request
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Create lesson successfully",
-                        lessonService.createLesson(request)
-                )
-        );
-    }
+        /* ===================== GET BY SECTION ===================== */
 
-    /* ===================== GET BY SECTION ===================== */
+        @GetMapping("/section/{sectionId}")
+        public ResponseEntity<ApiResponse<List<LessonResponse>>> getBySection(
+                        @PathVariable String sectionId) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Get lessons successfully",
+                                                lessonService.getLessonsBySection(sectionId)));
+        }
 
-    @GetMapping("/section/{sectionId}")
-    public ResponseEntity<ApiResponse<List<LessonResponse>>> getBySection(
-            @PathVariable String sectionId
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Get lessons successfully",
-                        lessonService.getLessonsBySection(sectionId)
-                )
-        );
-    }
+        /* ===================== GET DETAIL ===================== */
 
-    /* ===================== GET DETAIL ===================== */
+        @GetMapping("/{lessonId}")
+        public ResponseEntity<ApiResponse<LessonResponse>> getDetail(
+                        @PathVariable String lessonId) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Get lesson successfully",
+                                                lessonService.getLessonDetail(lessonId)));
+        }
 
-    @GetMapping("/{lessonId}")
-    public ResponseEntity<ApiResponse<LessonResponse>> getDetail(
-            @PathVariable String lessonId
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Get lesson successfully",
-                        lessonService.getLessonDetail(lessonId)
-                )
-        );
-    }
-    @PutMapping("/{lessonId}")
-    public ResponseEntity<ApiResponse<String>> updateLesson(
-            @PathVariable String lessonId,
-            @RequestBody CreateLessonRequest request
-    ) {
+        @PutMapping("/{lessonId}")
+        public ResponseEntity<ApiResponse<String>> updateLesson(
+                        @PathVariable String lessonId,
+                        @RequestBody CreateLessonRequest request) {
 
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Update lesson successfully",
-                        lessonService.updateLesson(lessonId, request)
-                )
-        );
-    }
-    /* ===================== DELETE ===================== */
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Update lesson successfully",
+                                                lessonService.updateLesson(lessonId, request)));
+        }
+        /* ===================== DELETE ===================== */
 
-    @DeleteMapping("/{lessonId}")
-    public ResponseEntity<ApiResponse<Void>> delete(
-            @PathVariable String lessonId
-    ) {
-        lessonService.deleteLesson(lessonId);
+        @DeleteMapping("/{lessonId}")
+        public ResponseEntity<ApiResponse<Void>> delete(
+                        @PathVariable String lessonId) {
+                lessonService.deleteLesson(lessonId);
 
-        return ResponseEntity.ok(
-                ApiResponse.success("Delete lesson successfully", null)
-        );
-    }
+                return ResponseEntity.ok(
+                                ApiResponse.success("Delete lesson successfully", null));
+        }
 }

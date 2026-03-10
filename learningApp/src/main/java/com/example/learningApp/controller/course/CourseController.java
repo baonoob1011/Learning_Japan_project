@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,93 +21,76 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class CourseController {
 
-    CourseService courseService;
+        CourseService courseService;
 
-    /* ===================== CREATE ===================== */
+        /* ===================== CREATE ===================== */
+        @PreAuthorize("hasRole('ADMIN')")
+        @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+        public ResponseEntity<ApiResponse<String>> createCourse(
+                        @ModelAttribute CreateCourseRequest request) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Create course successfully",
+                                                courseService.createCourse(request)));
+        }
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<String>> createCourse(
-            @ModelAttribute CreateCourseRequest request    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Create course successfully",
-                        courseService.createCourse(request)
-                )
-        );
-    }
+        /* ===================== GET ALL ACTIVE ===================== */
+        /* ===================== UPDATE ===================== */
 
-    /* ===================== GET ALL ACTIVE ===================== */
-    /* ===================== UPDATE ===================== */
+        @PutMapping("/{courseId}")
+        public ResponseEntity<ApiResponse<String>> updateCourse(
+                        @PathVariable String courseId,
+                        @RequestBody UpdateCourseRequest request) {
 
-    @PutMapping("/{courseId}")
-    public ResponseEntity<ApiResponse<String>> updateCourse(
-            @PathVariable String courseId,
-            @RequestBody UpdateCourseRequest request
-    ) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Update course successfully",
+                                                courseService.updateCourse(courseId, request)));
+        }
 
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Update course successfully",
-                        courseService.updateCourse(courseId, request)
-                )
-        );
-    }
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<CourseResponse>>> getAllCourses() {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Get courses successfully",
-                        courseService.getActiveCourses()
-                )
-        );
-    }
+        @GetMapping
+        public ResponseEntity<ApiResponse<List<CourseResponse>>> getAllCourses() {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Get courses successfully",
+                                                courseService.getActiveCourses()));
+        }
 
-    /* ===================== GET DETAIL ===================== */
+        /* ===================== GET DETAIL ===================== */
 
-    @GetMapping("/{courseId}")
-    public ResponseEntity<ApiResponse<CourseResponse>> getCourseDetail(
-            @PathVariable String courseId
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Get course detail successfully",
-                        courseService.getCourseDetail(courseId)
-                )
-        );
-    }
+        @GetMapping("/{courseId}")
+        public ResponseEntity<ApiResponse<CourseResponse>> getCourseDetail(
+                        @PathVariable String courseId) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Get course detail successfully",
+                                                courseService.getCourseDetail(courseId)));
+        }
 
-    /* ===================== GET FULL TREE ===================== */
-    /**
-     * Course → Section → Lesson → SectionDocument
-     */
-    @GetMapping("/{courseId}/tree")
-    public ResponseEntity<ApiResponse<CourseResponse>> getCourseTree(
-            @PathVariable String courseId
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Get course tree successfully",
-                        courseService.getCourseTree(courseId)
-                )
-        );
-    }
+        /* ===================== GET FULL TREE ===================== */
+        /**
+         * Course → Section → Lesson → SectionDocument
+         */
+        @GetMapping("/{courseId}/tree")
+        public ResponseEntity<ApiResponse<CourseResponse>> getCourseTree(
+                        @PathVariable String courseId) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Get course tree successfully",
+                                                courseService.getCourseTree(courseId)));
+        }
 
-    /* ===================== TOGGLE ACTIVE ===================== */
+        /* ===================== TOGGLE ACTIVE ===================== */
 
-    @PutMapping("/{courseId}/toggle")
-    public ResponseEntity<ApiResponse<Void>> toggleCourse(
-            @PathVariable String courseId
-    ) {
-        courseService.toggleActive(courseId);
+        @PutMapping("/{courseId}/toggle")
+        public ResponseEntity<ApiResponse<Void>> toggleCourse(
+                        @PathVariable String courseId) {
+                courseService.toggleActive(courseId);
 
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Toggle course successfully",
-                        null
-                )
-        );
-    }
-
-
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Toggle course successfully",
+                                                null));
+        }
 
 }

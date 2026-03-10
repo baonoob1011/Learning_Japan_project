@@ -14,7 +14,9 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @Slf4j
@@ -27,36 +29,14 @@ public class QuestionService {
     QuestionMapper questionMapper;
 
     public List<QuestionResponse> getQuestionsBySection(String sectionId) {
-        List<Question> questions = questionRepository.findBySectionId(sectionId);
-        // Map bằng mapper
-
-        return questions.stream()
-
+        return questionRepository.findBySectionId(sectionId).stream()
                 .map(questionMapper::toQuestionResponse)
                 .toList();
     }
 
     public List<QuestionResponse> getAll() {
-        return questionRepository.findAll()
-                .stream()
-                // ✅ sort đúng: sectionOrder -> questionOrder
-                .map(q -> {
-                    QuestionResponse res = new QuestionResponse();
-
-                    res.setId(q.getId());
-                    // ⭐ LẤY sectionOrder TỪ SECTION
-                    res.setSectionOrder(q.getSection().getSectionOrder());
-
-                    res.setQuestionType(q.getQuestionType());
-                    res.setQuestionText(q.getQuestionText());
-                    res.setOptions(q.getOptions());
-                    res.setAnswer(q.getAnswer());
-                    res.setImageUrl(q.getImageUrl());
-                    res.setAudioUrl(q.getAudioUrl());
-                    res.setQuestionOrder(q.getQuestionOrder());
-
-                    return res;
-                })
+        return questionRepository.findAll().stream()
+                .map(questionMapper::toQuestionResponse)
                 .toList();
     }
 
@@ -86,9 +66,25 @@ public class QuestionService {
     }
 
     public List<QuestionResponse> getQuestionsByExamId(String examId) {
-        return questionRepository.findAllByExamId(examId).stream()
+        List<QuestionResponse> responses = questionRepository.findAllByExamId(examId).stream()
                 .map(questionMapper::toQuestionResponse)
                 .toList();
+
+        Set<String> seenPassages = new HashSet<>();
+        responses.forEach(res -> {
+            if (res.getPassage() != null) {
+                // Deduplicate by ID
+                String passageKey = res.getPassage().getId();
+
+                if (seenPassages.contains(passageKey)) {
+                    res.setPassage(null);
+                } else {
+                    seenPassages.add(passageKey);
+                }
+            }
+        });
+
+        return responses;
     }
 
 }
