@@ -17,9 +17,15 @@ public class NotificationResponse {
     private String id;
     private String title;
     private String content;
-    private  boolean isRead;
+    private boolean isRead;
     private LocalDateTime createdAt;
 
     public NotificationResponse(Notification notification) {
+        this.id = notification.getId();
+        this.title = notification.getTitle();
+        this.content = notification.getContent();
+        this.isRead = notification.isRead();
+        this.createdAt = notification.getCreatedAt();
     }
+
 }

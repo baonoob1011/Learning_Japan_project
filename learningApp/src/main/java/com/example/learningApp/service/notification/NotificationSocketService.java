@@ -10,22 +10,21 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class NotificationSocketService {
 
-    private final SimpMessagingTemplate messagingTemplate;
+        private final SimpMessagingTemplate messagingTemplate;
 
-    public void push(String userId, Notification n) {
+        public void push(String userId, Notification n) {
 
-        NotificationResponse dto =
-                new NotificationResponse(
-                        n.getId(),
-                        n.getTitle(),
-                        n.getContent(),
-                        n.isRead(),
-                        n.getCreatedAt()
-                );
+                NotificationResponse dto = new NotificationResponse(
+                                n.getId(),
+                                n.getTitle(),
+                                n.getContent(),
+                                n.isRead(),
+                                n.getCreatedAt());
 
-        messagingTemplate.convertAndSend(
-                "/topic/notifications/" + userId,
-                dto
-        );
-    }
+                System.out.println("📤 Pushing notification to topic: /topic/notifications/" + userId);
+                messagingTemplate.convertAndSend(
+                                "/topic/notifications/" + userId,
+                                dto);
+
+        }
 }
