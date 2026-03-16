@@ -1,6 +1,5 @@
 package com.example.learningApp.service.cloud;
 
-
 import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.*;
@@ -28,11 +27,10 @@ public class S3Service {
     @Value("${aws.s3.bucket}")
     private String bucketName;
 
-
     private static final Set<String> MEDIA_EXTENSIONS = Set.of(
             "mp4", "mov", "avi",
-            "mp3", "wav", "aac"
-    );
+            "mp3", "wav", "aac");
+
     // Upload byte array (dành cho audio Polly)
     public String uploadBytes(byte[] bytes, String folder, String fileSuffix) {
         String fileName = folder + "/" + UUID.randomUUID() + fileSuffix;
@@ -51,6 +49,7 @@ public class S3Service {
         // Lấy URL public dựa vào bucket policy
         return "https://" + bucketName + ".s3." + amazonS3.getRegionName() + ".amazonaws.com/" + fileName;
     }
+
     public String uploadCsvFile(MultipartFile file, String folder) throws IOException {
         if (!"text/csv".equals(file.getContentType()) && !file.getOriginalFilename().endsWith(".csv")) {
             throw new RuntimeException("Only CSV files are allowed");
@@ -65,6 +64,7 @@ public class S3Service {
 
         return "https://" + bucketName + ".s3." + amazonS3.getRegionName() + ".amazonaws.com/" + fileName;
     }
+
     public String generatePresignedUrl(String key, int expirationSeconds) {
         Date expiration = new Date();
         expiration.setTime(System.currentTimeMillis() + expirationSeconds * 1000L);
@@ -76,6 +76,7 @@ public class S3Service {
         URL url = amazonS3.generatePresignedUrl(request);
         return url.toString();
     }
+
     public List<String> listAllKeys(String prefix) {
 
         ListObjectsV2Request request = new ListObjectsV2Request()
@@ -89,6 +90,7 @@ public class S3Service {
                 .map(S3ObjectSummary::getKey)
                 .collect(Collectors.toList());
     }
+
     public List<String> getAllMediaUrls() {
 
         ListObjectsV2Request request = new ListObjectsV2Request()
@@ -106,7 +108,8 @@ public class S3Service {
 
     private boolean isMediaFile(String key) {
         int lastDot = key.lastIndexOf(".");
-        if (lastDot == -1) return false;
+        if (lastDot == -1)
+            return false;
         String ext = key.substring(lastDot + 1).toLowerCase();
         return MEDIA_EXTENSIONS.contains(ext);
     }
@@ -116,10 +119,10 @@ public class S3Service {
                 + amazonS3.getRegionName()
                 + ".amazonaws.com/" + key;
     }
+
     public String uploadLessonDocument(
             MultipartFile file,
-            String title
-    ) throws IOException {
+            String title) throws IOException {
 
         String folder = "lessons/documents"; // ✅ default
 
@@ -133,8 +136,7 @@ public class S3Service {
                 .replaceAll("[^a-z0-9]+", "-")
                 .replaceAll("(^-|-$)", "");
 
-        String fileName =
-                folder + "/" + safeTitle + "-" + UUID.randomUUID() + "." + extension;
+        String fileName = folder + "/" + safeTitle + "-" + UUID.randomUUID() + "." + extension;
 
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(file.getSize());
@@ -144,7 +146,6 @@ public class S3Service {
 
         return buildPublicUrl(fileName);
     }
-
 
     private String getExtension(String filename) {
         if (filename == null || !filename.contains(".")) {

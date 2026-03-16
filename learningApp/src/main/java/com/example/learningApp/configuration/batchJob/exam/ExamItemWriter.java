@@ -29,20 +29,35 @@ public class ExamItemWriter {
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
 
-            questionRepository.saveAll(list);
-
             Set<Exam> exams = list.stream()
                     .map(Question::getSection)
                     .flatMap(s -> s.getExams().stream())
                     .collect(Collectors.toSet());
 
             for (Exam exam : exams) {
-                int totalQuestions = exam.getSections().stream()
-                        .mapToInt(s -> s.getQuestions().size())
-                        .sum();
-                exam.setNumQuestions(totalQuestions);
+                // ⚡ Liên kết trực tiếp Question <-> Exam
+                List<Question> questionsForThisExam = list.stream()
+                        .filter(q -> q.getSection().getExams().contains(exam))
+                        .collect(Collectors.toList());
+
+                for (Question q : questionsForThisExam) {
+                    if (!q.getExams().contains(exam)) {
+                        q.getExams().add(exam);
+                    }
+                    if (!exam.getQuestions().contains(q)) {
+                        exam.getQuestions().add(q);
+                    }
+                }
+
+                long totalQuestions = questionRepository.countAllByExamId(exam.getId());
+                exam.setNumQuestions((int) totalQuestions);
                 examRepository.save(exam);
             }
+
+            // Re-save questions to persist the relationship from the Question side if
+            // needed
+            // (though joining through Exam.save should handle it)
+            questionRepository.saveAll(list);
         };
     }
 }

@@ -1,8 +1,9 @@
 package com.example.learningApp.configuration.batchJob;
 
-import com.example.learningApp.entity.ExamSection;
+import com.example.learningApp.entity.AssessmentItem;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.job.builder.JobBuilder;
@@ -29,11 +30,11 @@ public class ExamSectionBatchConfig {
     @Bean(name = "examSectionStep")
     public Step examSectionStep(
             @Qualifier("examSectionReader") MultiResourceItemReader<Map<String, String>> reader,
-            @Qualifier("examSectionProcessor") ItemProcessor<Map<String, String>, ExamSection> processor,
-            @Qualifier("examSectionWriter") ItemWriter<ExamSection> writer) {
+            @Qualifier("examSectionProcessor") ItemProcessor<Map<String, String>, AssessmentItem> processor,
+            @Qualifier("examSectionWriter") ItemWriter<AssessmentItem> writer) {
 
         return new StepBuilder("examSectionStep", jobRepository)
-                .<Map<String, String>, ExamSection>chunk(10, transactionManager)
+                .<Map<String, String>, AssessmentItem>chunk(10, transactionManager)
                 .reader(reader)
                 .processor(processor)
                 .writer(writer)
@@ -42,9 +43,11 @@ public class ExamSectionBatchConfig {
 
     @Bean(name = "importExamSectionJob")
     public Job importExamSectionJob(
-            @Qualifier("examSectionStep") Step step) {
+            @Qualifier("examSectionStep") Step step,
+            @Qualifier("examSectionJobListener") JobExecutionListener listener) {
 
         return new JobBuilder("importExamSectionJob", jobRepository)
+                .listener(listener)
                 .start(step)
                 .build();
     }

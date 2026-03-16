@@ -87,4 +87,10 @@ public class QuestionService {
         return responses;
     }
 
+    public void deleteQuestion(String questionId) {
+        if (!questionRepository.existsById(questionId)) {
+            throw new IllegalArgumentException("Question not found");
+        }
+        questionRepository.deleteById(questionId);
+    }
 }

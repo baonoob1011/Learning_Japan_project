@@ -54,6 +54,10 @@ public class Question {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    @ManyToMany(mappedBy = "questions", fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<Exam> exams = new ArrayList<>();
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

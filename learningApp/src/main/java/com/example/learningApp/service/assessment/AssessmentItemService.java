@@ -23,8 +23,6 @@ public class AssessmentItemService {
     @Qualifier("assessmentItemMapperImpl")
     private final AssessmentItemMapper mapper;
 
-    /* ===================== GET ALL ===================== */
-
     @Transactional(readOnly = true)
     public List<AssessmentItemResponse> getAll() {
         return repository.findAll()
@@ -33,79 +31,59 @@ public class AssessmentItemService {
                 .toList();
     }
 
-    /* ===================== GET BY LEVEL ===================== */
-
     @Transactional(readOnly = true)
     public List<AssessmentItemResponse> getByLevel(String level) {
-        return repository.findAll()
+        return repository.findByLevel(level)
                 .stream()
-                .filter(item -> item.getLevel() != null && item.getLevel().equalsIgnoreCase(level))
                 .map(mapper::toResponse)
                 .toList();
     }
 
-    /* ===================== GET BY SECTION ===================== */
-
     @Transactional(readOnly = true)
     public List<AssessmentItemResponse> getBySection(String sectionId) {
-
         ExamSection section = finder.examSectionId(sectionId);
-
         return repository.findBySection(section)
                 .stream()
                 .map(mapper::toResponse)
                 .toList();
     }
 
-    /* ===================== GET DETAIL ===================== */
-
     @Transactional(readOnly = true)
     public AssessmentItemResponse getDetail(String itemId) {
-
         AssessmentItem item = finder.assessmentItemId(itemId);
         return mapper.toResponse(item);
     }
 
-    /* ===================== UPDATE ===================== */
-
     @Transactional
     public String update(String itemId, UpdateAssessmentItemRequest request) {
-
         AssessmentItem item = finder.assessmentItemId(itemId);
 
-        // nếu cho đổi section
         if (request.getSectionId() != null) {
             ExamSection section = finder.examSectionId(request.getSectionId());
             item.setSection(section);
         }
 
-        if (request.getName() != null) {
+        if (request.getName() != null)
             item.setName(request.getName());
-        }
-
-        if (request.getLevel() != null) {
+        if (request.getLevel() != null)
             item.setLevel(request.getLevel());
-        }
-
-        if (request.getQuestionCount() != null) {
+        if (request.getQuestionCount() != null)
             item.setQuestionCount(request.getQuestionCount());
-        }
-
-        if (request.getPointPerQuestion() != null) {
+        if (request.getPointPerQuestion() != null)
             item.setPointPerQuestion(request.getPointPerQuestion());
-        }
-
-        if (request.getAssessmentType() != null) {
+        if (request.getAssessmentType() != null)
             item.setAssessmentType(request.getAssessmentType());
-        }
 
-        // Auto tính lại totalPoint nếu có đủ dữ liệu
         if (item.getQuestionCount() != null && item.getPointPerQuestion() != null) {
-            item.setTotalPoint(
-                    item.getQuestionCount() * item.getPointPerQuestion()
-            );
+            item.setTotalPoint(item.getQuestionCount() * item.getPointPerQuestion());
         }
 
         return "Update assessment item successfully";
+    }
+
+    @Transactional
+    public String deleteByLevel(String level) {
+        repository.deleteByLevel(level);
+        return "Delete all assessment items of level " + level + " successfully";
     }
 }

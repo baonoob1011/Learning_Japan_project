@@ -12,11 +12,11 @@ public interface ExamParticipantRepository extends JpaRepository<ExamParticipant
 
     List<ExamParticipant> findByCompletedFalse();
 
-
     long countByUser_IdAndExam_IdAndStartedAtBetween(
             String userId,
             String examId,
             LocalDateTime start,
-            LocalDateTime end
-    );
+            LocalDateTime end);
+
+    void deleteByExam_Id(String examId);
 }

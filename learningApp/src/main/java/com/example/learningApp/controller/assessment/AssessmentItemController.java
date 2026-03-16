@@ -15,74 +15,71 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AssessmentItemController {
 
-    private final AssessmentItemService service;
+        private final AssessmentItemService service;
 
-    /* ===================== GET ALL ===================== */
+        /* ===================== GET ALL ===================== */
 
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<AssessmentItemResponse>>> getAll() {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Get all assessment items successfully",
-                        service.getAll()
-                )
-        );
-    }
+        @GetMapping
+        public ResponseEntity<ApiResponse<List<AssessmentItemResponse>>> getAll() {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Get all assessment items successfully",
+                                                service.getAll()));
+        }
 
-    /* ===================== GET BY LEVEL ===================== */
+        /* ===================== GET BY LEVEL ===================== */
 
-    @GetMapping("/level/{level}")
-    public ResponseEntity<ApiResponse<List<AssessmentItemResponse>>> getByLevel(
-            @PathVariable String level
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Get assessment items by level successfully",
-                        service.getByLevel(level)
-                )
-        );
-    }
+        @GetMapping("/level/{level}")
+        public ResponseEntity<ApiResponse<List<AssessmentItemResponse>>> getByLevel(
+                        @PathVariable String level) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Get assessment items by level successfully",
+                                                service.getByLevel(level)));
+        }
 
-    /* ===================== GET BY SECTION ===================== */
+        /* ===================== GET BY SECTION ===================== */
 
-    @GetMapping("/section/{sectionId}")
-    public ResponseEntity<ApiResponse<List<AssessmentItemResponse>>> getBySection(
-            @PathVariable String sectionId
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Get assessment items successfully",
-                        service.getBySection(sectionId)
-                )
-        );
-    }
+        @GetMapping("/section/{sectionId}")
+        public ResponseEntity<ApiResponse<List<AssessmentItemResponse>>> getBySection(
+                        @PathVariable String sectionId) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Get assessment items successfully",
+                                                service.getBySection(sectionId)));
+        }
 
-    /* ===================== GET DETAIL ===================== */
+        /* ===================== GET DETAIL ===================== */
 
-    @GetMapping("/{itemId}")
-    public ResponseEntity<ApiResponse<AssessmentItemResponse>> getDetail(
-            @PathVariable String itemId
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Get assessment item detail successfully",
-                        service.getDetail(itemId)
-                )
-        );
-    }
+        @GetMapping("/{itemId}")
+        public ResponseEntity<ApiResponse<AssessmentItemResponse>> getDetail(
+                        @PathVariable String itemId) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Get assessment item detail successfully",
+                                                service.getDetail(itemId)));
+        }
 
-    /* ===================== UPDATE ===================== */
+        /* ===================== UPDATE ===================== */
 
-    @PutMapping("/{itemId}")
-    public ResponseEntity<ApiResponse<String>> update(
-            @PathVariable String itemId,
-            @RequestBody UpdateAssessmentItemRequest request
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        service.update(itemId, request),
-                        null
-                )
-        );
-    }
+        @PutMapping("/{itemId}")
+        public ResponseEntity<ApiResponse<String>> update(
+                        @PathVariable String itemId,
+                        @RequestBody UpdateAssessmentItemRequest request) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                service.update(itemId, request),
+                                                null));
+        }
+
+        /* ===================== DELETE ===================== */
+
+        @DeleteMapping("/level/{level}")
+        public ResponseEntity<ApiResponse<String>> deleteByLevel(
+                        @PathVariable String level) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                service.deleteByLevel(level),
+                                                null));
+        }
 }

@@ -48,8 +48,7 @@ public class VocabReminderScheduler {
 
                 int totalUsers = byUser.size();
                 if (totalUsers == 0) {
-                        System.out.println("🕒 VocabReminder: found " + dueList.size()
-                                        + " items, but all were reminded within the last 24h.");
+
                         return;
                 }
 
@@ -73,10 +72,6 @@ public class VocabReminderScheduler {
                         list.forEach(p -> p.setLastReminderSentAt(now));
                         progressRepo.saveAll(list);
 
-                        System.out.println(
-                                        "🔔 Sent reminder | user=" + user.getId()
-                                                        + " | email=" + user.getEmail()
-                                                        + " | count=" + count);
                 }
         }
 

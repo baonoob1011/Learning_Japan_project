@@ -1,6 +1,5 @@
 package com.example.learningApp.entity;
 
-import com.example.learningApp.enums.AssessmentType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,6 +19,7 @@ public class ExamSection {
     private String id;
 
     @ManyToMany(mappedBy = "sections", fetch = FetchType.LAZY)
+    @Builder.Default
     private List<Exam> exams = new ArrayList<>();
 
     private String title;

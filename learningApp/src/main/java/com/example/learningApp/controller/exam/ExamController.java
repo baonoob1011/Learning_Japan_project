@@ -26,75 +26,75 @@ import java.util.List;
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class ExamController {
-    ExamService examService;
-    ExamParticipantService examParticipantService;
-    ExamSubmitService submitService;
+        ExamService examService;
+        ExamParticipantService examParticipantService;
+        ExamSubmitService submitService;
 
-    // Create exam
-    @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<ExamResponse>> createExam(@RequestBody @Valid CreateExamRequest request) {
-        ExamResponse response = examService.createExam(request);
-        return ResponseEntity.ok(ApiResponse.success("Exam created successfully", response));
-    }
+        // Create exam
+        @PostMapping
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<ApiResponse<ExamResponse>> createExam(@RequestBody @Valid CreateExamRequest request) {
+                ExamResponse response = examService.createExam(request);
+                return ResponseEntity.ok(ApiResponse.success("Exam created successfully", response));
+        }
 
-    // Get all exams
-    @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','USER','USER_VIP')")
-    public ResponseEntity<ApiResponse<List<ExamResponse>>> getAllExams() {
-        List<ExamResponse> response = examService.getAllExams();
-        return ResponseEntity.ok(ApiResponse.success("Exams retrieved successfully", response));
-    }
+        // Get all exams
+        @GetMapping
+        @PreAuthorize("hasAnyRole('ADMIN','USER','USER_VIP')")
+        public ResponseEntity<ApiResponse<List<ExamResponse>>> getAllExams() {
+                List<ExamResponse> response = examService.getAllExams();
+                return ResponseEntity.ok(ApiResponse.success("Exams retrieved successfully", response));
+        }
 
-    @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('ADMIN','USER','USER_VIP')")
-    public ResponseEntity<ApiResponse<List<ExamResponse>>> searchExams(
-            @RequestParam("key") String keyword) {
-        List<ExamResponse> response = examService.searchExams(keyword);
-        return ResponseEntity.ok(ApiResponse.success("Search results", response));
-    }
+        @GetMapping("/search")
+        @PreAuthorize("hasAnyRole('ADMIN','USER','USER_VIP')")
+        public ResponseEntity<ApiResponse<List<ExamResponse>>> searchExams(
+                        @RequestParam("key") String keyword) {
+                List<ExamResponse> response = examService.searchExams(keyword);
+                return ResponseEntity.ok(ApiResponse.success("Search results", response));
+        }
 
-    // Get exam by ID
-    @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER','USER_VIP')")
-    public ResponseEntity<ApiResponse<ExamResponse>> getExamById(@PathVariable String id) {
-        ExamResponse response = examService.getExamById(id);
-        return ResponseEntity.ok(ApiResponse.success("Exam retrieved successfully", response));
-    }
+        // Get exam by ID
+        @GetMapping("/{id}")
+        @PreAuthorize("hasAnyRole('ADMIN','USER','USER_VIP')")
+        public ResponseEntity<ApiResponse<ExamResponse>> getExamById(@PathVariable String id) {
+                ExamResponse response = examService.getExamById(id);
+                return ResponseEntity.ok(ApiResponse.success("Exam retrieved successfully", response));
+        }
 
-    @PostMapping("/start")
-    public ResponseEntity<ApiResponse<StartExamResponse>> startExam(
-            @RequestBody @Valid StartExamRequest request
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Exam started successfully",
-                        examParticipantService.startExam(request)
-                )
-        );
-    }
-    @GetMapping("/sections/{examId}")
-    public ResponseEntity<ApiResponse<List<SectionWithQuestionsResponse>>> getSectionsWithQuestions(
-            @PathVariable String examId
-    ) {
-        List<SectionWithQuestionsResponse> sections = examService.getSectionAndQuestionByExam(examId);
+        @PostMapping("/start")
+        public ResponseEntity<ApiResponse<StartExamResponse>> startExam(
+                        @RequestBody @Valid StartExamRequest request) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Exam started successfully",
+                                                examParticipantService.startExam(request)));
+        }
 
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Sections with questions fetched successfully",
-                        sections
-                )
-        );
-    }
-    @PostMapping("/submit")
-    public ResponseEntity<ApiResponse<SubmitExamResponse>> submitExam(
-            @RequestBody @Valid SubmitExamRequest request
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Exam submitted successfully",
-                        submitService.submitExam(request)
-                )
-        );
-    }
+        @GetMapping("/sections/{examId}")
+        public ResponseEntity<ApiResponse<List<SectionWithQuestionsResponse>>> getSectionsWithQuestions(
+                        @PathVariable String examId) {
+                List<SectionWithQuestionsResponse> sections = examService.getSectionAndQuestionByExam(examId);
+
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Sections with questions fetched successfully",
+                                                sections));
+        }
+
+        @PostMapping("/submit")
+        public ResponseEntity<ApiResponse<SubmitExamResponse>> submitExam(
+                        @RequestBody @Valid SubmitExamRequest request) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Exam submitted successfully",
+                                                submitService.submitExam(request)));
+        }
+
+        @DeleteMapping("/{id}")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<ApiResponse<Void>> deleteExam(@PathVariable String id) {
+                examService.deleteExam(id);
+                return ResponseEntity.ok(ApiResponse.success("Exam deleted successfully", null));
+        }
 }

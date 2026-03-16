@@ -11,13 +11,18 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ExamSectionRepository extends JpaRepository<ExamSection,String> {
+public interface ExamSectionRepository extends JpaRepository<ExamSection, String> {
     Optional<ExamSection> findByTitle(String title);
+
     Optional<ExamSection> findByTitleAndSectionOrderAndLevel(
             String title,
             Integer sectionOrder,
-            String level
-    );
+            String level);
+
+    Optional<ExamSection> findByTitleAndSectionOrderAndLevelAndExams_Code(
+            String title,
+            Integer sectionOrder,
+            String level,
+            String examCode);
 
 }
-

@@ -19,9 +19,10 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Component
@@ -31,13 +32,15 @@ public class ExamItemProcessor {
     private final ExamRepository examRepository;
     private final ExamSectionRepository sectionRepository;
     private final PassageRepository passageRepository;
+    private final com.example.learningApp.repository.QuestionRepository questionRepository;
 
     @Bean(name = "examProcessor")
     @StepScope
     public ItemProcessor<Map<String, String>, Question> examProcessor() {
-        Map<String, Exam> examCache = new HashMap<>();
-        Map<String, ExamSection> sectionCache = new HashMap<>();
-        Map<String, Passage> passageCache = new HashMap<>();
+        Map<String, Exam> examCache = new ConcurrentHashMap<>();
+        Map<String, ExamSection> sectionCache = new ConcurrentHashMap<>();
+        Map<String, Passage> passageCache = new ConcurrentHashMap<>();
+        java.util.Set<String> processedQuestionKeys = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
         return row -> {
             log.info("--- Bắt đầu xử lý dòng dữ liệu: {}", row);
@@ -73,19 +76,30 @@ public class ExamItemProcessor {
                             });
                 });
 
-                String sectionKey = sectionTitle + "_" + sectionOrder + "_" + examLevel;
+                int sectionDuration = BatchUtils.parseIntSafe(row.get("section_duration"), 0);
+                String sectionKey = (examCode + "_" + sectionTitle + "_" + sectionOrder + "_" + examLevel)
+                        .replaceAll("\\s+", "_");
+
                 ExamSection section = sectionCache.computeIfAbsent(sectionKey,
                         key -> {
                             log.debug("Cache miss cho Section (key: {}). Truy vấn từ Database...", key);
                             return sectionRepository
-                                    .findByTitleAndSectionOrderAndLevel(sectionTitle, sectionOrder, examLevel)
-                                    .orElseThrow(() -> {
-                                        log.error("Lỗi: Không tìm thấy Section (title={}, order={}, level={})",
-                                                sectionTitle, sectionOrder, examLevel);
-                                        return new IllegalStateException(
-                                                "Section not found: title=" + sectionTitle
-                                                        + ", order=" + sectionOrder
-                                                        + ", level=" + examLevel);
+                                    .findByTitleAndSectionOrderAndLevelAndExams_Code(sectionTitle, sectionOrder,
+                                            examLevel, examCode)
+                                    .orElseGet(() -> {
+                                        log.info(
+                                                "Không tìm thấy Section cho đề {}. Tiến hành tạo mới: title={}, order={}",
+                                                examCode, sectionTitle, sectionOrder);
+                                        return sectionRepository.save(ExamSection.builder()
+                                                .title(sectionTitle)
+                                                .sectionOrder(sectionOrder)
+                                                .level(examLevel)
+                                                .sectionDuration(sectionDuration)
+                                                .assessmentItems(new ArrayList<>())
+                                                .passages(new ArrayList<>())
+                                                .questions(new ArrayList<>())
+                                                .exams(new ArrayList<>())
+                                                .build());
                                     });
                         });
 
@@ -131,11 +145,23 @@ public class ExamItemProcessor {
                     });
                 }
 
+                String questionText = row.get("question_text").trim();
+                String questionKey = section.getId() + "_" + questionText + "_" + answer;
+
+                if (processedQuestionKeys.contains(questionKey) ||
+                        questionRepository.existsBySectionAndQuestionTextAndAnswer(section, questionText, answer)) {
+                    log.warn("Bỏ qua câu hỏi trùng lặp (Text & Answer): {} - Text: {}", section.getTitle(),
+                            questionText);
+                    return null;
+                }
+
+                processedQuestionKeys.add(questionKey);
+
                 Question question = Question.builder()
                         .section(section)
                         .passage(passage)
                         .questionType(questionType)
-                        .questionText(row.get("question_text").trim())
+                        .questionText(questionText)
                         .options(optionsParsed)
                         .answer(answer)
                         .explanation(Optional.ofNullable(row.get("explanation")).orElse("").trim())

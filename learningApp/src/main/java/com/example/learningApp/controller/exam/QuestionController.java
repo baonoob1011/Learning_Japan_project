@@ -37,27 +37,32 @@ public class QuestionController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<QuestionResponse>> createQuestion(@RequestBody @Valid CreateQuestionRequest request) {
+    public ResponseEntity<ApiResponse<QuestionResponse>> createQuestion(
+            @RequestBody @Valid CreateQuestionRequest request) {
         QuestionResponse res = questionService.createQuestion(request);
         return ResponseEntity.ok(ApiResponse.success("Question created", res));
     }
+
     @GetMapping
     public ApiResponse<List<QuestionResponse>> getAll() {
         return ApiResponse.success(questionService.getAll());
     }
+
     @PutMapping("/{questionId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<QuestionResponse>> updateQuestion(
             @PathVariable String questionId,
-            @RequestBody @Valid UpdateQuestionRequest request
-    ) {
+            @RequestBody @Valid UpdateQuestionRequest request) {
         QuestionResponse res = questionService.updateQuestion(questionId, request);
 
         return ResponseEntity.ok(
-                ApiResponse.success("Question updated successfully", res)
-        );
+                ApiResponse.success("Question updated successfully", res));
     }
 
+    @DeleteMapping("/{questionId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteQuestion(@PathVariable String questionId) {
+        questionService.deleteQuestion(questionId);
+        return ResponseEntity.ok(ApiResponse.success("Question deleted successfully", null));
+    }
 }
-
-
