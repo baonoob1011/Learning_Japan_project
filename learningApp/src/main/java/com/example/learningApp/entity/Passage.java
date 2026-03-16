@@ -3,8 +3,8 @@ package com.example.learningApp.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "passages")
@@ -13,12 +13,14 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Passage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
+    @EqualsAndHashCode.Include
     private String title;
 
     @Column(columnDefinition = "TEXT")
@@ -28,9 +30,10 @@ public class Passage {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "section_id", nullable = false)
+    @EqualsAndHashCode.Include
     private ExamSection section;
 
     @OneToMany(mappedBy = "passage", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<Question> questions = new ArrayList<>();
+    private Set<Question> questions = new LinkedHashSet<>();
 }

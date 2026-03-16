@@ -1,6 +1,7 @@
 package com.example.learningApp.configuration.batchJob.exam;
 
 import com.example.learningApp.entity.Exam;
+import com.example.learningApp.entity.ExamSection;
 import com.example.learningApp.entity.Question;
 import com.example.learningApp.repository.ExamRepository;
 import com.example.learningApp.repository.QuestionRepository;
@@ -21,6 +22,7 @@ public class ExamItemWriter {
 
     private final QuestionRepository questionRepository;
     private final ExamRepository examRepository;
+    private final org.springframework.data.redis.core.RedisTemplate<String, Object> redisTemplate;
 
     @Bean(name = "examWriter")
     public ItemWriter<Question> examWriter() {
@@ -34,24 +36,53 @@ public class ExamItemWriter {
                     .flatMap(s -> s.getExams().stream())
                     .collect(Collectors.toSet());
 
-            for (Exam exam : exams) {
-                // ⚡ Liên kết trực tiếp Question <-> Exam
-                List<Question> questionsForThisExam = list.stream()
-                        .filter(q -> q.getSection().getExams().contains(exam))
+            for (Exam detachedExam : exams) {
+                // Re-fetch managed instance to avoid detached collection issues across chunks
+                Exam exam = examRepository.findByCode(detachedExam.getCode())
+                        .orElse(detachedExam);
+
+                // Filter items belonging to this exam in current chunk
+                List<Question> chunkQuestionsForThisExam = list.stream()
+                        .filter(q -> q.getSection().getExams().stream()
+                                .anyMatch(e -> e.getCode().equals(exam.getCode())))
                         .collect(Collectors.toList());
 
-                for (Question q : questionsForThisExam) {
-                    if (!q.getExams().contains(exam)) {
-                        q.getExams().add(exam);
-                    }
-                    if (!exam.getQuestions().contains(q)) {
-                        exam.getQuestions().add(q);
+                // 1. Sync Sections
+                Set<ExamSection> chunkSectionsForThisExam = chunkQuestionsForThisExam.stream()
+                        .map(Question::getSection)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+
+                for (ExamSection s : chunkSectionsForThisExam) {
+                    if (!exam.getSections().contains(s)) {
+                        System.out.println("--- Adding Section to Exam: " + s.getTitle() + " (Order: "
+                                + s.getSectionOrder() + ")");
+                        exam.getSections().add(s);
                     }
                 }
 
-                long totalQuestions = questionRepository.countAllByExamId(exam.getId());
-                exam.setNumQuestions((int) totalQuestions);
-                examRepository.save(exam);
+                // 2. Sync Questions
+                for (Question q : chunkQuestionsForThisExam) {
+                    if (!exam.getQuestions().contains(q)) {
+                        exam.getQuestions().add(q);
+                        // Also ensure the back-reference is set if it's a ManyToMany on Question side
+                        // too
+                        if (!q.getExams().contains(exam)) {
+                            q.getExams().add(exam);
+                        }
+                    }
+                }
+
+                // Update counts and save
+                exam.setNumSections(exam.getSections().size());
+                exam.setNumQuestions(exam.getQuestions().size());
+                System.out.println("--- Saving Exam " + exam.getCode() + ": " + exam.getNumSections() + " sections, "
+                        + exam.getNumQuestions() + " questions total.");
+                Exam savedExam = examRepository.saveAndFlush(exam);
+
+                // Evict Redis cache to ensure UI shows new questions/sections
+                redisTemplate.delete("exam:" + savedExam.getId() + ":questions");
+                redisTemplate.delete("exam:" + savedExam.getId() + ":sections");
             }
 
             // Re-save questions to persist the relationship from the Question side if

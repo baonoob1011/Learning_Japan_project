@@ -70,20 +70,6 @@ public class QuestionService {
                 .map(questionMapper::toQuestionResponse)
                 .toList();
 
-        Set<String> seenPassages = new HashSet<>();
-        responses.forEach(res -> {
-            if (res.getPassage() != null) {
-                // Deduplicate by ID
-                String passageKey = res.getPassage().getId();
-
-                if (seenPassages.contains(passageKey)) {
-                    res.setPassage(null);
-                } else {
-                    seenPassages.add(passageKey);
-                }
-            }
-        });
-
         return responses;
     }
 

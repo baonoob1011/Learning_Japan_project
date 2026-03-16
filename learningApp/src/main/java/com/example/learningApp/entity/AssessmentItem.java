@@ -14,15 +14,16 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class AssessmentItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-
     @ManyToOne
     @JoinColumn(name = "section_id", nullable = false)
+    @EqualsAndHashCode.Include
     private ExamSection section;
 
     private String name;
@@ -35,6 +36,7 @@ public class AssessmentItem {
     private LocalDateTime updatedAt;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
+    @EqualsAndHashCode.Include
     private AssessmentType assessmentType;
 
     @PrePersist

@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -60,9 +61,9 @@ public class ExamSectionItemProcessor {
                                     .sectionOrder(sectionOrder)
                                     .level(sectionLevel)
                                     .sectionDuration(sectionDuration)
-                                    .assessmentItems(new ArrayList<>())
-                                    .passages(new ArrayList<>())
-                                    .questions(new ArrayList<>())
+                                    .assessmentItems(new LinkedHashSet<>())
+                                    .passages(new LinkedHashSet<>())
+                                    .questions(new LinkedHashSet<>())
                                     .build();
                             return sectionRepository.save(newSection);
                         }));

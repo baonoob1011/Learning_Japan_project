@@ -9,6 +9,7 @@ import com.example.learningApp.enums.AssessmentType;
 import com.example.learningApp.repository.ExamRepository;
 import com.example.learningApp.repository.ExamSectionRepository;
 import com.example.learningApp.repository.PassageRepository;
+import com.example.learningApp.repository.QuestionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -18,8 +19,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,7 +34,7 @@ public class ExamItemProcessor {
     private final ExamRepository examRepository;
     private final ExamSectionRepository sectionRepository;
     private final PassageRepository passageRepository;
-    private final com.example.learningApp.repository.QuestionRepository questionRepository;
+    private final QuestionRepository questionRepository;
 
     @Bean(name = "examProcessor")
     @StepScope
@@ -68,7 +70,7 @@ public class ExamItemProcessor {
                                                 .code(code)
                                                 .level(examLevel)
                                                 .duration(examDuration)
-                                                .sections(new ArrayList<>())
+                                                .sections(new LinkedHashSet<>())
                                                 .numQuestions(0)
                                                 .createdAt(LocalDateTime.now())
                                                 .updatedAt(LocalDateTime.now())
@@ -95,10 +97,10 @@ public class ExamItemProcessor {
                                                 .sectionOrder(sectionOrder)
                                                 .level(examLevel)
                                                 .sectionDuration(sectionDuration)
-                                                .assessmentItems(new ArrayList<>())
-                                                .passages(new ArrayList<>())
-                                                .questions(new ArrayList<>())
-                                                .exams(new ArrayList<>())
+                                                .assessmentItems(new LinkedHashSet<>())
+                                                .passages(new LinkedHashSet<>())
+                                                .questions(new LinkedHashSet<>())
+                                                .exams(new LinkedHashSet<>())
                                                 .build());
                                     });
                         });
@@ -123,7 +125,7 @@ public class ExamItemProcessor {
                 }
 
                 String answer = Optional.ofNullable(row.get("answer")).orElse("").trim();
-                String optionsParsed = BatchUtils.parseOptions(row.get("options"));
+                List<String> optionsParsed = BatchUtils.parseOptionsToList(row.get("options"));
 
                 String passageTitle = Optional.ofNullable(row.get("passage_title")).orElse("").trim();
                 String passageContent = Optional.ofNullable(row.get("passage_content")).orElse("").trim();
@@ -148,14 +150,22 @@ public class ExamItemProcessor {
                 String questionText = row.get("question_text").trim();
                 String questionKey = section.getId() + "_" + questionText + "_" + answer;
 
-                if (processedQuestionKeys.contains(questionKey) ||
-                        questionRepository.existsBySectionAndQuestionTextAndAnswer(section, questionText, answer)) {
-                    log.warn("Bỏ qua câu hỏi trùng lặp (Text & Answer): {} - Text: {}", section.getTitle(),
+                if (processedQuestionKeys.contains(questionKey)) {
+                    log.debug("Bỏ qua câu hỏi trùng lặp trong tệp import: {} - Text: {}", section.getTitle(),
                             questionText);
                     return null;
                 }
 
                 processedQuestionKeys.add(questionKey);
+
+                // Kiểm tra xem câu hỏi đã tồn tại trong Section này chưa
+                Optional<Question> existingQuestion = questionRepository.findBySectionAndQuestionTextAndAnswer(section,
+                        questionText, answer);
+                if (existingQuestion.isPresent()) {
+                    log.info("Sử dụng câu hỏi đã tồn tại trong Database: {} - Text: {}", section.getTitle(),
+                            questionText);
+                    return existingQuestion.get();
+                }
 
                 Question question = Question.builder()
                         .section(section)
@@ -170,7 +180,7 @@ public class ExamItemProcessor {
                         .questionOrder(questionOrder)
                         .build();
 
-                log.info("✓ Tạo thành công Question: {}", question.getQuestionText());
+                log.info("✓ Tạo mới Question: {}", question.getQuestionText());
                 return question;
 
             } catch (Exception e) {

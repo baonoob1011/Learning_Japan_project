@@ -16,63 +16,62 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ExamCacheService {
 
-    private final RedisTemplate<String, Object> redisTemplate;
+        private final RedisTemplate<String, Object> redisTemplate;
 
-    public Map<String, QuestionCache> getQuestions(String examId) {
-        return (Map<String, QuestionCache>)
-                redisTemplate.opsForValue().get("exam:" + examId + ":questions");
-    }
-
-    public Map<String, SectionCache> getSections(String examId) {
-        return (Map<String, SectionCache>)
-                redisTemplate.opsForValue().get("exam:" + examId + ":sections");
-    }
-
-    public void buildAndCache(String examId, Iterable<ExamSection> sections) {
-
-        Map<String, QuestionCache> questionMap = new HashMap<>();
-        Map<String, SectionCache> sectionMap = new HashMap<>();
-
-        for (ExamSection section : sections) {
-
-            Map<AssessmentType, Float> pointMap = new HashMap<>();
-            section.getAssessmentItems()
-                    .forEach(item ->
-                            pointMap.put(item.getAssessmentType(), item.getPointPerQuestion())
-                    );
-
-            SectionCache sc = new SectionCache(
-                    section.getId(),
-                    section.getTitle(),
-                    section.getSectionOrder(),
-                    section.getSectionDuration(),
-                    pointMap
-            );
-
-            sectionMap.put(section.getId(), sc);
-
-            section.getQuestions().forEach(q -> {
-                QuestionCache qc = new QuestionCache(
-                        q.getId(),
-                        q.getQuestionType(),
-                        q.getAnswer(),
-                        section.getId(),
-                        q.getQuestionText(),
-                        q.getOptions(),
-                        q.getQuestionOrder(),
-                        q.getAnswer(),
-                        q.getExplanation(),
-                        q.getImageUrl(),
-                        q.getAudioUrl()
-                );
-                questionMap.put(q.getId(), qc);
-            });
+        public Map<String, QuestionCache> getQuestions(String examId) {
+                return (Map<String, QuestionCache>) redisTemplate.opsForValue().get("exam:" + examId + ":questions");
         }
 
-        redisTemplate.opsForValue()
-                .set("exam:" + examId + ":questions", questionMap, Duration.ofHours(5));
+        public Map<String, SectionCache> getSections(String examId) {
+                return (Map<String, SectionCache>) redisTemplate.opsForValue().get("exam:" + examId + ":sections");
+        }
 
-        redisTemplate.opsForValue()
-                .set("exam:" + examId + ":sections", sectionMap, Duration.ofHours(5));
-    }
+        public void buildAndCache(String examId, Iterable<ExamSection> sections) {
+
+                Map<String, QuestionCache> questionMap = new HashMap<>();
+                Map<String, SectionCache> sectionMap = new HashMap<>();
+
+                for (ExamSection section : sections) {
+
+                        Map<AssessmentType, Float> pointMap = new HashMap<>();
+                        section.getAssessmentItems()
+                                        .forEach(item -> pointMap.put(item.getAssessmentType(),
+                                                        item.getPointPerQuestion()));
+
+                        SectionCache sc = new SectionCache(
+                                        section.getId(),
+                                        section.getTitle(),
+                                        section.getSectionOrder(),
+                                        section.getSectionDuration(),
+                                        pointMap);
+
+                        sectionMap.put(section.getId(), sc);
+
+                        section.getQuestions().forEach(q -> {
+                                QuestionCache qc = QuestionCache.builder()
+                                                .id(q.getId())
+                                                .questionType(q.getQuestionType())
+                                                .correctAnswer(q.getAnswer())
+                                                .sectionId(section.getId())
+                                                .questionText(q.getQuestionText())
+                                                .options(q.getOptions())
+                                                .questionOrder(q.getQuestionOrder())
+                                                .answer(q.getAnswer())
+                                                .explanation(q.getExplanation())
+                                                .imageUrl(q.getImageUrl())
+                                                .audioUrl(q.getAudioUrl())
+                                                .passageTitle(q.getPassage() != null ? q.getPassage().getTitle() : null)
+                                                .passageContent(q.getPassage() != null ? q.getPassage().getContent()
+                                                                : null)
+                                                .build();
+                                questionMap.put(q.getId(), qc);
+                        });
+                }
+
+                redisTemplate.opsForValue()
+                                .set("exam:" + examId + ":questions", questionMap, Duration.ofHours(5));
+
+                redisTemplate.opsForValue()
+                                .set("exam:" + examId + ":sections", sectionMap, Duration.ofHours(5));
+        }
 }

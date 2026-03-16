@@ -13,7 +13,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 public class SectionWithQuestionsResponse {
-    private String id;        // section id
+    private String id; // section id
     private String examId;
     private String title;
     private Integer sectionDuration;
@@ -29,10 +29,12 @@ public class SectionWithQuestionsResponse {
         private Integer sectionOrder;
         private AssessmentType questionType;
         private String questionText;
-        private String options;
+        private List<String> options;
         private String answer;
         private String imageUrl;
         private String audioUrl;
         private Integer questionOrder;
+        private String passageTitle;
+        private String passageContent;
     }
 }

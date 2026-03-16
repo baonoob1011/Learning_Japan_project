@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "exam_sections")
@@ -13,6 +15,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class ExamSection {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -20,24 +23,27 @@ public class ExamSection {
 
     @ManyToMany(mappedBy = "sections", fetch = FetchType.LAZY)
     @Builder.Default
-    private List<Exam> exams = new ArrayList<>();
+    private Set<Exam> exams = new LinkedHashSet<>();
 
+    @EqualsAndHashCode.Include
     private String title;
+    @EqualsAndHashCode.Include
     private Integer sectionOrder;
     @Column(nullable = false)
     private Integer sectionDuration; // phút
+    @EqualsAndHashCode.Include
     private String level;
 
     @OneToMany(mappedBy = "section", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<AssessmentItem> assessmentItems = new ArrayList<>();
+    private Set<AssessmentItem> assessmentItems = new LinkedHashSet<>();
 
     @OneToMany(mappedBy = "section", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<Passage> passages = new ArrayList<>();
+    private Set<Passage> passages = new LinkedHashSet<>();
 
     @OneToMany(mappedBy = "section", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<Question> questions = new ArrayList<>();
+    private Set<Question> questions = new LinkedHashSet<>();
 
 }

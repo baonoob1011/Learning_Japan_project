@@ -1,6 +1,7 @@
 package com.example.learningApp.dto.response.exam;
 
 import com.example.learningApp.enums.AssessmentType;
+import java.util.List;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -17,7 +18,7 @@ public class QuestionResponse {
     private Integer sectionOrder;
     private AssessmentType questionType;
     private String questionText;
-    private String options;
+    private List<String> options;
     private String answer;
     private String imageUrl;
     private String audioUrl;

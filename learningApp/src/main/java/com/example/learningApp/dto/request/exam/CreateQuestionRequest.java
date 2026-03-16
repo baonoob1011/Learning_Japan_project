@@ -5,9 +5,12 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
 public class CreateQuestionRequest {
     @NotNull
@@ -16,8 +19,8 @@ public class CreateQuestionRequest {
     private String type;
     @NotBlank
     private String questionText;
-    private String options;      // JSON string
-    private String answer;       // JSON string
+    private List<String> options;
+    private String answer;
     private String imageUrl;
     private String audioUrl;
     @NotNull

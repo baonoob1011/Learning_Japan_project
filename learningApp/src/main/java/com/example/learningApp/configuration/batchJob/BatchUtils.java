@@ -3,7 +3,6 @@ package com.example.learningApp.configuration.batchJob;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.experimental.UtilityClass;
 
-import java.util.Arrays;
 import java.util.List;
 
 @UtilityClass
@@ -21,7 +20,8 @@ public class BatchUtils {
 
     public static float parseFloatSafe(String value, float defaultValue) {
         try {
-            if (value == null || value.isBlank()) return defaultValue;
+            if (value == null || value.isBlank())
+                return defaultValue;
             return Float.parseFloat(value.trim());
         } catch (Exception e) {
             return defaultValue;
@@ -29,24 +29,28 @@ public class BatchUtils {
     }
 
     public static String parseOptions(String raw) {
-        if (raw == null || raw.isBlank() || raw.equals("[]")) return "[]";
+        List<String> list = parseOptionsToList(raw);
+        try {
+            return objectMapper.writeValueAsString(list);
+        } catch (Exception e) {
+            return "[]";
+        }
+    }
+
+    public static List<String> parseOptionsToList(String raw) {
+        if (raw == null || raw.isBlank() || raw.equals("[]"))
+            return java.util.Collections.emptyList();
 
         raw = raw.trim();
         if (raw.startsWith("[") && raw.endsWith("]")) {
             raw = raw.substring(1, raw.length() - 1);
         }
 
-        List<String> list = Arrays.stream(raw.split(","))
+        return java.util.Arrays.stream(raw.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .map(s -> s.replaceAll("^\"|\"$", ""))
                 .map(s -> s.replaceAll("^'|'$", ""))
                 .toList();
-
-        try {
-            return objectMapper.writeValueAsString(list);
-        } catch (Exception e) {
-            return "[]";
-        }
     }
 }

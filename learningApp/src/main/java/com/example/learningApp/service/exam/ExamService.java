@@ -20,16 +20,16 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import com.example.learningApp.entity.ExamSection;
+import com.example.learningApp.entity.Question;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Transactional(readOnly = true)
 public class ExamService {
         RedisTemplate<String, Object> redisTemplate;
 
@@ -39,6 +39,7 @@ public class ExamService {
         UserExamResultRepository userExamResultRepository;
         UserAnswerRepository userAnswerRepository;
         ExamMapper examMapper;
+        ExamCacheService examCacheService;
 
         // Method để fetch section + question từ Redis, nếu không có thì tìm từ DB
         public List<SectionWithQuestionsResponse> getSectionAndQuestionByExam(String examId) {
@@ -74,6 +75,8 @@ public class ExamService {
                                                         .imageUrl(q.getImageUrl())
                                                         .audioUrl(q.getAudioUrl())
                                                         .questionOrder(q.getQuestionOrder())
+                                                        .passageTitle(q.getPassageTitle())
+                                                        .passageContent(q.getPassageContent())
                                                         .build();
                                 })
                                 .collect(Collectors.groupingBy(
@@ -107,10 +110,33 @@ public class ExamService {
          * Fallback method: Tìm kiếm section và question từ Database
          */
         private List<SectionWithQuestionsResponse> getSectionAndQuestionFromDatabase(String examId) {
-                Exam exam = examRepository.findById(examId)
-                                .orElseThrow(() -> new RuntimeException("Exam not found with id: " + examId));
+                if (!examRepository.existsById(examId)) {
+                        throw new RuntimeException("Exam not found with id: " + examId);
+                }
 
-                return exam.getSections().stream()
+                // Lấy tất cả câu hỏi của Exam này từ DB
+                List<Question> allQuestions = questionRepository.findAllByExamId(examId);
+
+                // Thu thập tất cả các Section duy nhất từ danh sách câu hỏi
+                Set<ExamSection> allSections = allQuestions.stream()
+                                .map(Question::getSection)
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toSet());
+
+                log.info("Rebuilding cache for examId: {}. Found {} questions across {} sections.",
+                                examId, allQuestions.size(), allSections.size());
+
+                allSections.forEach(
+                                s -> log.info("  - Section Found: {} (Order: {})", s.getTitle(), s.getSectionOrder()));
+
+                // Cập nhật lại cache với danh sách section thực tế
+                examCacheService.buildAndCache(examId, allSections);
+
+                // Nhóm câu hỏi theo Section ID
+                Map<String, List<Question>> questionsBySection = allQuestions.stream()
+                                .collect(Collectors.groupingBy(q -> q.getSection().getId()));
+
+                return allSections.stream()
                                 .map(section -> SectionWithQuestionsResponse.builder()
                                                 .id(section.getId())
                                                 .examId(examId)
@@ -118,7 +144,10 @@ public class ExamService {
                                                 .sectionOrder(section.getSectionOrder())
                                                 .sectionDuration(section.getSectionDuration())
                                                 .questions(
-                                                                section.getQuestions().stream()
+                                                                questionsBySection
+                                                                                .getOrDefault(section.getId(),
+                                                                                                List.of())
+                                                                                .stream()
                                                                                 .map(question -> SectionWithQuestionsResponse.QuestionItem
                                                                                                 .builder()
                                                                                                 .id(question.getId())
@@ -137,6 +166,16 @@ public class ExamService {
                                                                                                                 .getAudioUrl())
                                                                                                 .questionOrder(question
                                                                                                                 .getQuestionOrder())
+                                                                                                .passageTitle(question
+                                                                                                                .getPassage() != null
+                                                                                                                                ? question.getPassage()
+                                                                                                                                                .getTitle()
+                                                                                                                                : null)
+                                                                                                .passageContent(question
+                                                                                                                .getPassage() != null
+                                                                                                                                ? question.getPassage()
+                                                                                                                                                .getContent()
+                                                                                                                                : null)
                                                                                                 .build())
                                                                                 .sorted(Comparator.comparingInt(
                                                                                                 SectionWithQuestionsResponse.QuestionItem::getQuestionOrder))

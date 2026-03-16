@@ -4,8 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Entity
@@ -15,6 +14,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Exam {
 
     @Id
@@ -22,6 +22,7 @@ public class Exam {
     private String id;
 
     @Column(length = 50, nullable = false)
+    @EqualsAndHashCode.Include
     private String code; // VD: JLPT-N1 07 2024
 
     @Column(length = 10, nullable = false)
@@ -46,12 +47,12 @@ public class Exam {
     @ManyToMany(cascade = { CascadeType.PERSIST, CascadeType.MERGE }, fetch = FetchType.LAZY)
     @JoinTable(name = "exam_exam_section", joinColumns = @JoinColumn(name = "exam_id"), inverseJoinColumns = @JoinColumn(name = "section_id"))
     @Builder.Default
-    private List<ExamSection> sections = new ArrayList<>();
+    private Set<ExamSection> sections = new LinkedHashSet<>();
 
     @ManyToMany(cascade = { CascadeType.PERSIST, CascadeType.MERGE }, fetch = FetchType.LAZY)
     @JoinTable(name = "exam_questions", joinColumns = @JoinColumn(name = "exam_id"), inverseJoinColumns = @JoinColumn(name = "question_id"))
     @Builder.Default
-    private List<Question> questions = new ArrayList<>();
+    private Set<Question> questions = new LinkedHashSet<>();
 
     @PrePersist
     protected void onCreate() {
