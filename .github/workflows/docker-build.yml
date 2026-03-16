@@ -8,6 +8,9 @@ on:
     paths:
       - 'learningApp/**' # Chỉ trigger khi code của BE thay đổi
 
+permissions:
+  contents: write
+
 jobs:
   build_and_push:
     runs-on: ubuntu-latest

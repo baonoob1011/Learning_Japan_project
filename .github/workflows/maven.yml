@@ -9,6 +9,9 @@ on:
   pull_request:
     branches: [ "main", "dev" ]
 
+permissions:
+  contents: write # Cần thiết cho việc submit dependency graph
+
 jobs:
   build:
 
