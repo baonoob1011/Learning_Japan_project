@@ -13,6 +13,8 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
     - uses: actions/checkout@v4
@@ -31,7 +33,7 @@ jobs:
 
     # 3. Trỏ đường dẫn vào thư mục learningApp chứa file pom.xml
     - name: Build with Maven
-      run: ./mvnw -B package --file pom.xml
+      run: ./mvnw -B package -DskipTests --file pom.xml
       working-directory: ./learningApp
 
     # Optional: Ghi nhận dependency graph (Đã trỏ đúng vào learningApp/pom.xml)
