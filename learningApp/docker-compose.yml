@@ -36,33 +36,32 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
-    command: ["redis-server", "--appendonly", "yes"]
+    command: [ "redis-server", "--appendonly", "yes" ]
     volumes:
       - redis_data:/data
     restart: unless-stopped
 
-
   ##################################################
-  # 🔎 Elasticsearch (for ELK)
+  # 🚀 Backend Application (Learning App)
   ##################################################
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.2
-    container_name: elasticsearch
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-    volumes:
-      - esdata:/usr/share/elasticsearch/data
+  learning-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: learning-app
     ports:
-      - "9200:9200"
+      - "8080:8080"
+    env_file:
+      - .env # Nếu dự án bạn đang dùng file .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_REDIS_HOST=redis
+    depends_on:
+      - redis
+      - kafka
+      - elasticsearch
     restart: unless-stopped
-
-
 
 ##################################################
 # 📦 Shared Volumes
