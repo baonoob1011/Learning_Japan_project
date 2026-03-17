@@ -9,7 +9,8 @@ on:
       - 'learningApp/**'
       - 'tool/**'
       - '.github/workflows/**'
-      - '*' # Chạy khi có bất kỳ thay đổi nào ở root (như .env)
+      - '*'
+  workflow_dispatch: # Cho phép chạy thủ công bằng nút bấm trên GitHub
 
 permissions:
   contents: write
