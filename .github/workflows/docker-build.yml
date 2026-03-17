@@ -3,10 +3,11 @@ name: Build and Deploy Docker Image
 on:
   push:
     branches:
-      - main 
+      - main
       - dev
     paths:
-      - 'learningApp/**' # Chỉ trigger khi code của BE thay đổi
+      - 'learningApp/**'  # Trigger khi code backend thay đổi
+      - 'tool/**'         # Trigger khi thư mục tool thay đổi
 
 permissions:
   contents: write
@@ -27,8 +28,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      # Bỏ comment và nhập Docker Hub username/password vào Settings > Secrets của GitHub
-      # NẾU BẠN MUỐN ĐẨY IMAGE LÊN DOCKER HUB:
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -41,7 +40,31 @@ jobs:
           context: ./learningApp
           file: ./learningApp/Dockerfile
           push: true
-          # Thay `your-dockerhub-username` bằng username Docker Hub thực tế của bạn
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/learning-app:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build_and_push
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            mkdir -p ~/app
+            cd ~/app
+            # Tạo file docker-compose.yml từ repo (có thể copy từ repo sang)
+            # Hoặc pull repo về EC2 nếu bạn muốn setup gọn.
+            # Ở đây ta giả sử đã có file docker-compose.yml và .env trên EC2.
+            docker-compose pull
+            docker-compose up -d
+            docker image prune -f

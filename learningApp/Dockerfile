@@ -23,6 +23,12 @@ FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
+# Cài đặt ffmpeg và curl (dùng để tải yt-dlp), python3 (yt-dlp dependency)
+RUN apk add --no-cache ffmpeg curl python3 && \
+    # Tải yt-dlp bản Linux mới nhất
+    curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp && \
+    chmod a+rx /usr/local/bin/yt-dlp
+
 # Copy file jar từ stage builder sang
 COPY --from=builder /app/target/*.jar app.jar
 

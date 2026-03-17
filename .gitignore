@@ -1,3 +1,5 @@
 .idea/compiler.xml
 jakaroma/
-.idea/compiler.xml
+
+# Tool binaries (Windows .exe - không cần commit, Docker tự cài Linux version)
+tool/*.exe

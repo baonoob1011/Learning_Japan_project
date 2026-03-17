@@ -3,30 +3,54 @@ version: "3.9"
 services:
 
   ##################################################
+  # 🐘 PostgreSQL
+  ##################################################
+  postgres:
+    image: postgres:17-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_DB: learningApp
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  ##################################################
   # 🦓 Zookeeper
   ##################################################
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "2181:2181"
+    restart: unless-stopped
 
   ##################################################
   # 🦜 Kafka
   ##################################################
   kafka:
     image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
     depends_on:
       - zookeeper
     ports:
-      - "9092:9092"
+      - "9092:9092"   # External (host machine)
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      # Dual listener: INTERNAL cho Docker, EXTERNAL cho host machine
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    restart: unless-stopped
 
   ##################################################
   # 🧠 Redis (for bitmap, cache, etc.)
@@ -55,12 +79,14 @@ services:
       - .env # Nếu dự án bạn đang dùng file .env
     environment:
       - SPRING_PROFILES_ACTIVE=default
-      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - SPRING_REDIS_HOST=redis
+      # Ghi đè DB_URL: dùng tên service 'postgres' thay vì localhost
+      - DB_URL=jdbc:postgresql://postgres:5432/learningApp
     depends_on:
       - redis
       - kafka
-      - elasticsearch
+      - postgres
     restart: unless-stopped
 
 ##################################################
@@ -69,3 +95,4 @@ services:
 volumes:
   redis_data:
   esdata:
+  postgres_data:
