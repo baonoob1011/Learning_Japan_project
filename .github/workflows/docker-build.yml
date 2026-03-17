@@ -6,8 +6,10 @@ on:
       - main
       - dev
     paths:
-      - 'learningApp/**'  # Trigger khi code backend thay đổi
-      - 'tool/**'         # Trigger khi thư mục tool thay đổi
+      - 'learningApp/**'
+      - 'tool/**'
+      - '.github/workflows/**'
+      - '*' # Chạy khi có bất kỳ thay đổi nào ở root (như .env)
 
 permissions:
   contents: write
