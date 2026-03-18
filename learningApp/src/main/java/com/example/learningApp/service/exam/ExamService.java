@@ -8,6 +8,7 @@ import com.example.learningApp.dto.response.exam.SectionWithQuestionsResponse;
 import com.example.learningApp.entity.Exam;
 import com.example.learningApp.mapper.ExamMapper;
 import com.example.learningApp.repository.ExamRepository;
+import com.example.learningApp.repository.ExamSectionRepository;
 import com.example.learningApp.repository.QuestionRepository;
 import com.example.learningApp.repository.ExamParticipantRepository;
 import com.example.learningApp.repository.UserExamResultRepository;
@@ -35,6 +36,7 @@ public class ExamService {
 
         ExamRepository examRepository;
         QuestionRepository questionRepository;
+        ExamSectionRepository examSectionRepository;
         ExamParticipantRepository examParticipantRepository;
         UserExamResultRepository userExamResultRepository;
         UserAnswerRepository userAnswerRepository;
@@ -254,21 +256,40 @@ public class ExamService {
 
                 log.info("Starting deletion of exam: {} (ID: {})", exam.getCode(), id);
 
-                // 1. Delete associated results and participants
+                // 1. Delete associated results, participants, and answers
                 userExamResultRepository.deleteByExam_Id(id);
                 examParticipantRepository.deleteByExam_Id(id);
                 userAnswerRepository.deleteByExamId(id);
 
-                // 2. Clear associations (Many-to-Many)
+                // 2. Clear Join Tables (Owner side)
+                Set<ExamSection> sections = new HashSet<>(exam.getSections());
+                Set<Question> questions = new HashSet<>(exam.getQuestions());
+
                 exam.getSections().clear();
                 exam.getQuestions().clear();
-                examRepository.save(exam);
+                examRepository.saveAndFlush(exam);
 
-                // 3. Delete the exam itself
+                // 3. Clear passage references in questions to avoid FK violation
+                if (!questions.isEmpty()) {
+                        questions.forEach(q -> q.setPassage(null));
+                        questionRepository.saveAllAndFlush(questions);
+
+                        // Delete questions in batch
+                        questionRepository.deleteAllInBatch(questions);
+                        questionRepository.flush();
+                }
+
+                // 4. Delete sections (this will cascade to passages)
+                if (!sections.isEmpty()) {
+                        examSectionRepository.deleteAllInBatch(sections);
+                        examSectionRepository.flush();
+                }
+
+                // 5. Delete the exam itself
                 examRepository.delete(exam);
                 log.info("Successfully deleted exam and related data for id: {}", id);
 
-                // 4. Clean up Redis cache
+                // 6. Clean up Redis cache
                 redisTemplate.delete("exam:" + id + ":questions");
                 redisTemplate.delete("exam:" + id + ":sections");
         }

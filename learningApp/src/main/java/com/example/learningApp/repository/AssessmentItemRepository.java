@@ -14,6 +14,8 @@ public interface AssessmentItemRepository extends JpaRepository<AssessmentItem, 
 
     boolean existsBySectionAndAssessmentType(ExamSection section, AssessmentType assessmentType);
 
+    java.util.Optional<AssessmentItem> findBySectionAndAssessmentType(ExamSection section, AssessmentType assessmentType);
+
     @org.springframework.data.jpa.repository.Modifying
     @org.springframework.data.jpa.repository.Query("DELETE FROM AssessmentItem a WHERE a.level = :level")
     void deleteByLevel(@org.springframework.data.repository.query.Param("level") String level);

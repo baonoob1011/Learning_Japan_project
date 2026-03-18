@@ -22,7 +22,9 @@ public class BatchUtils {
         try {
             if (value == null || value.isBlank())
                 return defaultValue;
-            return Float.parseFloat(value.trim());
+            // Xử lý cả dấu phẩy (Vietnamese style) và dấu chấm
+            String normalized = value.trim().replace(",", ".");
+            return Float.parseFloat(normalized);
         } catch (Exception e) {
             return defaultValue;
         }
