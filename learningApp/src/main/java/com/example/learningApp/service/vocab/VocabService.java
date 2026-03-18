@@ -48,6 +48,7 @@ public class VocabService {
     VocabCacheRedisService vocabCacheRedisService;
     TranslateMapper translateMapper;
     VocabCacheMapper vocabCacheMapper;
+    VocabExerciseService vocabExerciseService;
 
     public List<VocabResponse> getSavedVocabsOfCurrentUserByVideo(String videoId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -117,6 +118,10 @@ public class VocabService {
         // 3️⃣ Lưu quan hệ
         user.getSavedVocabs().add(vocab);
         userRepository.save(user);
+
+        // 4️⃣ Gọi AI tạo bài tập (Async)
+        vocabExerciseService.generateAndSaveQuestion(user, vocab);
+
         return null;
     }
 
