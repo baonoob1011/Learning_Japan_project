@@ -1,7 +1,9 @@
 package com.example.learningApp.service.vocab;
 
 import com.example.learningApp.common.EntityFinder;
+import com.example.learningApp.common.kafka.Producer;
 import com.example.learningApp.dto.cache.VocabCache;
+import com.example.learningApp.dto.event.VocabSaveExerciseEvent;
 import com.example.learningApp.dto.request.translate.TranslateRequest;
 import com.example.learningApp.dto.request.vocab.CreateVocabRequest;
 import com.example.learningApp.dto.request.vocab.UpdateVocabRequest;
@@ -48,18 +50,16 @@ public class VocabService {
     VocabCacheRedisService vocabCacheRedisService;
     TranslateMapper translateMapper;
     VocabCacheMapper vocabCacheMapper;
-    VocabExerciseService vocabExerciseService;
+    Producer kafkaProducer;
 
     public List<VocabResponse> getSavedVocabsOfCurrentUserByVideo(String videoId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userId = authentication.getName();
-        List<Vocab> vocabs =
-                vocabRepository.findSavedVocabsByUserAndVideo(userId, videoId);
+        List<Vocab> vocabs = vocabRepository.findSavedVocabsByUserAndVideo(userId, videoId);
         return vocabs.stream()
                 .map(vocabMapper::toVocabResponse)
                 .toList();
     }
-
 
     @Transactional
     public void createVocab(CreateVocabRequest request) {
@@ -75,19 +75,16 @@ public class VocabService {
         youtubeVideoRepository.save(video);
     }
 
-
     public TranslateResponse findOrTranslate(TranslateRequest request) {
 
-        String cacheKey =
-                request.getVideoId() + ":" + request.getText().toLowerCase();
+        String cacheKey = request.getVideoId() + ":" + request.getText().toLowerCase();
 
         // 1️⃣ Redis
         VocabCache cache = vocabCacheRedisService.get(cacheKey);
         if (cache != null) {
             return translateMapper.mapWithVideoId(
                     cache,
-                    request.getVideoId()
-            );
+                    request.getVideoId());
         }
 
         // 2️⃣ DB
@@ -98,13 +95,11 @@ public class VocabService {
 
                     return translateMapper.toTranslateResponse(
                             vocab,
-                            request.getVideoId()
-                    );
+                            request.getVideoId());
                 })
                 // 3️⃣ Không có → translate mới
                 .orElseGet(() -> translateService.translate(request));
     }
-
 
     public Void saveVocabForCurrentUser(String surface) {
 
@@ -119,8 +114,12 @@ public class VocabService {
         user.getSavedVocabs().add(vocab);
         userRepository.save(user);
 
-        // 4️⃣ Gọi AI tạo bài tập (Async)
-        vocabExerciseService.generateAndSaveQuestion(user, vocab);
+        // 4️⃣ Gọi AI tạo bài tập qua Kafka
+        kafkaProducer.send("vocab-save-exercise", user.getId(), VocabSaveExerciseEvent.builder()
+                .userId(user.getId())
+                .vocabId(vocab.getId())
+                .surface(vocab.getSurface())
+                .build());
 
         return null;
     }

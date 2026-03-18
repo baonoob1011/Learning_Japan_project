@@ -1,6 +1,8 @@
 package com.example.learningApp.entity;
 
 import com.example.learningApp.enums.LearningStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -12,6 +14,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class UserVocabProgress {
 
     @Id
@@ -20,17 +23,20 @@ public class UserVocabProgress {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
+    @JsonIgnore
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vocab_id")
+    @JsonIgnoreProperties("vocabProgresses")
     private Vocab vocab;
 
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private LearningStatus status = LearningStatus.NEW;
 
-    private int reviewCount;       // số lần bấm THUỘC
-    private int forgottenCount;    // số lần bấm CHƯA THUỘC
+    private int reviewCount; // số lần bấm THUỘC
+    private int forgottenCount; // số lần bấm CHƯA THUỘC
 
     private LocalDateTime createdAt;
     private LocalDateTime lastReviewedAt;

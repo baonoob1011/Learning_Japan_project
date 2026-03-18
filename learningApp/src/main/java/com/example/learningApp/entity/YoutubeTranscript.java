@@ -1,5 +1,7 @@
 package com.example.learningApp.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -11,6 +13,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class YoutubeTranscript {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -18,6 +21,7 @@ public class YoutubeTranscript {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "video_id", nullable = false)
+    @JsonIgnore
     private YoutubeVideo video;
 
     @Column(name = "offset_sec") // thời điểm từ trong video (ms)
@@ -25,7 +29,7 @@ public class YoutubeTranscript {
 
     @Column(name = "translated_text", columnDefinition = "text")
     private String translatedText;
-    
+
     @Column(columnDefinition = "text")
     private String text;
 
@@ -33,7 +37,7 @@ public class YoutubeTranscript {
     private Integer startOffset; // thời điểm bắt đầu câu (ms)
 
     @Column(name = "end_offset_ms")
-    private Integer endOffset;   // thời điểm kết thúc câu (ms)
+    private Integer endOffset; // thời điểm kết thúc câu (ms)
 
     private LocalDateTime createdAt;
 }
