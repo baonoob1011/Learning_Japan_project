@@ -35,15 +35,19 @@ import software.amazon.awssdk.services.transcribe.model.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -66,6 +70,8 @@ public class YoutubeVideoService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final UserRepository userRepository;
     private final VocabService vocabService;
+    private final S3Client s3Client;
+    private final TranscribeClient transcribeClient;
 
     public List<YoutubeVideoSummaryResponse> getAllVideoByVocab(){
         var listVocabByCurrentUser= vocabService.getSavedVocabsOfCurrentUser();
@@ -255,12 +261,62 @@ public class YoutubeVideoService {
                 youtubeUrl
         );
 
-        pb.inheritIO();
+        pb.redirectErrorStream(true);
         Process process = pb.start();
-        int exitCode = process.waitFor();
 
-        if (exitCode != 0) {
-            throw new RuntimeException("yt-dlp failed, exitCode=" + exitCode);
+        StringBuilder toolOutput = new StringBuilder();
+        boolean ytDlpOutputError = false;
+        String ytDlpErrorLine = null;
+
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                toolOutput.append(line).append(System.lineSeparator());
+                log.info("[yt-dlp] {}", line);
+
+                if (line.contains("No supported JavaScript runtime could be found")) {
+                    log.warn("yt-dlp JS runtime warning detected. Continuing download with limited formats.");
+                    continue;
+                }
+
+                if (line.startsWith("ERROR:")) {
+                    ytDlpOutputError = true;
+                    ytDlpErrorLine = line;
+                    if (process.isAlive()) {
+                        process.destroyForcibly();
+                    }
+                    break;
+                }
+            }
+        }
+
+        try {
+            boolean completed = process.waitFor(3, TimeUnit.MINUTES);
+            if (!completed) {
+                process.destroyForcibly();
+                throw new RuntimeException("yt-dlp timeout after 3 minutes. Process killed.");
+            }
+
+            int exitCode = process.exitValue();
+            if (ytDlpOutputError) {
+                throw new RuntimeException("yt-dlp output error: " + ytDlpErrorLine);
+            }
+            if (exitCode != 0) {
+                if (process.isAlive()) {
+                    process.destroyForcibly();
+                }
+                throw new RuntimeException("yt-dlp failed, exitCode=" + exitCode
+                        + ". Process killed. Output:\n" + toolOutput);
+            }
+        } catch (InterruptedException e) {
+            process.destroyForcibly();
+            Thread.currentThread().interrupt();
+            throw e;
+        } finally {
+            if (process.isAlive()) {
+                process.destroyForcibly();
+            }
         }
 
         File audioFile = new File(fileName);
@@ -285,11 +341,7 @@ public class YoutubeVideoService {
     }
 
     public void deleteFromS3(String key) {
-        S3Client s3 = S3Client.builder()
-                .region(Region.of(awsRegion))
-                .build();
-
-        s3.deleteObject(builder -> builder
+        s3Client.deleteObject(builder -> builder
                 .bucket(s3Bucket)
                 .key(key)
         );
@@ -299,35 +351,28 @@ public class YoutubeVideoService {
 
 
     public String uploadToS3(File audioFile, String key) throws IOException {
-        S3Client s3 = S3Client.builder().region(Region.of(awsRegion)).build();
-        s3.putObject(PutObjectRequest.builder().bucket(s3Bucket).key(key).build(), audioFile.toPath());
+        s3Client.putObject(PutObjectRequest.builder().bucket(s3Bucket).key(key).build(), audioFile.toPath());
         return "s3://" + s3Bucket + "/" + key;
     }
 
     // ------------------- AWS Transcribe -------------------
 
     public void createTranscriptionJob(String jobName, String s3Uri, String languageCode) {
-        TranscribeClient client = TranscribeClient.builder()
-                .region(Region.of(awsRegion))
-                .build();
         StartTranscriptionJobRequest request = StartTranscriptionJobRequest.builder()
                 .transcriptionJobName(jobName)
                 .languageCode(languageCode)
                 .media(Media.builder().mediaFileUri(s3Uri).build())
                 // Bỏ outputBucketName -> AWS tự quản lý bucket
                 .build();
-        client.startTranscriptionJob(request);
+        transcribeClient.startTranscriptionJob(request);
     }
 
     public String getTranscriptionResult(String jobName) throws IOException, InterruptedException {
-        TranscribeClient client = TranscribeClient.builder()
-                .region(Region.of(awsRegion))
-                .build();
 
         TranscriptionJob job;
         int retries = 0;
         do {
-            GetTranscriptionJobResponse response = client.getTranscriptionJob(
+            GetTranscriptionJobResponse response = transcribeClient.getTranscriptionJob(
                     GetTranscriptionJobRequest.builder()
                             .transcriptionJobName(jobName)
                             .build()

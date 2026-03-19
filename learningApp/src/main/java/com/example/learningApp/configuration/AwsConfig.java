@@ -66,10 +66,10 @@ public class AwsConfig {
     }
     @Bean
     public AmazonS3 amazonS3() {
-        System.out.println("AccessKeyNam: " + accessKey);
+        System.out.println("AccessKeyVy: " + accessKey);
         BasicAWSCredentials awsCreds = new BasicAWSCredentials(accessKey, secretKey);
         return AmazonS3ClientBuilder.standard()
-                .withRegion(Regions.fromName(region))
+                .withRegion(Regions.fromName(region))   
                 .withCredentials(new AWSStaticCredentialsProvider(awsCreds))
                 .build();
     }
