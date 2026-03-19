@@ -32,6 +32,7 @@ public interface OrderMapper {
 
     @Mapping(target = "vipPackageId", expression = "java(getVipId(item))")
     @Mapping(target = "vipPackageName", expression = "java(getVipName(item))")
+    @Mapping(target = "courseTitle", ignore = true)
     OrderItemResponse toOrderItemResponse(OrderItem item);
 
     /* ================= HELPER METHODS ================= */

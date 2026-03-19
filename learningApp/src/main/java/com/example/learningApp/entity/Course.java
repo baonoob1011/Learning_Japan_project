@@ -2,6 +2,8 @@ package com.example.learningApp.entity;
 
 import com.example.learningApp.enums.JLPTLevel;
 import com.example.learningApp.enums.LessonProcess;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -15,6 +17,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class Course {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -31,11 +34,7 @@ public class Course {
     @Enumerated(EnumType.STRING)
     private LessonProcess lessonProcess;
 
-    @OneToMany(
-            mappedBy = "course",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
-    )
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("createdAt ASC")
     private List<Section> sections;
 
@@ -44,11 +43,12 @@ public class Course {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_user_id")
+    @JsonIgnore
     private User createdBy;
 
-    private Boolean isPaid = false;   // true = khóa học trả phí
+    private Boolean isPaid = false; // true = khóa học trả phí
 
-    private Long price;               // giá gốc (VND)
+    private Long price; // giá gốc (VND)
 
     private Boolean isActive = true;
 

@@ -68,38 +68,48 @@ public class ExamSectionItemProcessor {
                             return sectionRepository.save(newSection);
                         }));
 
-                // 2. Kiểm tra trùng Mondai (AssessmentItem)
+                // 2. Kiểm tra trùng hoặc Cập nhật Mondai (AssessmentItem)
                 AssessmentType type = AssessmentType.valueOf(row.get("assessment_type").trim());
 
-                // Key định danh duy nhất cho 1 loại bài trong 1 Section
+                // Key định danh duy nhất cho 1 loại bài trong 1 Section (Cache trong loop)
                 String itemKey = sectionKey + "##" + type.name();
-
-                // Kiểm tra trong Local Cache hoặc Database
-                if (processedItemKeys.contains(itemKey) ||
-                        assessmentItemRepository.existsBySectionAndAssessmentType(section, type)) {
-                    // System.out.println("⏭️ Bỏ qua Mondai trùng lặp: " + type + " ở level " +
-                    // sectionLevel);
+                if (processedItemKeys.contains(itemKey)) {
                     return null;
                 }
-
-                // Đánh dấu đã xử lý để dòng tiếp theo trong cùng lượt chạy không bị trùng
                 processedItemKeys.add(itemKey);
 
+                // Tìm xem đã có Mondai này trong Database chưa để cập nhật
+                AssessmentItem assessmentItem = assessmentItemRepository
+                        .findBySectionAndAssessmentType(section, type)
+                        .orElse(AssessmentItem.builder()
+                                .section(section)
+                                .assessmentType(type)
+                                .createdAt(LocalDateTime.now())
+                                .build());
+
                 int questionCount = BatchUtils.parseIntSafe(row.get("question_count"), 0);
+                float totalPoints = BatchUtils.parseFloatSafe(row.get("total_points"), 0f);
                 float pointPerQuestion = BatchUtils.parseFloatSafe(row.get("point_per_question"), 0f);
 
-                // 3. Tạo Item
-                return AssessmentItem.builder()
-                        .section(section)
-                        .assessmentType(type)
-                        .name(assessmentName)
-                        .level(sectionLevel)
-                        .questionCount(questionCount)
-                        .pointPerQuestion(pointPerQuestion)
-                        .totalPoint(questionCount * pointPerQuestion)
-                        .createdAt(LocalDateTime.now())
-                        .updatedAt(LocalDateTime.now())
-                        .build();
+                // Ưu tiên tính pointPerQuestion chuẩn xác từ totalPoints nếu có
+                if (totalPoints > 0 && questionCount > 0) {
+                    float calculatedPoint = totalPoints / questionCount;
+                    if (pointPerQuestion == 0 || Math.abs(pointPerQuestion - calculatedPoint) > 0.0001) {
+                        pointPerQuestion = calculatedPoint;
+                    }
+                } else if (pointPerQuestion > 0 && questionCount > 0) {
+                    totalPoints = questionCount * pointPerQuestion;
+                }
+
+                // 3. Cập nhật các trường
+                assessmentItem.setName(assessmentName);
+                assessmentItem.setLevel(sectionLevel);
+                assessmentItem.setQuestionCount(questionCount);
+                assessmentItem.setPointPerQuestion(pointPerQuestion);
+                assessmentItem.setTotalPoint(totalPoints);
+                assessmentItem.setUpdatedAt(LocalDateTime.now());
+
+                return assessmentItem;
 
             } catch (Exception e) {
                 System.err.println("❌ Lỗi xử lý dòng: " + row);

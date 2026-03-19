@@ -87,7 +87,8 @@ public class YoutubeTranscribeConsumer {
         } catch (Exception e) {
             video.setVideoStatus(VideoStatus.FAILED);
             youtubeVideoRepository.save(video);
-            throw e; // Kafka retry
+            log.error("Transcribe pipeline failed for video {}. Marked as FAILED and skip retry.", videoId, e);
+            return;
         } finally {
             if (audioFile.exists()) audioFile.delete();
 

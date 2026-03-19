@@ -18,5 +18,7 @@ public interface ExamParticipantRepository extends JpaRepository<ExamParticipant
             LocalDateTime start,
             LocalDateTime end);
 
+    long countByUser_IdAndStartedAtBetween(String userId, LocalDateTime start, LocalDateTime end);
+
     void deleteByExam_Id(String examId);
 }

@@ -1,6 +1,7 @@
 package com.example.learningApp.entity;
 
-import com.example.learningApp.enums.LearningStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -11,33 +12,36 @@ import java.util.Set;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 @Entity
 @Table(name = "vocab")
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler", "vocabProgresses", "videos", "users" })
 public class Vocab {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
-    private String surface;       // từ gốc
-    private String romaji;        // phiên âm
+    private String surface; // từ gốc
+    private String romaji; // phiên âm
     private String translated;
     private String reading;
-    private String partOfSpeech;  // loại từ
-    private String targetDefs;    // nghĩa ngôn ngữ đích
+    private String partOfSpeech; // loại từ
+    private String targetDefs; // nghĩa ngôn ngữ đích
     private String explain;
-    private String audioUrl;      // đường dẫn audio trên S3
+    private String audioUrl; // đường dẫn audio trên S3
     @ManyToMany(mappedBy = "vocabs")
+    @JsonIgnore
+    @Builder.Default
     private Set<YoutubeVideo> videos = new HashSet<>();
 
     @ManyToMany(mappedBy = "savedVocabs")
+    @JsonIgnore
+    @Builder.Default
     private Set<User> users = new HashSet<>();
 
     // ===== Vocab learning progress =====
-    @OneToMany(
-            mappedBy = "vocab",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true,
-            fetch = FetchType.LAZY
-    )
-    private Set<UserVocabProgress> vocabProgresses;
+    @OneToMany(mappedBy = "vocab", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private Set<UserVocabProgress> vocabProgresses = new HashSet<>();
 }

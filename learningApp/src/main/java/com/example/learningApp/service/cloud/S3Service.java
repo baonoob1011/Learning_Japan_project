@@ -187,6 +187,17 @@ public class S3Service {
                 .collect(Collectors.toList());
     }
 
+    // Lấy hết file trong /exam_processed
+    public List<S3ImageResponse> getAllProcessedExamsUrls() {
+        return listAllKeys("exam_processed/")
+                .stream()
+                .map(key -> S3ImageResponse.builder()
+                        .key(key)
+                        .url(buildPublicUrl(key))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
     // Xóa file trong S3
     public void deleteFile(String key) {
         if (key == null || key.trim().isEmpty()) {

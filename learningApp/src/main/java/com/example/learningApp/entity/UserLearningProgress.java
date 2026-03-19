@@ -1,6 +1,7 @@
 package com.example.learningApp.entity;
 
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class UserLearningProgress {
 
     @Id
@@ -23,6 +25,7 @@ public class UserLearningProgress {
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User user;
 
     /**
@@ -36,18 +39,21 @@ public class UserLearningProgress {
      * Tổng số exam đã làm ở level này
      */
     @Column(nullable = false)
+    @Builder.Default
     private Integer totalExamsTaken = 0;
 
     /**
      * Tổng số câu hỏi đã làm
      */
     @Column(nullable = false)
+    @Builder.Default
     private Integer totalQuestionsDone = 0;
 
     /**
      * Tổng số câu đúng
      */
     @Column(nullable = false)
+    @Builder.Default
     private Integer correctQuestions = 0;
 
     /**

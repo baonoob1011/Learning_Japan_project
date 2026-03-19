@@ -3,11 +3,13 @@ package com.example.learningApp.service.exam;
 import com.example.learningApp.dto.cache.QuestionCache;
 import com.example.learningApp.dto.cache.SectionCache;
 import com.example.learningApp.dto.request.exam.CreateExamRequest;
+import com.example.learningApp.dto.request.exam.UpdateExamRequest;
 import com.example.learningApp.dto.response.exam.ExamResponse;
 import com.example.learningApp.dto.response.exam.SectionWithQuestionsResponse;
 import com.example.learningApp.entity.Exam;
 import com.example.learningApp.mapper.ExamMapper;
 import com.example.learningApp.repository.ExamRepository;
+import com.example.learningApp.repository.ExamSectionRepository;
 import com.example.learningApp.repository.QuestionRepository;
 import com.example.learningApp.repository.ExamParticipantRepository;
 import com.example.learningApp.repository.UserExamResultRepository;
@@ -35,6 +37,7 @@ public class ExamService {
 
         ExamRepository examRepository;
         QuestionRepository questionRepository;
+        ExamSectionRepository examSectionRepository;
         ExamParticipantRepository examParticipantRepository;
         UserExamResultRepository userExamResultRepository;
         UserAnswerRepository userAnswerRepository;
@@ -248,25 +251,48 @@ public class ExamService {
         }
 
         @Transactional
+        public ExamResponse updateExam(String id,
+                        UpdateExamRequest updateExamRequest) {
+                Exam exam = examRepository.findById(id)
+                                .orElseThrow(() -> new RuntimeException("Exam not found with id: " + id));
+
+                // Check if code already exists for another exam
+                if (!exam.getCode().equals(updateExamRequest.getCode()) &&
+                                examRepository.existsByCode(updateExamRequest.getCode())) {
+                        throw new RuntimeException("Exam code already exists: " + updateExamRequest.getCode());
+                }
+
+                examMapper.updateExam(exam, updateExamRequest);
+                return examMapper.toExamResponse(examRepository.save(exam));
+        }
+
+        @Transactional
         public void deleteExam(String id) {
                 Exam exam = examRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException("Exam not found with id: " + id));
 
                 log.info("Starting deletion of exam: {} (ID: {})", exam.getCode(), id);
 
-                // 1. Delete associated results and participants
+                // 1. Delete associated results, participants, and answers (Exam-specific)
                 userExamResultRepository.deleteByExam_Id(id);
                 examParticipantRepository.deleteByExam_Id(id);
                 userAnswerRepository.deleteByExamId(id);
 
-                // 2. Clear associations (Many-to-Many)
+                userExamResultRepository.flush();
+                examParticipantRepository.flush();
+                userAnswerRepository.flush();
+
+                // 2. Clear Join Tables (Many-to-Many)
+                // This will remove rows from exam_questions and exam_exam_section join tables
                 exam.getSections().clear();
                 exam.getQuestions().clear();
-                examRepository.save(exam);
+                examRepository.saveAndFlush(exam);
 
                 // 3. Delete the exam itself
                 examRepository.delete(exam);
-                log.info("Successfully deleted exam and related data for id: {}", id);
+                examRepository.flush();
+
+                log.info("Successfully deleted exam and cleared associations for id: {}", id);
 
                 // 4. Clean up Redis cache
                 redisTemplate.delete("exam:" + id + ":questions");

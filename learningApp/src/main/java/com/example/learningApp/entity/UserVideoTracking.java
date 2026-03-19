@@ -1,5 +1,6 @@
 package com.example.learningApp.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,6 +20,7 @@ public class UserVideoTracking {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -27,10 +29,10 @@ public class UserVideoTracking {
 
     // ===== tracking data =====
     @Column(nullable = false)
-    private Long lastPositionSeconds = 0L;   // giây xem cuối cùng
+    private Long lastPositionSeconds = 0L; // giây xem cuối cùng
 
     @Column(nullable = false)
-    private Long totalWatchedSeconds = 0L;   // tổng thời gian đã xem
+    private Long totalWatchedSeconds = 0L; // tổng thời gian đã xem
 
     @Column(nullable = false)
     private boolean completed = false;

@@ -13,10 +13,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -27,6 +30,7 @@ public class QuestionService {
     QuestionRepository questionRepository;
     ExamSectionRepository sectionRepository;
     QuestionMapper questionMapper;
+    ExamCacheService examCacheService;
 
     public List<QuestionResponse> getQuestionsBySection(String sectionId) {
         return questionRepository.findBySectionId(sectionId).stream()
@@ -40,43 +44,97 @@ public class QuestionService {
                 .toList();
     }
 
+    @Transactional
     public QuestionResponse updateQuestion(String questionId, UpdateQuestionRequest request) {
-
         Question question = questionRepository.findById(questionId)
                 .orElseThrow(() -> new IllegalArgumentException("Question not found"));
 
-        // nếu đổi section
+        Set<String> affectedExamIds = collectAffectedExamIds(question);
+
         if (request.getSectionId() != null) {
             ExamSection section = sectionRepository.findById(request.getSectionId())
                     .orElseThrow(() -> new IllegalArgumentException("Section not found"));
+            collectSectionExamIds(section, affectedExamIds);
             question.setSection(section);
         }
 
-        // update field != null
         questionMapper.updateQuestion(question, request);
+        Question savedQuestion = questionRepository.save(question);
 
-        return questionMapper.toQuestionResponse(
-                questionRepository.save(question));
+        affectedExamIds.addAll(collectAffectedExamIds(savedQuestion));
+        refreshExamCaches(affectedExamIds);
+
+        return questionMapper.toQuestionResponse(savedQuestion);
     }
 
+    @Transactional
     public QuestionResponse createQuestion(CreateQuestionRequest request) {
         sectionRepository.findById(request.getSectionId())
                 .orElseThrow(() -> new IllegalArgumentException("Section not found"));
-        return questionMapper.toQuestionResponse(questionRepository.save(questionMapper.toQuestion(request)));
+
+        Question savedQuestion = questionRepository.save(questionMapper.toQuestion(request));
+        refreshExamCaches(collectAffectedExamIds(savedQuestion));
+        return questionMapper.toQuestionResponse(savedQuestion);
     }
 
     public List<QuestionResponse> getQuestionsByExamId(String examId) {
-        List<QuestionResponse> responses = questionRepository.findAllByExamId(examId).stream()
+        return questionRepository.findAllByExamId(examId).stream()
                 .map(questionMapper::toQuestionResponse)
                 .toList();
-
-        return responses;
     }
 
+    @Transactional
     public void deleteQuestion(String questionId) {
-        if (!questionRepository.existsById(questionId)) {
+        Question question = questionRepository.findById(questionId).orElse(null);
+        if (question == null) {
             throw new IllegalArgumentException("Question not found");
         }
+
+        Set<String> affectedExamIds = collectAffectedExamIds(question);
         questionRepository.deleteById(questionId);
+        refreshExamCaches(affectedExamIds);
+    }
+
+    private Set<String> collectAffectedExamIds(Question question) {
+        Set<String> examIds = new HashSet<>();
+        if (question == null) {
+            return examIds;
+        }
+
+        if (question.getExams() != null) {
+            question.getExams().stream()
+                    .map(exam -> exam.getId())
+                    .filter(Objects::nonNull)
+                    .forEach(examIds::add);
+        }
+
+        collectSectionExamIds(question.getSection(), examIds);
+        return examIds;
+    }
+
+    private void collectSectionExamIds(ExamSection section, Set<String> examIds) {
+        if (section == null || section.getExams() == null) {
+            return;
+        }
+        section.getExams().stream()
+                .map(exam -> exam.getId())
+                .filter(Objects::nonNull)
+                .forEach(examIds::add);
+    }
+
+    private void refreshExamCaches(Set<String> examIds) {
+        for (String examId : examIds) {
+            List<Question> questions = questionRepository.findAllByExamId(examId);
+            Set<ExamSection> sections = questions.stream()
+                    .map(Question::getSection)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+
+            if (sections.isEmpty()) {
+                examCacheService.evictExamCache(examId);
+            } else {
+                examCacheService.buildAndCache(examId, sections);
+            }
+        }
     }
 }
