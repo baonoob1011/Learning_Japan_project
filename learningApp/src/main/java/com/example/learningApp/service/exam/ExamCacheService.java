@@ -74,4 +74,9 @@ public class ExamCacheService {
                 redisTemplate.opsForValue()
                                 .set("exam:" + examId + ":sections", sectionMap, Duration.ofHours(5));
         }
+
+        public void evictExamCache(String examId) {
+                redisTemplate.delete("exam:" + examId + ":questions");
+                redisTemplate.delete("exam:" + examId + ":sections");
+        }
 }
