@@ -27,8 +27,7 @@ public class S3Controller {
     @PostMapping("/upload")
     public ResponseEntity<ApiResponse<String>> uploadFile(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("type") String type
-    ) {
+            @RequestParam("type") String type) {
         try {
             String url = s3Service.uploadFile(file, type);
             return ResponseEntity.ok(ApiResponse.success("File uploaded successfully", url));
@@ -42,8 +41,7 @@ public class S3Controller {
     @PostMapping("/upload/csv")
     public ResponseEntity<ApiResponse<String>> uploadCsvFile(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "folder", defaultValue = "csv") String folder
-    ) {
+            @RequestParam(value = "folder", defaultValue = "csv") String folder) {
         try {
             String fileUrl = s3Service.uploadCsvFile(file, folder);
             return ResponseEntity.ok(ApiResponse.success("CSV uploaded successfully", fileUrl));
@@ -73,39 +71,34 @@ public class S3Controller {
     ) {
         List<String> keys = s3Service.listAllKeys(prefix);
         return ResponseEntity.ok(
-                ApiResponse.success("Get S3 keys successfully", keys)
-        );
+                ApiResponse.success("Get S3 keys successfully", keys));
     }
+
     @GetMapping("/media/urls")
     public ResponseEntity<ApiResponse<List<String>>> getAllMediaUrls() {
 
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Get all video & audio URLs successfully",
-                        s3Service.getAllMediaUrls()
-                )
-        );
+                        s3Service.getAllMediaUrls()));
     }
+
     @GetMapping("/images/urls")
     @PreAuthorize("permitAll()")
     public ResponseEntity<ApiResponse<List<S3ImageResponse>>> getAllImagesUrls() {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Get all image URLs successfully",
-                        s3Service.getAllImagesUrls()
-                )
-        );
+                        s3Service.getAllImagesUrls()));
     }
 
     @DeleteMapping("/image")
     public ResponseEntity<ApiResponse<Void>> deleteImage(
-            @RequestParam String key
-    ) {
+            @RequestParam String key) {
         try {
             s3Service.deleteFile(key);
             return ResponseEntity.ok(
-                    ApiResponse.success("Image deleted successfully", null)
-            );
+                    ApiResponse.success("Image deleted successfully", null));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error(400, e.getMessage()));
@@ -121,20 +114,16 @@ public class S3Controller {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Get all audio URLs successfully",
-                        s3Service.getAllAudioUrls()
-                )
-        );
+                        s3Service.getAllAudioUrls()));
     }
 
     @DeleteMapping("/audio")
     public ResponseEntity<ApiResponse<Void>> deleteAudio(
-            @RequestParam String key
-    ) {
+            @RequestParam String key) {
         try {
             s3Service.deleteFile(key);
             return ResponseEntity.ok(
-                    ApiResponse.success("Audio deleted successfully", null)
-            );
+                    ApiResponse.success("Audio deleted successfully", null));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error(400, e.getMessage()));
@@ -150,26 +139,46 @@ public class S3Controller {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Get all assessment URLs successfully",
-                        s3Service.getAllAssessmentUrls()
-                )
-        );
+                        s3Service.getAllAssessmentUrls()));
     }
 
     @DeleteMapping("/assessment")
     public ResponseEntity<ApiResponse<Void>> deleteAssessment(
-            @RequestParam String key
-    ) {
+            @RequestParam String key) {
         try {
             s3Service.deleteFile(key);
             return ResponseEntity.ok(
-                    ApiResponse.success("Assessment file deleted successfully", null)
-            );
+                    ApiResponse.success("Assessment file deleted successfully", null));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error(400, e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(500)
                     .body(ApiResponse.error(500, "Could not delete assessment file: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/exam-processed/urls")
+    public ResponseEntity<ApiResponse<List<S3ImageResponse>>> getAllProcessedExamsUrls() {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Get all processed exam URLs successfully",
+                        s3Service.getAllProcessedExamsUrls()));
+    }
+
+    @DeleteMapping("/exam-processed")
+    public ResponseEntity<ApiResponse<Void>> deleteProcessedExam(
+            @RequestParam String key) {
+        try {
+            s3Service.deleteFile(key);
+            return ResponseEntity.ok(
+                    ApiResponse.success("Processed exam file deleted successfully", null));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(400, e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(ApiResponse.error(500, "Could not delete processed exam file: " + e.getMessage()));
         }
     }
 

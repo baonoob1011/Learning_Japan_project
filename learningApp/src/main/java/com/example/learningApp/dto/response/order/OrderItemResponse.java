@@ -1,16 +1,21 @@
 package com.example.learningApp.dto.response.order;
 
 import com.example.learningApp.enums.ProductType;
-import lombok.Data;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class OrderItemResponse {
-
-    private String id;
-    private ProductType productType;
-    private String courseId;
-    private String courseName;
-    private String vipPackageId;
-    private String vipPackageName;
-    private Long price;
+    String id;
+    ProductType productType;
+    String courseId;
+    String courseName;
+    String courseTitle; // For my new dashboard
+    String vipPackageId;
+    String vipPackageName;
+    Long price;
 }

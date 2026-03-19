@@ -23,34 +23,30 @@ public class VipPurchaseService {
     private final EntityFinder entityFinder;
 
     @Transactional
-    public void purchaseVip(String vipPackageId,String userId) {
+    public void purchaseVip(String vipPackageId, String userId) {
 
         var user = entityFinder.userId(userId);
-        var vipPackage=entityFinder.vipPackageById(vipPackageId);
+        var vipPackage = entityFinder.vipPackageById(vipPackageId);
 
         if (!Boolean.TRUE.equals(vipPackage.getActive())) {
             throw new RuntimeException("Vip package is not active");
         }
 
-        // ===== 3️⃣ Tính expire date =====
+        // ===== Check VIP status =====
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime currentExpire = user.getVipExpiredAt();
 
+        if (currentExpire != null && currentExpire.isAfter(now)) {
+            throw new RuntimeException("Bạn đang là hội viên VIP và vẫn còn hạn sử dụng (đến " + currentExpire
+                    + "). Không thể mua thêm lúc này.");
+        }
+
+        // ===== 3️⃣ Tính expire date =====
         if (vipPackage.getDurationDays() == null) {
             // LIFETIME
             user.setVipExpiredAt(null);
         } else {
-
-            // Nếu còn VIP thì cộng dồn
-            if (currentExpire != null && currentExpire.isAfter(now)) {
-                user.setVipExpiredAt(
-                        currentExpire.plusDays(vipPackage.getDurationDays())
-                );
-            } else {
-                user.setVipExpiredAt(
-                        now.plusDays(vipPackage.getDurationDays())
-                );
-            }
+            user.setVipExpiredAt(now.plusDays(vipPackage.getDurationDays()));
         }
 
         userRepository.save(user);
@@ -59,8 +55,7 @@ public class VipPurchaseService {
         roleService.changeUserRole(
                 user.getId(),
                 "USER",
-                "USER_VIP"
-        );
+                "USER_VIP");
 
         log.info("🔥 User {} upgraded to VIP", user.getEmail());
     }

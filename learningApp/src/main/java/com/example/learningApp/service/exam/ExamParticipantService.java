@@ -23,7 +23,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 
 @Service
@@ -47,6 +49,21 @@ public class ExamParticipantService {
                                 .orElseThrow(() -> new RuntimeException("Exam not found"));
                 User user = userRepo.findById(userId)
                                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+                // Check participation limit for normal users
+                boolean isVipOrAdmin = user.getRoles().stream()
+                                .anyMatch(r -> r.getRoleName().equals("USER_VIP") || r.getRoleName().equals("ADMIN"));
+
+                if (!isVipOrAdmin) {
+                        LocalDateTime startOfDay = LocalDateTime.now().with(LocalTime.MIN);
+                        LocalDateTime endOfDay = LocalDateTime.now().with(LocalTime.MAX);
+                        long countToday = participantRepo.countByUser_IdAndStartedAtBetween(userId, startOfDay,
+                                        endOfDay);
+                        if (countToday >= 3) {
+                                throw new RuntimeException(
+                                                "Bạn đã hết lượt thi thử cho ngày hôm nay (tối đa 3 lần). Hãy nâng cấp VIP để thi không giới hạn!");
+                        }
+                }
 
                 ExamParticipant participant = ExamParticipant.builder()
                                 .exam(exam)

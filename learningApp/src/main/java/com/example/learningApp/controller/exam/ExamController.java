@@ -4,6 +4,7 @@ import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.request.exam.CreateExamRequest;
 import com.example.learningApp.dto.request.exam.StartExamRequest;
 import com.example.learningApp.dto.request.exam.SubmitExamRequest;
+import com.example.learningApp.dto.request.exam.UpdateExamRequest;
 import com.example.learningApp.dto.response.exam.ExamResponse;
 import com.example.learningApp.dto.response.exam.SectionWithQuestionsResponse;
 import com.example.learningApp.dto.response.exam.StartExamResponse;
@@ -36,6 +37,15 @@ public class ExamController {
         public ResponseEntity<ApiResponse<ExamResponse>> createExam(@RequestBody @Valid CreateExamRequest request) {
                 ExamResponse response = examService.createExam(request);
                 return ResponseEntity.ok(ApiResponse.success("Exam created successfully", response));
+        }
+
+        @PutMapping("/{id}")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<ApiResponse<ExamResponse>> updateExam(
+                        @PathVariable String id,
+                        @RequestBody  UpdateExamRequest request) {
+                ExamResponse response = examService.updateExam(id, request);
+                return ResponseEntity.ok(ApiResponse.success("Exam updated successfully", response));
         }
 
         // Get all exams

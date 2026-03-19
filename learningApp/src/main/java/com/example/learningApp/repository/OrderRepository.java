@@ -14,26 +14,40 @@ public interface OrderRepository extends JpaRepository<Order, String> {
 
     /* ===================== REVENUE ===================== */
     List<Order> findByUserIdOrderByCreatedAtDesc(String userId);
+
     @Query("""
-        SELECT SUM(o.amount)
-        FROM Order o
-        WHERE o.status = :status
-    """)
+                SELECT SUM(o.amount)
+                FROM Order o
+                WHERE o.status = :status
+            """)
     Optional<Long> sumAmountByStatus(@Param("status") PaymentStatus status);
+
     Optional<Order> findByOrderCodeAndUserId(String orderCode, String userId);
 
     @Query("""
-        SELECT SUM(o.amount)
-        FROM Order o
-        WHERE o.status = :status
-        AND o.paidAt BETWEEN :start AND :end
-    """)
+                SELECT SUM(o.amount)
+                FROM Order o
+                WHERE o.status = :status
+                AND o.paidAt BETWEEN :start AND :end
+            """)
     Optional<Long> sumAmountByStatusAndPaidAtBetween(
             @Param("status") PaymentStatus status,
             @Param("start") LocalDateTime start,
-            @Param("end") LocalDateTime end
-    );
+            @Param("end") LocalDateTime end);
 
     Long countByStatus(PaymentStatus status);
+
     Optional<Order> findByOrderCode(String orderCode);
+
+    /* ===================== ANALYTICS ===================== */
+
+    @Query("""
+            SELECT o
+            FROM Order o
+            WHERE o.status = :status
+            ORDER BY o.paidAt DESC
+            """)
+    List<Order> findRecentSuccessOrders(
+            @Param("status") PaymentStatus status);
+
 }

@@ -3,6 +3,7 @@ package com.example.learningApp.service.exam;
 import com.example.learningApp.dto.cache.QuestionCache;
 import com.example.learningApp.dto.cache.SectionCache;
 import com.example.learningApp.dto.request.exam.CreateExamRequest;
+import com.example.learningApp.dto.request.exam.UpdateExamRequest;
 import com.example.learningApp.dto.response.exam.ExamResponse;
 import com.example.learningApp.dto.response.exam.SectionWithQuestionsResponse;
 import com.example.learningApp.entity.Exam;
@@ -250,46 +251,50 @@ public class ExamService {
         }
 
         @Transactional
+        public ExamResponse updateExam(String id,
+                        UpdateExamRequest updateExamRequest) {
+                Exam exam = examRepository.findById(id)
+                                .orElseThrow(() -> new RuntimeException("Exam not found with id: " + id));
+
+                // Check if code already exists for another exam
+                if (!exam.getCode().equals(updateExamRequest.getCode()) &&
+                                examRepository.existsByCode(updateExamRequest.getCode())) {
+                        throw new RuntimeException("Exam code already exists: " + updateExamRequest.getCode());
+                }
+
+                examMapper.updateExam(exam, updateExamRequest);
+                return examMapper.toExamResponse(examRepository.save(exam));
+        }
+
+        @Transactional
         public void deleteExam(String id) {
                 Exam exam = examRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException("Exam not found with id: " + id));
 
                 log.info("Starting deletion of exam: {} (ID: {})", exam.getCode(), id);
 
-                // 1. Delete associated results, participants, and answers
+                // 1. Delete associated results, participants, and answers (Exam-specific)
                 userExamResultRepository.deleteByExam_Id(id);
                 examParticipantRepository.deleteByExam_Id(id);
                 userAnswerRepository.deleteByExamId(id);
 
-                // 2. Clear Join Tables (Owner side)
-                Set<ExamSection> sections = new HashSet<>(exam.getSections());
-                Set<Question> questions = new HashSet<>(exam.getQuestions());
+                userExamResultRepository.flush();
+                examParticipantRepository.flush();
+                userAnswerRepository.flush();
 
+                // 2. Clear Join Tables (Many-to-Many)
+                // This will remove rows from exam_questions and exam_exam_section join tables
                 exam.getSections().clear();
                 exam.getQuestions().clear();
                 examRepository.saveAndFlush(exam);
 
-                // 3. Clear passage references in questions to avoid FK violation
-                if (!questions.isEmpty()) {
-                        questions.forEach(q -> q.setPassage(null));
-                        questionRepository.saveAllAndFlush(questions);
-
-                        // Delete questions in batch
-                        questionRepository.deleteAllInBatch(questions);
-                        questionRepository.flush();
-                }
-
-                // 4. Delete sections (this will cascade to passages)
-                if (!sections.isEmpty()) {
-                        examSectionRepository.deleteAllInBatch(sections);
-                        examSectionRepository.flush();
-                }
-
-                // 5. Delete the exam itself
+                // 3. Delete the exam itself
                 examRepository.delete(exam);
-                log.info("Successfully deleted exam and related data for id: {}", id);
+                examRepository.flush();
 
-                // 6. Clean up Redis cache
+                log.info("Successfully deleted exam and cleared associations for id: {}", id);
+
+                // 4. Clean up Redis cache
                 redisTemplate.delete("exam:" + id + ":questions");
                 redisTemplate.delete("exam:" + id + ":sections");
         }
