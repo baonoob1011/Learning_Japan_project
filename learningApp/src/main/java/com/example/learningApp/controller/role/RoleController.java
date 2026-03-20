@@ -29,3 +29,4 @@ public class RoleController {
         return ResponseEntity.ok(ApiResponse.success("Role assigned to user", null));
     }
 }
+

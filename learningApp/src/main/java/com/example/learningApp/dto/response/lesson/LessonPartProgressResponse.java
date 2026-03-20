@@ -13,3 +13,4 @@ public class LessonPartProgressResponse {
     private Double lastWatchedSecond;
     private Boolean completed;
 }
+

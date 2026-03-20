@@ -27,3 +27,4 @@ public class RomajiService {
                 .replace("ワ", "wa").replace("ヲ", "wo").replace("ン", "n");
     }
 }
+

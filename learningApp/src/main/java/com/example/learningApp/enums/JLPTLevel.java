@@ -7,3 +7,4 @@ public enum JLPTLevel {
     N4,
     UNKNOWN, N5
 }
+

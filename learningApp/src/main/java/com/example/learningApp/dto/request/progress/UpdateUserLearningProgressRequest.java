@@ -21,3 +21,4 @@ public class UpdateUserLearningProgressRequest {
     @Min(0)
     private Integer correctQuestions;
 }
+

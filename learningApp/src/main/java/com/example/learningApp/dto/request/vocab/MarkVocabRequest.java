@@ -10,3 +10,4 @@ public class MarkVocabRequest {
         private boolean remembered; // true = thuộc, false = chưa thuộc
     private String vocabId;
 }
+

@@ -27,3 +27,4 @@ public class ChatRoomResponse {
 
     private Integer unreadCount;
 }
+

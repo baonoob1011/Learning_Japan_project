@@ -12,3 +12,4 @@ public class KanjiCheckResponse {
     private int expectedStrokeCount;
     private int userStrokeCount;
 }
+

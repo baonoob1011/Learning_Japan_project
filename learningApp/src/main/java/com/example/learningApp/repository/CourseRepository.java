@@ -16,3 +16,4 @@ public interface CourseRepository extends JpaRepository<Course, String> {
     })
     Optional<Course> findWithTreeById(String id);
 }
+

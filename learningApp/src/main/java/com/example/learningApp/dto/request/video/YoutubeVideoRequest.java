@@ -16,3 +16,4 @@ public class YoutubeVideoRequest {
     private VideoTag videoTag;
     private JLPTLevel level;
 }
+

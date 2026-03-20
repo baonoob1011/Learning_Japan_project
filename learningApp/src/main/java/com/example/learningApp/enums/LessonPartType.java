@@ -7,3 +7,4 @@ public enum LessonPartType {
     READING,
     KAIWA
 }
+

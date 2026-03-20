@@ -27,3 +27,4 @@ public class SystemStartupRunner implements ApplicationRunner {
         log.info("✅ System startup completed");
     }
 }
+

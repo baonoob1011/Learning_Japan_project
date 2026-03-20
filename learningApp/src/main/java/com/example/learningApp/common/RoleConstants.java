@@ -13,3 +13,4 @@ public final class RoleConstants {
     public static final List<String> DEFAULT_ROLES =
             List.of(USER, USER_VIP, ADMIN);
 }
+

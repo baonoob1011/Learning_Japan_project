@@ -57,3 +57,4 @@ public class UserVideoTracking {
         updatedAt = Instant.now();
     }
 }
+

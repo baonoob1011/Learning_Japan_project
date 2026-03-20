@@ -21,3 +21,4 @@ public class AdminUserProgressResponse {
     private UserResponse user;
 
 }
+

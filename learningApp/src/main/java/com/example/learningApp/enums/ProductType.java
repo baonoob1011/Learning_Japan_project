@@ -4,3 +4,4 @@ public enum ProductType {
     COURSE,
     VIP_PACKAGE
 }
+

@@ -21,3 +21,4 @@ public class WordPronunciationResultResponse {
     /** Điểm của từ (0 → 1) */
     private double score;
 }
+

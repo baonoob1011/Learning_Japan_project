@@ -9,3 +9,4 @@ public class CreateLessonDocumentRequest {
     private String title;
     private Integer documentOrder;
 }
+

@@ -13,3 +13,4 @@ public class FriendResponse {
     private String senderName;
     private String senderAvatar;
 }
+

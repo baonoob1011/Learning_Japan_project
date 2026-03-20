@@ -5,3 +5,4 @@ public enum LessonProcess {
     TAISAKU,    // 対策 – Ôn luyện chiến lược
     PRACTICE    // 模擬試験 – Luyện đề
 }
+

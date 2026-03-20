@@ -11,3 +11,4 @@ public interface QuestionVideoYoutubeRepository extends JpaRepository<QuestionVi
     List<QuestionVideoYoutube> findByExerciseId(String exerciseId);
 
 }
+

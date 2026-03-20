@@ -4,3 +4,4 @@ public interface CacheService<T> {
 
     void save(String key, T value);
 }
+

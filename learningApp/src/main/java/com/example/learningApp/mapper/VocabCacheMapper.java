@@ -8,3 +8,4 @@ import org.mapstruct.Mapper;
 public interface VocabCacheMapper {
     VocabCache toCache(Vocab vocab);
 }
+

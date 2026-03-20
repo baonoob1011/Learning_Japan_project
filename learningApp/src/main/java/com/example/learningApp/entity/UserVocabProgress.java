@@ -35,16 +35,41 @@ public class UserVocabProgress {
     @Builder.Default
     private LearningStatus status = LearningStatus.NEW;
 
-    private int reviewCount; // số lần bấm THUỘC
-    private int forgottenCount; // số lần bấm CHƯA THUỘC
+    private int reviewCount;
+    private int forgottenCount;
+
+    @Builder.Default
+    private int intervalDays = 0;
+
+    @Builder.Default
+    private double easeFactor = 2.5;
+
+    @Builder.Default
+    private int lapseCount = 0;
+
+    @Builder.Default
+    private int successCount = 0;
 
     private LocalDateTime createdAt;
     private LocalDateTime lastReviewedAt;
+    private LocalDateTime nextReviewAt;
+    private LocalDateTime updatedAt;
 
     private LocalDateTime lastReminderSentAt;
 
     @PrePersist
     void onCreate() {
-        createdAt = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now();
+        createdAt = now;
+        updatedAt = now;
+        if (nextReviewAt == null) {
+            nextReviewAt = now;
+        }
+    }
+
+    @PreUpdate
+    void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }
+

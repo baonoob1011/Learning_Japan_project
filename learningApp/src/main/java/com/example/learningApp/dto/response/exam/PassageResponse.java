@@ -15,3 +15,4 @@ public class PassageResponse {
     private String content;
     private Integer passageOrder;
 }
+

@@ -26,3 +26,4 @@ public class PronunciationResultResponse {
     /** Nhận xét tổng quát (optional) */
     private String feedback;
 }
+

@@ -19,3 +19,4 @@ public class UserExamResultResponse {
     private float score;
     private LocalDateTime submittedAt;
 }
+

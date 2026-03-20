@@ -14,3 +14,4 @@ public class YoutubeVideoSearchDoc {
     private String level;
     private String videoTag;
 }
+

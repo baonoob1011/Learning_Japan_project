@@ -13,3 +13,4 @@ public class MonthlyRevenueResponse {
     String monthName;
     Long revenue;
 }
+

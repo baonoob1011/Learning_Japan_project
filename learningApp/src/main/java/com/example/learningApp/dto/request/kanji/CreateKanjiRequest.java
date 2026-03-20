@@ -11,3 +11,4 @@ public class CreateKanjiRequest {
     private String character;
 
 }
+

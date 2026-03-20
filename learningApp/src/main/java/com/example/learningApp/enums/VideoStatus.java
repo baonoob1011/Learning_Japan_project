@@ -6,3 +6,4 @@ public enum VideoStatus {
     DONE,
     FAILED
 }
+

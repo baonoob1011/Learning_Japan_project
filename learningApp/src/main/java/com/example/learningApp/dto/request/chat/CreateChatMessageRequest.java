@@ -11,3 +11,4 @@ public class CreateChatMessageRequest {
     @NotBlank(message = "Message content cannot be blank")
     private String content;
 }
+

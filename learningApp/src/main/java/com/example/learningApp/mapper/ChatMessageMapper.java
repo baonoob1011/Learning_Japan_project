@@ -19,3 +19,4 @@ public interface ChatMessageMapper {
 
     ChatMessage toChatMessage(CreateChatMessageRequest request);
 }
+

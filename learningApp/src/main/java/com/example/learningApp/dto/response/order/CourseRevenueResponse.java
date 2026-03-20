@@ -12,3 +12,4 @@ public class CourseRevenueResponse {
     String courseTitle;
     Long revenue;
 }
+

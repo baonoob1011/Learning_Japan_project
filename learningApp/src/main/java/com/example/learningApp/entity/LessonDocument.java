@@ -27,3 +27,4 @@ public class LessonDocument {
 
     private Integer documentOrder;
 }
+

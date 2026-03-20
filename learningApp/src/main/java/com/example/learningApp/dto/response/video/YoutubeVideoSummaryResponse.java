@@ -23,3 +23,4 @@ public class YoutubeVideoSummaryResponse {
     private String duration;           // PT2H35M54S
     private Instant createdAt;
 }
+

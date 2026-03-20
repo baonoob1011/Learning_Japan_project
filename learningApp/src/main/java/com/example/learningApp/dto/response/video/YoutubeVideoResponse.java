@@ -25,3 +25,4 @@ public class YoutubeVideoResponse {
     private Instant createdAt;
     private Instant updatedAt;
 }
+

@@ -35,3 +35,4 @@ public final class RepositoryUtil {
                 .orElseThrow(() -> new RuntimeException(errorMessage));
     }
 }
+

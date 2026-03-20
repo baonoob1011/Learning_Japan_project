@@ -29,3 +29,4 @@ public class LessonPart {
 
     private Integer partOrder;
 }
+

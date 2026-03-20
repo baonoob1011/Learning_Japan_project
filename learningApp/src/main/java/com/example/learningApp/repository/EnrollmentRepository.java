@@ -18,3 +18,4 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, String> 
        """)
     List<Course> findCoursesByUserId(String userId);
 }
+

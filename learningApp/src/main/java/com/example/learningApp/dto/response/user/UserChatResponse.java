@@ -11,3 +11,4 @@ public class UserChatResponse {
     private String fullName;
     private String avatarUrl;
 }
+

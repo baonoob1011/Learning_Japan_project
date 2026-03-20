@@ -21,3 +21,4 @@ public class CreateVocabRequest {
     private String audioUrl;      // đường dẫn audio S3 (nếu đã tạo sẵn)
 
 }
+

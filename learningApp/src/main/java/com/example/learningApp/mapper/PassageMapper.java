@@ -23,3 +23,4 @@ public interface PassageMapper {
     void updatePassageFromRequest(UpdatePassageRequest request, @MappingTarget Passage passage);
 }
 
+

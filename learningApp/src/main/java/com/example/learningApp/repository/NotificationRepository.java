@@ -9,17 +9,19 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
-public interface NotificationRepository
-        extends JpaRepository<Notification, String> {
-    Page<Notification> findByUser(
-            User user,
-            Pageable pageable
-    );
+public interface NotificationRepository extends JpaRepository<Notification, String> {
+    Page<Notification> findByUser(User user, Pageable pageable);
 
     Optional<Notification> findByIdAndUser(String id, User user);
+
+    boolean existsByUserAndTitleContainingAndCreatedAtAfter(User user, String titlePart, LocalDateTime after);
+
+    boolean existsByUserAndTitleContainingAndIsReadFalse(User user, String titlePart);
+
+    long countByUserAndIsReadFalse(User user);
 
     @Modifying
     @Query("""
@@ -28,4 +30,8 @@ public interface NotificationRepository
         where n.user = :user and n.isRead = false
     """)
     void markAllAsReadByUser(@Param("user") User user);
+
+    @Modifying
+    void deleteAllByUser(User user);
 }
+

@@ -12,3 +12,4 @@ public interface UserCourseProgressRepository
     Optional<UserCourseProgress>
     findByUserIdAndCourseId(String userId, String courseId);
 }
+

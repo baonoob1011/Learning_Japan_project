@@ -18,6 +18,7 @@ import com.example.learningApp.mapper.TranslateMapper;
 import com.example.learningApp.mapper.VocabCacheMapper;
 import com.example.learningApp.mapper.VocabMapper;
 import com.example.learningApp.repository.UserRepository;
+import com.example.learningApp.repository.UserVocabProgressRepository;
 import com.example.learningApp.repository.VocabRepository;
 import com.example.learningApp.repository.YoutubeVideoRepository;
 import com.example.learningApp.service.translate.TranslateService;
@@ -33,6 +34,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static java.awt.SystemColor.text;
@@ -48,16 +50,64 @@ public class VocabService {
     TranslateService translateService;
     UserRepository userRepository;
     VocabCacheRedisService vocabCacheRedisService;
+    UserVocabProgressRepository progressRepo;
     TranslateMapper translateMapper;
     VocabCacheMapper vocabCacheMapper;
     Producer kafkaProducer;
 
+    public long resolveSrsReviewIntervalDays(com.example.learningApp.entity.UserVocabProgress progress) {
+        // Cực kỳ đơn giản: Quá 3 ngày không ôn là nhắc!
+        return 3;
+    }
+
+    public boolean isDueForSrsReview(com.example.learningApp.entity.UserVocabProgress progress, LocalDateTime now) {
+        if (progress == null) return false;
+        
+        // Chỉ nhắc những từ đã bắt đầu học (tránh những từ mới tinh chưa bao giờ đụng tới nếu muốn)
+        // Nhưng theo yêu cầu bạn muốn nhắc cả chưa thuộc, nên ta sẽ cho NEW cũng nhắc luôn sau 3 ngày
+        LocalDateTime lastReviewedAt = progress.getLastReviewedAt();
+        if (lastReviewedAt == null) {
+            // Nếu chưa bao giờ Review, coi như CreatedAt là điểm bắt đầu
+            if (progress.getCreatedAt() != null) {
+                return progress.getCreatedAt().plusDays(3).isBefore(now);
+            }
+            return true;
+        }
+
+        return lastReviewedAt.plusDays(3).isBefore(now);
+    }
+
+    public String buildSrsReminderMessage(long forgottenCount, long fuzzyCount, long masteredCount) {
+        long total = forgottenCount + fuzzyCount + masteredCount;
+        if (total == 0) return null;
+        
+        long totalUnlearned = forgottenCount + fuzzyCount; // Gộp cả "quên" và "đang học" vào chưa thuộc
+        StringBuilder sb = new StringBuilder();
+        sb.append("B\u1ea1n c\u00f3 ").append(total).append(" t\u1eeb \u0111\u1ebfn l\u1ecbch \u00f4n: ");
+        
+        if (totalUnlearned > 0) {
+            sb.append(totalUnlearned).append(" t\u1eeb ch\u01b0a thu\u1ed9c");
+        }
+        
+        if (masteredCount > 0) {
+            if (totalUnlearned > 0) sb.append(", ");
+            sb.append(masteredCount).append(" t\u1eeb \u0111\u00e3 thu\u1ed9c");
+        }
+        
+        sb.append(".");
+        return sb.toString();
+    }
+
     public List<VocabResponse> getSavedVocabsOfCurrentUserByVideo(String videoId) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String userId = authentication.getName();
-        List<Vocab> vocabs = vocabRepository.findSavedVocabsByUserAndVideo(userId, videoId);
+        var user = finder.userById();
+        List<Vocab> vocabs = vocabRepository.findSavedVocabsByUserAndVideo(user.getId(), videoId);
         return vocabs.stream()
-                .map(vocabMapper::toVocabResponse)
+                .map(vocab -> {
+                    VocabResponse resp = vocabMapper.toVocabResponse(vocab);
+                    var progress = progressRepo.findByUserAndVocab(user, vocab);
+                    resp.setStatus(progress.map(p -> p.getStatus()).orElse(com.example.learningApp.enums.LearningStatus.NEW));
+                    return resp;
+                })
                 .toList();
     }
 
@@ -65,14 +115,23 @@ public class VocabService {
     public void createVocab(CreateVocabRequest request) {
         Vocab vocab = vocabMapper.toVocab(request);
         var video = finder.videoById(request.getVideoId());
+        var user = finder.userById();
+
         Vocab savedVocab = vocabRepository.findBySurface(vocab.getSurface())
                 .orElseGet(() -> vocabRepository.save(vocab));
 
+        // Lưu vào Video
         if (!video.getVocabs().contains(savedVocab)) {
             video.getVocabs().add(savedVocab);
         }
         savedVocab.getVideos().add(video);
         youtubeVideoRepository.save(video);
+
+        // Lưu vào User (để hiện trong Tab Từ vựng)
+        if (!user.getSavedVocabs().contains(savedVocab)) {
+            user.getSavedVocabs().add(savedVocab);
+            userRepository.save(user);
+        }
     }
 
     public TranslateResponse findOrTranslate(TranslateRequest request) {
@@ -128,7 +187,12 @@ public class VocabService {
         var user = finder.userById();
         return user.getSavedVocabs()
                 .stream()
-                .map(vocabMapper::toVocabResponse)
+                .map(vocab -> {
+                    VocabResponse resp = vocabMapper.toVocabResponse(vocab);
+                    var progress = progressRepo.findByUserAndVocab(user, vocab);
+                    resp.setStatus(progress.map(p -> p.getStatus()).orElse(com.example.learningApp.enums.LearningStatus.NEW));
+                    return resp;
+                })
                 .toList();
     }
 
@@ -157,3 +221,4 @@ public class VocabService {
     }
 
 }
+

@@ -11,3 +11,4 @@ public interface LessonPartRepository extends JpaRepository<LessonPart, String> 
     List<LessonPart> findByLessonId(String lessonId);
 
 }
+

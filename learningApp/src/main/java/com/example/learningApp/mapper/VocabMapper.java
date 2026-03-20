@@ -21,3 +21,4 @@ public interface VocabMapper {
  Vocab toVocab (CreateVocabRequest request);
  VocabResponse toVocabResponse(Vocab vocab);
  }
+

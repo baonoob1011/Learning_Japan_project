@@ -54,3 +54,4 @@ public class Course {
 
     private LocalDateTime createdAt;
 }
+

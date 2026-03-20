@@ -14,3 +14,4 @@ public final class DurationUtils {
         return Duration.parse(isoDuration).getSeconds();
     }
 }
+

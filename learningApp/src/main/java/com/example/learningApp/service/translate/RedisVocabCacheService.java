@@ -33,3 +33,4 @@ public class RedisVocabCacheService
         return VocabCache.class;
     }
 }
+

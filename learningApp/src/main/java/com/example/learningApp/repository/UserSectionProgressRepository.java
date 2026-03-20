@@ -23,3 +23,4 @@ public interface UserSectionProgressRepository
     Optional<UserSectionProgress>
     findByUserIdAndSectionId(String userId, String sectionId);
 }
+

@@ -12,3 +12,4 @@ public class KanjiStrokeRequest {
 
     private List<List<PointDTO>> strokes;
 }
+

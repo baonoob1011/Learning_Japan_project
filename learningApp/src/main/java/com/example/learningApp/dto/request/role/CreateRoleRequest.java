@@ -12,3 +12,4 @@ public class CreateRoleRequest {
     @NotBlank
     private String roleName;
 }
+

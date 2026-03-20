@@ -53,3 +53,4 @@ public class PronunciationController {
         return ResponseEntity.ok(ApiResponse.success("Pronunciation result", result));
     }
 }
+

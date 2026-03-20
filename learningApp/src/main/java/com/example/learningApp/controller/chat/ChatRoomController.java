@@ -114,3 +114,4 @@ public class ChatRoomController {
                                                 chatRoomService.getMessages(roomId, page, size)));
         }
 }
+

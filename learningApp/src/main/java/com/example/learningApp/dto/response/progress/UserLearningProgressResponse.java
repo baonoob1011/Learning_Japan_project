@@ -22,3 +22,4 @@ public class UserLearningProgressResponse {
     private Float averageScore;
     private LocalDateTime lastExamAt;
 }
+

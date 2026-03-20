@@ -30,3 +30,4 @@ public interface VocabRepository extends JpaRepository<Vocab, String> {
             @Param("videoId") String videoId
     );
 }
+

@@ -36,3 +36,4 @@ public class QuestionVideoYoutube {
 
     private Instant createdAt;
 }
+

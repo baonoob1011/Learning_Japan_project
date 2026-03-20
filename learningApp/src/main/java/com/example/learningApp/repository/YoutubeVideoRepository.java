@@ -24,3 +24,4 @@ public interface YoutubeVideoRepository extends JpaRepository<YoutubeVideo, Stri
     List<YoutubeVideo> findAllByVocabId(@Param("vocabId") String vocabId);
 
 }
+

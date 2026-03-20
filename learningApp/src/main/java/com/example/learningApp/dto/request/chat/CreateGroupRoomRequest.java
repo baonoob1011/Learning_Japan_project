@@ -11,3 +11,4 @@ public class CreateGroupRoomRequest {
     private MultipartFile avatar;
     private List<String> memberIds;
 }
+

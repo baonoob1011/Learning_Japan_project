@@ -82,3 +82,4 @@ public class UserLearningProgress {
         this.updatedAt = LocalDateTime.now();
     }
 }
+

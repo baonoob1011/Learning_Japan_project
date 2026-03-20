@@ -19,3 +19,4 @@ public class UserResponse {
     private LocalDateTime updatedAt;
     private String avatarUrl;
 }
+

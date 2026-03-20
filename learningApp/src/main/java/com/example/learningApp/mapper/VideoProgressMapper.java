@@ -12,3 +12,4 @@ public interface VideoProgressMapper {
     @Mapping(target = "videoId", source = "video.id")
     VideoProgressResponse toVideoProgressResponse(UserVideoTracking tracking);
 }
+

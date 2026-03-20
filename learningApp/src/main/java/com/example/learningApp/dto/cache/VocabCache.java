@@ -19,3 +19,4 @@ public class VocabCache {
     private String exampleJa;
     private String exampleVi;
 }
+

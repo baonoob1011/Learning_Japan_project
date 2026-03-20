@@ -13,3 +13,4 @@ public interface ChatRoomMapper {
 
     ChatRoomResponse toChatRoomResponse(ChatRoom room);
 }
+

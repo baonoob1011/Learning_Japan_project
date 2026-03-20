@@ -28,3 +28,4 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, String
         long countByRoomIdAndSenderIdNotAndIsReadFalse(String roomId, String userId);
 
 }
+

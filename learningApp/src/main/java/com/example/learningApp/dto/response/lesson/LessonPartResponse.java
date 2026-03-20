@@ -14,3 +14,4 @@ public class LessonPartResponse {
     private String duration;           // PT2H35M54S
     private Integer partOrder;
 }
+

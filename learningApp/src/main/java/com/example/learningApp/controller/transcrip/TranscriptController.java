@@ -24,3 +24,4 @@ public class TranscriptController {
         return ResponseEntity.ok(ApiResponse.success("Video uploaded successfully with transcript", transcriptService.getTranscriptsByVideoId(videoId)));
     }
 }
+

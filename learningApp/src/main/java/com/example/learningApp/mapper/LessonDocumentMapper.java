@@ -10,3 +10,4 @@ public interface LessonDocumentMapper {
     LessonDocument toLessonDocument(CreateLessonDocumentRequest createLessonDocumentRequest);
     LessonDocumentResponse toLessonDocumentResponse(LessonDocument lessonDocument);
 }
+

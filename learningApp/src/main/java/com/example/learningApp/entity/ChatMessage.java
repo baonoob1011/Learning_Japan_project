@@ -33,3 +33,4 @@ public class ChatMessage {
 
     private Boolean isRead = false;
 }
+

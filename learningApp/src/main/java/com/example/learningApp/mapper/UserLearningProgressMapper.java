@@ -14,3 +14,4 @@ public interface UserLearningProgressMapper {
 UserLearningProgressResponse toUserLearningProgressResponse (UserLearningProgress userLearningProgress);
 
 }
+

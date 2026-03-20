@@ -146,3 +146,4 @@ public class CourseService {
         course.setIsActive(!course.getIsActive());
     }
 }
+

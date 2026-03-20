@@ -14,3 +14,4 @@ import java.util.List;
 public class DeleteUsersRequest {
     private List<String> emails;
 }
+

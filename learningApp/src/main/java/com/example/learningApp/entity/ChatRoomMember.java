@@ -31,3 +31,4 @@ public class ChatRoomMember {
     private Boolean isAdmin = false;   // dùng cho group
     private Boolean isMuted = false;   // mute room
 }
+

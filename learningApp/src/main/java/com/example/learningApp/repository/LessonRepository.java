@@ -9,3 +9,4 @@ public interface LessonRepository extends JpaRepository<Lesson, String> {
     List<Lesson> findBySectionIdOrderByLessonOrderAsc(String sectionId);
 
 }
+

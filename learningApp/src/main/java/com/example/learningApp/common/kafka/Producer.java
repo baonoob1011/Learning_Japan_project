@@ -16,3 +16,4 @@ public class Producer {
         kafkaTemplate.send(topic, userId, request);
     }
 }
+

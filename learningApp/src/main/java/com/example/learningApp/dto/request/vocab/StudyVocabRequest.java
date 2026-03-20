@@ -9,3 +9,4 @@ public class StudyVocabRequest {
     private String vocabId;
     private boolean mastered;
 }
+

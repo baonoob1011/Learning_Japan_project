@@ -53,3 +53,4 @@ public class VocabPracticeQuestion {
         this.createdAt = LocalDateTime.now();
     }
 }
+

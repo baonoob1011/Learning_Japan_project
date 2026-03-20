@@ -19,3 +19,4 @@ public class VipPackageResponse {
     Integer durationDays;
     Boolean active;
 }
+

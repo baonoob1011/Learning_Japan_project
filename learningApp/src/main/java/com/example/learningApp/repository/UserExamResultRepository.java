@@ -7,3 +7,4 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface UserExamResultRepository extends JpaRepository<UserExamResult, String> {
     void deleteByExam_Id(String examId);
 }
+

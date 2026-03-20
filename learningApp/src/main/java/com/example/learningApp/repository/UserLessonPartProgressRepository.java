@@ -28,3 +28,4 @@ public interface UserLessonPartProgressRepository
     Double calculateLessonPercent(String userId, String lessonId);
 
 }
+

@@ -22,3 +22,4 @@ public interface ExamParticipantRepository extends JpaRepository<ExamParticipant
 
     void deleteByExam_Id(String examId);
 }
+

@@ -8,3 +8,4 @@ public enum RoomType {
     GROUP,
     PRIVATE    // Chat riêng 1-1 giữa 2 user
 }
+

@@ -14,3 +14,4 @@ public class UserStatsResponse {
     private long active;
     private long banned;
 }
+

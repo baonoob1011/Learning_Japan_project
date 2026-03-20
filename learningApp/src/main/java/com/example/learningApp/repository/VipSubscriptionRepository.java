@@ -13,3 +13,4 @@ public interface VipSubscriptionRepository extends JpaRepository<VipSubscription
     List<VipSubscription> findByExpiredDateBeforeAndActiveTrue(LocalDateTime now);
 
     boolean existsByUserIdAndActiveTrue(String userId);}
+

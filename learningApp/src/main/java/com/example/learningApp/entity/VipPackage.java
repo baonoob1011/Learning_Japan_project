@@ -29,3 +29,4 @@ public class VipPackage {
 
     private Boolean active;
 }
+

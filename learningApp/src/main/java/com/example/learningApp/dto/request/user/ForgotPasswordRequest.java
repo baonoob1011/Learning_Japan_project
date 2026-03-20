@@ -14,3 +14,4 @@ public class ForgotPasswordRequest {
     private String otp;
     private String newPassword;
 }
+

@@ -8,3 +8,4 @@ public class UpdateVocabRequest {
     private String surface;      // vocab cần sửa
     private String translated;   // nghĩa chính
 }
+

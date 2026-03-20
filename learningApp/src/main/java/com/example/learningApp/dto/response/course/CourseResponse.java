@@ -24,3 +24,4 @@ public class CourseResponse {
     private Boolean isActive;
     private LocalDateTime createdAt;
 }
+

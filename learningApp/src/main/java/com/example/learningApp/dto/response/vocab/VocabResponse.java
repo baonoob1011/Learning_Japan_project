@@ -20,4 +20,6 @@ public class VocabResponse {
     private String targetDefs;    // nghĩa ngôn ngữ đích
     private String explain;
     private String audioUrl;      // đường dẫn audio trên S3
+    private LearningStatus status; // trạng thái học tập của user hiện tại
 }
+

@@ -22,3 +22,4 @@ public class ExamResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
+

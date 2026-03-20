@@ -12,3 +12,4 @@ public class VideoProgressRequest {
     private Long watchedSecondsDelta;   // xem thêm bao nhiêu giây
 
 }
+

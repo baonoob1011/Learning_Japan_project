@@ -13,3 +13,4 @@ public interface VipPackageRepository extends JpaRepository<VipPackage, String> 
 
     List<VipPackage> findByActiveTrue();
 }
+

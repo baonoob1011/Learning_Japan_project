@@ -15,3 +15,4 @@ public interface ExamMapper {
     ExamResponse toExamResponse(Exam exam);
 
 }
+

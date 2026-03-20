@@ -12,3 +12,4 @@ public interface SectionMapper {
 Section toSection(CreateSectionRequest createSectionRequest);
 SectionResponse toSectionResponse(Section section);
 }
+

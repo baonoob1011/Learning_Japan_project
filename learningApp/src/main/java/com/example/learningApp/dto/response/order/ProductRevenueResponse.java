@@ -14,3 +14,4 @@ public class ProductRevenueResponse {
     String type; // "COURSE" or "VIP"
     Long revenue;
 }
+

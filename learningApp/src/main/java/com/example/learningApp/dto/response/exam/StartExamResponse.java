@@ -22,3 +22,4 @@ public class StartExamResponse {
     private Boolean completed;
     private LocalDateTime startedAt;
 }
+

@@ -74,3 +74,4 @@ public class Question {
         this.updatedAt = LocalDateTime.now();
     }
 }
+

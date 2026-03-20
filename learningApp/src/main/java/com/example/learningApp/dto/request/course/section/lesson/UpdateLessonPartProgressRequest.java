@@ -11,3 +11,4 @@ public class UpdateLessonPartProgressRequest {
     private Double progressPercent;
     private Double lastWatchedSecond;
 }
+

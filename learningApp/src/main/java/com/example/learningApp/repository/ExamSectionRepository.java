@@ -26,3 +26,4 @@ public interface ExamSectionRepository extends JpaRepository<ExamSection, String
             String examCode);
 
 }
+

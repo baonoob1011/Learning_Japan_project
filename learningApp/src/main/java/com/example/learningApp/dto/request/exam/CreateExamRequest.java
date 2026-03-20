@@ -25,3 +25,4 @@ public class CreateExamRequest {
     @NotNull(message = "Number of questions is required")
     private Integer numQuestions;
 }
+

@@ -67,3 +67,4 @@ public class YoutubeVideo {
         private Instant createdAt;
         private Instant updatedAt;
 }
+

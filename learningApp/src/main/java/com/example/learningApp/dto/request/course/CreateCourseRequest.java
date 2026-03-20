@@ -20,3 +20,4 @@ public class CreateCourseRequest {
     private MultipartFile image; // ✅ thêm dòng này
 
 }
+

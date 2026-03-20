@@ -10,3 +10,4 @@ public class TranslateRequest {
     private String sourceLang; // "ja"
     private String targetLang; // "vi"
 }
+

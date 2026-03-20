@@ -41,3 +41,4 @@ public class YoutubeTranscript {
 
     private LocalDateTime createdAt;
 }
+

@@ -38,3 +38,4 @@ public abstract class AbstractRedisCacheService<T>
         return type().cast(value);
     }
 }
+

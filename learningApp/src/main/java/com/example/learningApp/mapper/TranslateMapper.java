@@ -20,3 +20,4 @@ public interface TranslateMapper {
     @Mapping(target = "videoId", source = "videoId")
     TranslateResponse toTranslateResponse(Vocab vocab, String videoId);
 }
+

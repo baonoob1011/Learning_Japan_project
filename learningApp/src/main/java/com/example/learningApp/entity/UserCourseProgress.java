@@ -40,3 +40,4 @@ public class UserCourseProgress {
 
     private LocalDateTime completedAt;
 }
+

@@ -16,3 +16,4 @@ public class SignalMessageRequest {
     String room;
     Object data;
 }
+

@@ -52,3 +52,4 @@ public interface QuestionRepository extends JpaRepository<Question, String> {
                         """)
         long countAllByExamId(@Param("examId") String examId);
 }
+

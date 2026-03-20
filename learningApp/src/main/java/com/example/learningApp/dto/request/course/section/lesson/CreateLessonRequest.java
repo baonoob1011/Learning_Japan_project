@@ -12,3 +12,4 @@ public class CreateLessonRequest {
     private String description;
     private Integer lessonOrder;
 }
+

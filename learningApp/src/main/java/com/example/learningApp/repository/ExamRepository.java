@@ -19,3 +19,4 @@ public interface ExamRepository extends JpaRepository<Exam,String> {
             "OR LOWER(e.level) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     List<Exam> searchByKeyword(@Param("keyword") String keyword);
 }
+

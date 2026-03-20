@@ -9,3 +9,4 @@ public class SuggestResponse {
     private String id;
     private String title;
 }
+

@@ -41,3 +41,4 @@ public class UserLearningDashboardResponse {
         private LocalDateTime lastExamAt;
     }
 }
+

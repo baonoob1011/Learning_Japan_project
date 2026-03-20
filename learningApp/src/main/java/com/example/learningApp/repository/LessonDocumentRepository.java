@@ -10,3 +10,4 @@ public interface LessonDocumentRepository extends JpaRepository<LessonDocument, 
 
     List<LessonDocument> findByLessonOrderByDocumentOrderAsc(Lesson lesson);
 }
+

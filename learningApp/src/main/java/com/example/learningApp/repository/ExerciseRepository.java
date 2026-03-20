@@ -10,3 +10,4 @@ import java.util.Optional;
 public interface ExerciseRepository extends JpaRepository<Exercise, String> {
     Optional<Exercise> findFirstByVideoIdOrderByCreatedAtDesc(String videoId);
 }
+

@@ -34,3 +34,4 @@ public class VocabExerciseController {
         return ResponseEntity.ok(ApiResponse.success("Fetched exercises successfully", exerciseService.getExercisesForUser(user)));
     }
 }
+

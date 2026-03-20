@@ -24,3 +24,4 @@ public class OrderResponse {
     UserSimpleResponse user;
     List<OrderItemResponse> orderItems;
 }
+

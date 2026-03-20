@@ -21,3 +21,4 @@ public interface CourseMapper {
         if (course.getCreatedBy() == null) return null;
         return course.getCreatedBy().getFullName(); // 👈 hoặc getUsername()
     }}
+

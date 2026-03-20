@@ -16,3 +16,4 @@ public class RoleInitializationService {
                 .forEach(roleService::createRoleIfNotExists);
     }
 }
+

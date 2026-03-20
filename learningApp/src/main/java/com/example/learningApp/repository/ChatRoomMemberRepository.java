@@ -60,3 +60,4 @@ public interface ChatRoomMemberRepository
     List<Object[]> findPrivateChatPreview(String currentUserId);
 
 }
+

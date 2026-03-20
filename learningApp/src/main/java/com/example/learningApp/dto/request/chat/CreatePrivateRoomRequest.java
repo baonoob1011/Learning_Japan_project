@@ -6,3 +6,4 @@ import lombok.Data;
 public class CreatePrivateRoomRequest {
     private String targetUserId; // người mình muốn chat
 }
+

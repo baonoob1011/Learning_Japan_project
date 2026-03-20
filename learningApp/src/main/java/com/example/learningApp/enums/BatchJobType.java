@@ -4,3 +4,4 @@ public enum BatchJobType {
     EXAM,
     SECTION_ASSESSMENT
 }
+

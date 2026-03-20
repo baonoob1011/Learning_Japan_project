@@ -8,3 +8,4 @@ import java.util.List;
 public interface YoutubeTranscriptRepository extends JpaRepository<YoutubeTranscript, String> {
     List<YoutubeTranscript> findByVideoId(String videoId);
 }
+

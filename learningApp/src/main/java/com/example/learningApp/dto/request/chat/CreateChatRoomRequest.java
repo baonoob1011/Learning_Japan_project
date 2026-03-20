@@ -10,3 +10,4 @@ public class CreateChatRoomRequest {
     private RoomType roomType;
     private String lessonId;
 }
+

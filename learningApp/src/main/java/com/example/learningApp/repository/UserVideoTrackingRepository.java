@@ -13,3 +13,4 @@ public interface UserVideoTrackingRepository extends JpaRepository<UserVideoTrac
     List<UserVideoTracking> findAllByUser(User user);
 
 }
+

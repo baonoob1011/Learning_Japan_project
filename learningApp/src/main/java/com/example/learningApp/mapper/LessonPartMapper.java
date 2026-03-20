@@ -10,3 +10,4 @@ public interface LessonPartMapper {
     LessonPart toLessonPart(CreateLessonPartRequest lessonPart);
     LessonPartResponse toLessonPartResponse(LessonPart lessonPart);
 }
+

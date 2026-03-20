@@ -26,3 +26,4 @@ public class Kanji {
     private String svgStrokes;
 
 }
+

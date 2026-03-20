@@ -26,3 +26,4 @@ public class CreateUserRequest {
     )
     private String password; // Mật khẩu do client gửi
 }
+

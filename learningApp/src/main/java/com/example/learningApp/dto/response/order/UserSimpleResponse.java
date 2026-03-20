@@ -13,3 +13,4 @@ public class UserSimpleResponse {
     String email;
     String avatarUrl;
 }
+

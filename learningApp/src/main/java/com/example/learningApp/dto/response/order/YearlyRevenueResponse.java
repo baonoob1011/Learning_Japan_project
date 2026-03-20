@@ -12,3 +12,4 @@ public class YearlyRevenueResponse {
     int year;
     Long revenue;
 }
+

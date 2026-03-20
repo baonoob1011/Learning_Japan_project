@@ -14,3 +14,4 @@ public class VocabSaveExerciseEvent {
     private String vocabId;
     private String surface;
 }
+

@@ -9,3 +9,4 @@ public interface SectionRepository extends JpaRepository<Section, String> {
     List<Section> findByCourseIdOrderByCreatedAtAsc(String courseId);
 
 }
+

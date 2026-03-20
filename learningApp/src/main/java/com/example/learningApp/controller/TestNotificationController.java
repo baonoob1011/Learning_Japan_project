@@ -1,27 +1,62 @@
 package com.example.learningApp.controller;
 
+import com.example.learningApp.entity.User;
+import com.example.learningApp.repository.UserRepository;
+import com.example.learningApp.repository.UserVocabProgressRepository;
+import com.example.learningApp.service.notification.NotificationService;
+import com.example.learningApp.service.review.ReviewSessionService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @RestController
 @RequiredArgsConstructor
 public class TestNotificationController {
 
-    private final SimpMessagingTemplate messagingTemplate;
+    private final NotificationService notificationService;
+    private final UserRepository userRepository;
+    private final ReviewSessionService reviewSessionService;
+    private final UserVocabProgressRepository progressRepo;
 
     @GetMapping("/test-noti/{userId}")
-    public void test(@PathVariable String userId) {
-        messagingTemplate.convertAndSend(
-                "/topic/notifications/" + userId,
-                Map.of(
-                        "title", "🔥 Test Notification",
-                        "content", "Nếu thấy cái này là socket OK"
-                )
-        );
+    public String test(
+            @PathVariable String userId,
+            @RequestParam(defaultValue = "Nhac on tu vung theo SRS") String title,
+            @RequestParam(defaultValue = "Hom nay ban co mot phien on moi.") String content
+    ) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+        notificationService.create(user, title, content);
+        return "OK";
+    }
+
+    @GetMapping("/trigger-srs-reminder/{userId}")
+    public String triggerSrs(@PathVariable String userId) {
+        reviewSessionService.createTodaySessionForUser(userId, LocalDate.now());
+        return "SRS session created for user: " + userId;
+    }
+
+    @GetMapping("/make-due-all/{userId}")
+    public String makeDueAll(@PathVariable String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+        var list = progressRepo.findByUser(user);
+        LocalDateTime threeDaysAgo = LocalDateTime.now().minusDays(3).minusMinutes(5);
+
+        list.forEach(p -> {
+            p.setNextReviewAt(threeDaysAgo);
+            p.setLastReminderSentAt(threeDaysAgo);
+        });
+
+        progressRepo.saveAll(list);
+        return "SUCCESS: All " + list.size() + " vocabs for user " + userId + " are now marked as overdue.";
     }
 }
+

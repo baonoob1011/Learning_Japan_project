@@ -10,3 +10,4 @@ public class PointDTO {
     private double x;
     private double y;
 }
+

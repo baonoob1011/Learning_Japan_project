@@ -24,3 +24,4 @@ public class ExamAnswerCache {
     private float score;
     private LocalDateTime answeredAt;
 }
+

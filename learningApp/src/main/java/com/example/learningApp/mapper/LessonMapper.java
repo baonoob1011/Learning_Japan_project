@@ -12,3 +12,4 @@ public interface LessonMapper {
     Lesson toLesson(CreateLessonRequest createLessonRequest);
     LessonResponse toLessonResponse(Lesson lesson);
 }
+

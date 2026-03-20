@@ -46,3 +46,4 @@ public class KanjiController {
                                                 kanjiService.getAllKanji()));
         }
 }
+

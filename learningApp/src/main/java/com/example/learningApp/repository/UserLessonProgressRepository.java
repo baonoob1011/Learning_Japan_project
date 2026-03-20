@@ -22,3 +22,4 @@ public interface UserLessonProgressRepository
     Optional<UserLessonProgress>
     findByUserIdAndLessonId(String userId, String lessonId);
 }
+

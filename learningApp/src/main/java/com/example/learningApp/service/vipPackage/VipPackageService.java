@@ -81,3 +81,4 @@ public class VipPackageService{
         vipPackageRepository.save(vipPackage);
     }
 }
+

@@ -16,3 +16,4 @@ public class UserCourseProgressResponse {
 
     private CourseResponse course;
 }
+

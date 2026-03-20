@@ -15,3 +15,4 @@ public interface VocabPracticeQuestionRepository extends JpaRepository<VocabPrac
     List<VocabPracticeQuestion> findByUserAndVocab(User user, Vocab vocab);
     Optional<VocabPracticeQuestion> findFirstByUserAndVocabOrderByCreatedAtDesc(User user, Vocab vocab);
 }
+

@@ -45,3 +45,4 @@ public class UserExamResult {
         this.submittedAt = LocalDateTime.now();
     }
 }
+

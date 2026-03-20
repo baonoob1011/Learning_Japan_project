@@ -17,3 +17,4 @@ public class LevelDetailResponse {
     private Double accuracy;
     private LocalDateTime lastExamAt;
 }
+

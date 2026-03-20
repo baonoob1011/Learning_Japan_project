@@ -9,3 +9,4 @@ import org.springframework.stereotype.Service;
 public class AIReviewToggleService {
     private boolean enabled = true;
 }
+

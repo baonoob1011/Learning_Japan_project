@@ -10,3 +10,4 @@ public class VocabStatusResponse {
     private String vocabId;
     private LearningStatus status;
 }
+

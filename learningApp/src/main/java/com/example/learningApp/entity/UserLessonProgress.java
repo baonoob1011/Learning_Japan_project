@@ -36,3 +36,4 @@ public class UserLessonProgress {
 
     private LocalDateTime completedAt;
 }
+

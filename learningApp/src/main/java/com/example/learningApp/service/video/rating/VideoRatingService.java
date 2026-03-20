@@ -84,3 +84,4 @@ public class VideoRatingService {
                 .ifPresent(videoRatingRepository::delete);
     }
 }
+

@@ -1,3 +1,6 @@
+server:
+  port: ${PORT:8081}
+
 spring:
   application:
     name: learningApp
@@ -110,6 +113,8 @@ jwt:
   secret-key: ${JWT_SECRET}
 
 app:
+  vocab-reminder:
+    cron: ${VOCAB_REMINDER_CRON:0 0 8 * * *}
   admin:
     email: ${ADMIN_EMAIL}
     full-name: ${ADMIN_FULL_NAME}

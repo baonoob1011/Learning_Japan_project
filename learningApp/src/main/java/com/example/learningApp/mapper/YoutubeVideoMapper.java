@@ -17,3 +17,4 @@ public interface YoutubeVideoMapper {
   YoutubeVideoResponse toYoutubeVideoResponse(YoutubeVideo youtubeVideo);
   YoutubeVideoSummaryResponse toYoutubeVideoSummaryResponse(YoutubeVideo youtubeVideo);
 }
+

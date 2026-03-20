@@ -15,3 +15,4 @@ public class AssignRoleRequest {
     @NotBlank
     private String roleName;
 }
+

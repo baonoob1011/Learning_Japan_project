@@ -22,3 +22,4 @@ public class UpdateExamRequest {
 
     private Integer numQuestions;
 }
+
