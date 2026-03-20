@@ -70,6 +70,11 @@ services:
     command: [ "redis-server", "--appendonly", "yes" ]
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     restart: unless-stopped
 
   ##################################################
@@ -85,8 +90,13 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=default
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      # Support both old and new Spring Redis property names at runtime.
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       # Force Spring datasource at runtime (works even if image has old application.yaml)
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5433/learningApp
       - SPRING_DATASOURCE_USERNAME=postgres
@@ -96,7 +106,7 @@ services:
       - DB_PASSWORD=postgres
     depends_on:
       redis:
-        condition: service_started
+        condition: service_healthy
       kafka:
         condition: service_started
       postgres:
