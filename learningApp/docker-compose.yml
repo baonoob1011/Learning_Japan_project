@@ -86,6 +86,7 @@ services:
       - SPRING_PROFILES_ACTIVE=default
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
       # Force Spring datasource at runtime (works even if image has old application.yaml)
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5433/learningApp
       - SPRING_DATASOURCE_USERNAME=postgres

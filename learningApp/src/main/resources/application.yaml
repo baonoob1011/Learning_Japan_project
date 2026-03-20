@@ -23,7 +23,7 @@ spring:
     data:
       redis:
         host: ${SPRING_REDIS_HOST:localhost}
-        port: 6379
+        port: ${SPRING_REDIS_PORT:6379}
 
   data:
     elasticsearch:
