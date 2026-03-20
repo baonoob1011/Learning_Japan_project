@@ -8,14 +8,20 @@ services:
   postgres:
     image: postgres:17-alpine
     container_name: postgres
+    command: ["postgres", "-p", "5433"]
     environment:
       POSTGRES_DB: learningApp
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5433:5432"
+      - "5433:5433"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d learningApp -p 5433"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     restart: unless-stopped
 
 
@@ -80,12 +86,20 @@ services:
       - SPRING_PROFILES_ACTIVE=default
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - SPRING_REDIS_HOST=redis
-      # Ghi đè DB_URL: dùng tên service 'postgres' thay vì localhost
-      - DB_URL=jdbc:postgresql://postgres:5432/learningApp
+      # Force Spring datasource at runtime (works even if image has old application.yaml)
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5433/learningApp
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - DB_URL=jdbc:postgresql://postgres:5433/learningApp
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
     depends_on:
-      - redis
-      - kafka
-      - postgres
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
 ##################################################
