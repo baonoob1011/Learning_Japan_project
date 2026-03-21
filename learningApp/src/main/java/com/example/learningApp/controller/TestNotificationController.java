@@ -5,6 +5,7 @@ import com.example.learningApp.repository.UserRepository;
 import com.example.learningApp.repository.UserVocabProgressRepository;
 import com.example.learningApp.service.notification.NotificationService;
 import com.example.learningApp.service.review.ReviewSessionService;
+import com.example.learningApp.service.vocab.IntradayVocabReminderJob;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,13 +23,13 @@ public class TestNotificationController {
     private final UserRepository userRepository;
     private final ReviewSessionService reviewSessionService;
     private final UserVocabProgressRepository progressRepo;
+    private final IntradayVocabReminderJob intradayJob;
 
     @GetMapping("/test-noti/{userId}")
     public String test(
             @PathVariable String userId,
             @RequestParam(defaultValue = "Nhac on tu vung theo SRS") String title,
-            @RequestParam(defaultValue = "Hom nay ban co mot phien on moi.") String content
-    ) {
+            @RequestParam(defaultValue = "Hom nay ban co mot phien on moi.") String content) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
 
@@ -58,5 +59,10 @@ public class TestNotificationController {
         progressRepo.saveAll(list);
         return "SUCCESS: All " + list.size() + " vocabs for user " + userId + " are now marked as overdue.";
     }
-}
 
+    @GetMapping("/trigger-intraday")
+    public String triggerIntradayJob() {
+        intradayJob.sendIntradayReminders();
+        return "Da chay Job nhac nho giua ngay thanh cong. Hay kiem tra chuong thong bao!";
+    }
+}

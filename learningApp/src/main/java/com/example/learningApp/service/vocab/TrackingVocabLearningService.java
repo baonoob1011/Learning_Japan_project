@@ -7,10 +7,10 @@ import com.example.learningApp.entity.User;
 import com.example.learningApp.entity.UserVocabProgress;
 import com.example.learningApp.entity.Vocab;
 import com.example.learningApp.enums.LearningStatus;
-import com.example.learningApp.enums.ReviewGrade;
 import com.example.learningApp.repository.UserVocabProgressRepository;
 import com.example.learningApp.repository.UserRepository;
 import com.example.learningApp.service.review.SrsGradingService;
+import com.example.learningApp.service.review.ReviewSessionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +25,7 @@ public class TrackingVocabLearningService {
     private final EntityFinder finder;
     private final SrsGradingService srsGradingService;
     private final UserRepository userRepository;
+    private final ReviewSessionService reviewSessionService;
 
     public void markVocab(MarkVocabRequest request) {
 
@@ -42,10 +43,19 @@ public class TrackingVocabLearningService {
                 .orElseGet(() -> createNewProgress(user, vocab));
 
         LocalDateTime now = LocalDateTime.now();
-        ReviewGrade grade = request.isRemembered() ? ReviewGrade.GOOD : ReviewGrade.AGAIN;
-        srsGradingService.applyGrade(progress, grade, now);
+        
+        // Gọi logic tính điểm đa phương thức
+        srsGradingService.applyStudyModeResult(
+                progress, 
+                request.getStudyMode(), 
+                request.isRemembered(), 
+                now
+        );
 
         progressRepo.save(progress);
+        
+        // Cập nhật session (xóa khỏi hàng đợi sau khi học xong kỹ năng)
+        reviewSessionService.markItemCompletedIfInTodaySession(user, progress.getId());
     }
 
     public List<UserVocabProgressResponse> getMyLearningProgress() {
@@ -60,6 +70,10 @@ public class TrackingVocabLearningService {
                         .status(p.getStatus())
                         .reviewCount(p.getReviewCount())
                         .forgottenCount(p.getForgottenCount())
+                        .listeningScore(p.getListeningScore())
+                        .writingScore(p.getWritingScore())
+                        .readingScore(p.getReadingScore())
+                        .masteryLevel(p.getMasteryLevel())
                         .lastReviewedAt(p.getLastReviewedAt())
                         .createdAt(p.getCreatedAt())
                         .build())
@@ -79,9 +93,12 @@ public class TrackingVocabLearningService {
                 .easeFactor(2.5)
                 .lapseCount(0)
                 .successCount(0)
+                .listeningScore(0)
+                .writingScore(0)
+                .readingScore(0)
+                .masteryLevel(0)
                 .nextReviewAt(LocalDateTime.now())
                 .lastReviewedAt(LocalDateTime.now())
                 .build();
     }
 }
-

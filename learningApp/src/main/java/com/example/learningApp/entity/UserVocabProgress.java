@@ -50,6 +50,15 @@ public class UserVocabProgress {
     @Builder.Default
     private int successCount = 0;
 
+    @Builder.Default
+    private int listeningScore = 0;   // 0-100
+    @Builder.Default
+    private int writingScore = 0;     // 0-100
+    @Builder.Default
+    private int readingScore = 0;     // 0-100
+    @Builder.Default
+    private int masteryLevel = 0;     // 0-100 (tổng hợp)
+
     private LocalDateTime createdAt;
     private LocalDateTime lastReviewedAt;
     private LocalDateTime nextReviewAt;

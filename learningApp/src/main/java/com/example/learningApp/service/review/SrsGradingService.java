@@ -3,6 +3,7 @@ package com.example.learningApp.service.review;
 import com.example.learningApp.entity.UserVocabProgress;
 import com.example.learningApp.enums.LearningStatus;
 import com.example.learningApp.enums.ReviewGrade;
+import com.example.learningApp.enums.StudyMode;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -12,6 +13,40 @@ public class SrsGradingService {
 
     private static final double MIN_EASE_FACTOR = 1.3;
     private static final double MAX_EASE_FACTOR = 3.0;
+
+    /**
+     * Cập nhật tiến độ dựa trên chế độ học tập cụ thể (Nghe/Viết/Đọc)
+     */
+    public void applyStudyModeResult(UserVocabProgress progress, StudyMode mode, boolean success, LocalDateTime now) {
+        if (success) {
+            switch (mode) {
+                case LISTEN -> progress.setListeningScore(Math.min(100, progress.getListeningScore() + 15));
+                case WRITE -> progress.setWritingScore(Math.min(100, progress.getWritingScore() + 20));
+                case FLASHCARD, QUIZ -> progress.setReadingScore(Math.min(100, progress.getReadingScore() + 10));
+            }
+        } else {
+            // Giảm nhẹ điểm nếu sai để học lại
+            switch (mode) {
+                case LISTEN -> progress.setListeningScore(Math.max(0, progress.getListeningScore() - 5));
+                case WRITE -> progress.setWritingScore(Math.max(0, progress.getWritingScore() - 10));
+                case FLASHCARD, QUIZ -> progress.setReadingScore(Math.max(0, progress.getReadingScore() - 5));
+            }
+        }
+
+        // Tính lại Mastery Level (0-100) dựa trên trung bình cộng các kỹ năng
+        int totalMastery = (progress.getListeningScore() + progress.getWritingScore() + progress.getReadingScore()) / 3;
+        progress.setMasteryLevel(Math.min(100, totalMastery));
+
+        // Chuyển đổi kết quả sang ReviewGrade của SRS
+        ReviewGrade grade = success ? ReviewGrade.GOOD : ReviewGrade.AGAIN;
+        
+        // Nếu gõ chuẩn hoặc làm trắc nghiệm đúng khi điểm cao, coi như EASY
+        if (success && (mode == StudyMode.WRITE || mode == StudyMode.QUIZ) && totalMastery > 70) {
+            grade = ReviewGrade.EASY;
+        }
+
+        applyGrade(progress, grade, now);
+    }
 
     public void applyGrade(UserVocabProgress progress, ReviewGrade grade, LocalDateTime now) {
         int currentInterval = Math.max(progress.getIntervalDays(), 0);
@@ -82,4 +117,3 @@ public class SrsGradingService {
         return Math.max(MIN_EASE_FACTOR, Math.min(MAX_EASE_FACTOR, value));
     }
 }
-

@@ -1,13 +1,16 @@
 package com.example.learningApp.dto.request.vocab;
 
+import com.example.learningApp.enums.StudyMode;
+import lombok.*;
 
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter
-@Setter
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class MarkVocabRequest {
-        private boolean remembered; // true = thuộc, false = chưa thuộc
     private String vocabId;
+    private boolean remembered; 
+    
+    @Builder.Default
+    private StudyMode studyMode = StudyMode.FLASHCARD;
 }
-

@@ -28,7 +28,11 @@ public interface UserVocabProgressRepository extends JpaRepository<UserVocabProg
 
     List<UserVocabProgress> findByStatusAndLastReviewedAtLessThanEqual(
             LearningStatus status,
-            LocalDateTime time
-    );
-}
+            LocalDateTime time);
 
+    List<UserVocabProgress> findAllByNextReviewAtBetween(LocalDateTime start, LocalDateTime end);
+
+    List<UserVocabProgress> findAllByNextReviewAtBefore(LocalDateTime time);
+
+    void deleteByUserAndVocab(User user, Vocab vocab);
+}

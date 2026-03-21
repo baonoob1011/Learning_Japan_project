@@ -17,7 +17,9 @@ public class ReviewWordItemResponse {
     private ReviewQueueType type;
     private LearningStatus status;
     private int lapseCount;
+    private int intervalDays;
     private LocalDateTime nextReviewAt;
     private boolean completed;
 }
+
 

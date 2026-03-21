@@ -141,8 +141,10 @@ public class ReviewSessionService {
             if (p.getNextReviewAt() == null || p.getNextReviewAt().isAfter(now)) {
                 continue;
             }
-            if (p.getNextReviewAt().isBefore(start)) overdueCount++;
-            else dueCount++;
+            if (p.getNextReviewAt().isBefore(start))
+                overdueCount++;
+            else
+                dueCount++;
         }
 
         Map<String, Integer> stats = new HashMap<>();
@@ -193,15 +195,15 @@ public class ReviewSessionService {
                 newWords,
                 maxReviewPerDay,
                 maxNewPerDay,
-                maxOverduePerDay
-        );
+                maxOverduePerDay);
 
         ReviewSession session = ReviewSession.builder()
                 .user(user)
                 .date(date)
                 .status(queueEntries.isEmpty() ? ReviewSessionStatus.COMPLETED : ReviewSessionStatus.PENDING)
                 .dueCount((int) queueEntries.stream().filter(e -> e.type() == ReviewQueueType.DUE_TODAY).count())
-                .overdueInjectedCount((int) queueEntries.stream().filter(e -> e.type() == ReviewQueueType.OVERDUE).count())
+                .overdueInjectedCount(
+                        (int) queueEntries.stream().filter(e -> e.type() == ReviewQueueType.OVERDUE).count())
                 .newCount((int) queueEntries.stream().filter(e -> e.type() == ReviewQueueType.NEW).count())
                 .totalCount(queueEntries.size())
                 .build();
@@ -225,9 +227,9 @@ public class ReviewSessionService {
         if (session.getTotalCount() <= 0) {
             return;
         }
-        String content = "Hom nay ban co " + session.getDueCount() + " tu den han on";
+        String content = "Hôm nay bạn có " + session.getDueCount() + " từ đến hạn ôn";
         if (session.getOverdueInjectedCount() > 0) {
-            content += " va " + session.getOverdueInjectedCount() + " tu qua han da duoc chon de on dan.";
+            content += " và " + session.getOverdueInjectedCount() + " từ quá hạn đã được chọn để ôn dần.";
         } else {
             content += ".";
         }
@@ -238,11 +240,10 @@ public class ReviewSessionService {
                 + "}";
         notificationService.create(
                 user,
-                "Phien on hom nay da san sang",
+                "Phiên ôn hôm nay đã sẵn sàng",
                 content,
                 NotificationType.REVIEW_REMINDER,
-                metadata
-        );
+                metadata);
     }
 
     private void ensureProgressRows(User user) {
@@ -276,10 +277,30 @@ public class ReviewSessionService {
     }
 
     private TodayReviewQueueResponse toTodayQueueResponse(ReviewSession session) {
-        List<ReviewWordItemResponse> queue = sessionItemRepository.findBySession_IdOrderByOrderIndexAsc(session.getId())
-                .stream()
-                .map(item -> toQueueItemResponse(item.getWordProgress(), item.getQueueType(), item.isCompleted()))
-                .toList();
+        List<ReviewWordItemResponse> queue = new ArrayList<>();
+        boolean changed = false;
+
+        for (ReviewSessionItem item : sessionItemRepository.findBySession_IdOrderByOrderIndexAsc(session.getId())) {
+            String progressId = item.getWordProgress() == null ? null : item.getWordProgress().getId();
+            if (progressId == null) {
+                sessionItemRepository.delete(item);
+                changed = true;
+                continue;
+            }
+
+            Optional<UserVocabProgress> progressOpt = progressRepository.findById(progressId);
+            if (progressOpt.isEmpty()) {
+                sessionItemRepository.delete(item);
+                changed = true;
+                continue;
+            }
+
+            queue.add(toQueueItemResponse(progressOpt.get(), item.getQueueType(), item.isCompleted()));
+        }
+
+        if (changed) {
+            refreshSessionCounters(session, queue);
+        }
 
         long totalOverduePool = progressRepository.findByUser(session.getUser()).stream()
                 .filter(p -> p.getStatus() != LearningStatus.NEW)
@@ -289,7 +310,7 @@ public class ReviewSessionService {
 
         String recoveryMessage = null;
         if (totalOverduePool > session.getOverdueInjectedCount()) {
-            recoveryMessage = "Ban dang co nhieu tu cho on, hom nay minh chon ra nhung tu uu tien nhat de ban bat nhip lai.";
+            recoveryMessage = "Bạn đang có nhiều từ chờ ôn, hôm nay mình chọn ra những từ ưu tiên nhất để bạn bắt nhịp lại.";
         }
 
         TodayReviewSummaryResponse summary = TodayReviewSummaryResponse.builder()
@@ -307,7 +328,20 @@ public class ReviewSessionService {
                 .build();
     }
 
-    private ReviewWordItemResponse toQueueItemResponse(UserVocabProgress progress, ReviewQueueType type, boolean completed) {
+    private void refreshSessionCounters(ReviewSession session, List<ReviewWordItemResponse> queue) {
+        session.setDueCount((int) queue.stream().filter(q -> q.getType() == ReviewQueueType.DUE_TODAY).count());
+        session.setOverdueInjectedCount(
+                (int) queue.stream().filter(q -> q.getType() == ReviewQueueType.OVERDUE).count());
+        session.setNewCount((int) queue.stream().filter(q -> q.getType() == ReviewQueueType.NEW).count());
+        session.setTotalCount(queue.size());
+        if (queue.isEmpty()) {
+            session.setStatus(ReviewSessionStatus.COMPLETED);
+        }
+        sessionRepository.save(session);
+    }
+
+    private ReviewWordItemResponse toQueueItemResponse(UserVocabProgress progress, ReviewQueueType type,
+            boolean completed) {
         return ReviewWordItemResponse.builder()
                 .wordProgressId(progress.getId())
                 .vocabId(progress.getVocab().getId())
@@ -316,6 +350,7 @@ public class ReviewSessionService {
                 .type(type)
                 .status(progress.getStatus())
                 .lapseCount(progress.getLapseCount())
+                .intervalDays(progress.getIntervalDays())
                 .nextReviewAt(progress.getNextReviewAt())
                 .completed(completed)
                 .build();
@@ -333,4 +368,3 @@ public class ReviewSessionService {
                 .build();
     }
 }
-

@@ -53,6 +53,9 @@ public class User {
         @Column(name = "last_vocab_reminder_date")
         private LocalDate lastVocabReminderDate;
 
+        @Column(name = "last_reminder_sent_at")
+        private LocalDateTime lastReminderSentAt;
+
         @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
         @Builder.Default
         Set<UserVideoTracking> videoTrackings = new HashSet<>();
