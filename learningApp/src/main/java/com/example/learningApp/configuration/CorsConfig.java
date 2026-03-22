@@ -23,7 +23,7 @@ public class CorsConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        System.out.println("[CORS_CONFIG_VER_22_MAR] Initializing CORS with specific origins...");
+        System.out.println("[CORS_CONFIG_VER_V3_22_MAR] Initializing CORS...");
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(ALLOWED_ORIGINS);
         config.setAllowedOriginPatterns(ALLOWED_ORIGIN_PATTERNS);

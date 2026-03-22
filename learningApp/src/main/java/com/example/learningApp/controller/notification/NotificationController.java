@@ -23,36 +23,35 @@ import java.util.Map;
 public class NotificationController {
 
     private static final Logger log = LoggerFactory.getLogger(NotificationController.class);
-    private static final String DEPLOY_MARKER = "UNREAD_COUNT_V2_2026-03-22";
+    private static final String DEPLOY_MARKER = "UNREAD_COUNT_V3_FIX_GET_2026-03-22";
 
     NotificationService notificationService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<NotificationResponse>>> getMyNotifications(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
+            @RequestParam(defaultValue = "10") int size) {
         PageResponse<NotificationResponse> res = notificationService.getNotifications(
-                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
-        );
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
 
         return ResponseEntity.ok(ApiResponse.success("Get notifications success", res));
     }
 
-    @RequestMapping(value = {"/unread-count", "/unread-count/"}, method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = { "/unread-count", "/unread-count/" }, method = { RequestMethod.GET, RequestMethod.POST })
     public ResponseEntity<ApiResponse<Map<String, Long>>> getUnreadCount() {
         log.warn("[{}] hit /api/v1/notifications/unread-count", DEPLOY_MARKER);
         System.out.println(">>> " + DEPLOY_MARKER + " | NotificationController#getUnreadCount called");
-        return ResponseEntity.ok(ApiResponse.success("Unread count fetched", Map.of("unreadCount", notificationService.getUnreadCount())));
+        return ResponseEntity.ok(ApiResponse.success("Unread count fetched",
+                Map.of("unreadCount", notificationService.getUnreadCount())));
     }
 
-    @RequestMapping(value = "/{id}/read", method = {RequestMethod.PUT, RequestMethod.POST})
+    @RequestMapping(value = "/{id}/read", method = { RequestMethod.PUT, RequestMethod.POST })
     public ResponseEntity<ApiResponse<Void>> markAsRead(@PathVariable String id) {
         notificationService.markAsRead(id);
         return ResponseEntity.ok(ApiResponse.success("Notification marked as read", null));
     }
 
-    @RequestMapping(value = "/read-all", method = {RequestMethod.PUT, RequestMethod.POST})
+    @RequestMapping(value = "/read-all", method = { RequestMethod.PUT, RequestMethod.POST })
     public ResponseEntity<ApiResponse<Void>> markAllAsRead() {
         notificationService.markAllAsRead();
         return ResponseEntity.ok(ApiResponse.success("All notifications marked as read", null));
@@ -70,4 +69,3 @@ public class NotificationController {
         return ResponseEntity.ok(ApiResponse.success("Notification deleted", null));
     }
 }
-

@@ -81,7 +81,10 @@ services:
   # 🚀 Backend Application (Learning App)
   ##################################################
   learning-app:
-    image: baonoob1011/learning-app:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: learning-app:local
     container_name: learning-app
     ports:
       - "8080:8080"

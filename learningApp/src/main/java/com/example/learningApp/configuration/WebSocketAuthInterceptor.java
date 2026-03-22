@@ -26,7 +26,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
         if (accessor != null) {
 
-            System.out.println("[WS_MARKER_2026_03_22] Intercepting CONNECT");
+            System.out.println("[WS_MARKER_V3_2026_03_22] Intercepting CONNECT");
             if (StompCommand.CONNECT.equals(accessor.getCommand())) {
 
                 String authHeader = accessor.getFirstNativeHeader("Authorization");
