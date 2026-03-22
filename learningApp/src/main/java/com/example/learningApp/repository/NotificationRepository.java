@@ -21,7 +21,8 @@ public interface NotificationRepository extends JpaRepository<Notification, Stri
 
     boolean existsByUserAndTitleContainingAndReadFalse(User user, String titlePart);
 
-    long countByUserAndReadFalse(User user);
+    @Query("SELECT COUNT(n) FROM Notification n WHERE n.user = :user AND n.isRead = false")
+    long countByUserAndReadFalse(@Param("user") User user);
 
     @Modifying
     @Query("""

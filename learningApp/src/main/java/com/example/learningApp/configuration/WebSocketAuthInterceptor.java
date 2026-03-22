@@ -22,11 +22,11 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
 
-        StompHeaderAccessor accessor =
-                MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+        StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
         if (accessor != null) {
 
+            System.out.println("[WS_MARKER_2026_03_22] Intercepting CONNECT");
             if (StompCommand.CONNECT.equals(accessor.getCommand())) {
 
                 String authHeader = accessor.getFirstNativeHeader("Authorization");
@@ -39,12 +39,10 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
                     String userId = jwt.getSubject();
 
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(
-                                    userId,
-                                    null,
-                                    List.of()
-                            );
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            userId,
+                            null,
+                            List.of());
 
                     accessor.setUser(authentication);
                 }
@@ -59,4 +57,3 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
         return message;
     }
 }
-

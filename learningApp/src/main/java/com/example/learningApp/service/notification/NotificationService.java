@@ -68,7 +68,10 @@ public class NotificationService {
 
     public long getUnreadCount() {
         User user = finder.userById();
-        return repo.countByUserAndReadFalse(user);
+        long count = repo.countByUserAndReadFalse(user);
+        System.out.println(
+                "[NEW_CODE_VER_12:45] Fetching unread count for user: " + user.getUsername() + ", Result: " + count);
+        return count;
     }
 
     public void delete(String notificationId) {
