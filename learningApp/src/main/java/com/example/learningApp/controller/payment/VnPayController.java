@@ -19,10 +19,19 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/payments")
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class VnPayController {
 
     VnPayService vnPayService;
+    String frontendUrl;
+
+    public VnPayController(
+            VnPayService vnPayService,
+            @Value("${app.frontend-url:http://localhost:3000}") String frontendUrl
+    ) {
+        this.vnPayService = vnPayService;
+        this.frontendUrl = frontendUrl;
+    }
 
     /* ===================== CREATE ===================== */
 
@@ -59,8 +68,8 @@ public class VnPayController {
         OrderSuccessResponse order =
                 vnPayService.handleVnPayReturn(params);
 
-        // Redirect về FE kèm orderId
-        String redirectUrl = "http://localhost:3000/video";
+        // Redirect về FE đúng trang Video của nibojapan.cloud
+        String redirectUrl = frontendUrl + "/video";
 
         response.sendRedirect(redirectUrl);
     }

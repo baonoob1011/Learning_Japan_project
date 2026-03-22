@@ -90,7 +90,7 @@ public class VnPayService {
         vnp_Params.put("vnp_OrderType", "other");
         vnp_Params.put("vnp_Locale", "vn");
         vnp_Params.put("vnp_ReturnUrl", vnp_ReturnUrl);
-        vnp_Params.put("vnp_IpAddr", "127.0.0.1");
+        vnp_Params.put("vnp_IpAddr", "1.1.1.1"); // Or get from request
 
         String vnp_CreateDate =
                 new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
