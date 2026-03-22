@@ -15,29 +15,29 @@ public interface SystemLogRepository extends JpaRepository<SystemLog, String> {
             value = """
                     SELECT *
                     FROM system_logs s
-                    WHERE (:keyword IS NULL OR :keyword = '' OR
-                           CAST(s.target_class AS TEXT) ILIKE CONCAT('%', :keyword, '%') OR
-                           CAST(s.method_name AS TEXT) ILIKE CONCAT('%', :keyword, '%') OR
-                           CAST(COALESCE(s.error_message, '') AS TEXT) ILIKE CONCAT('%', :keyword, '%'))
-                      AND (:username IS NULL OR :username = '' OR
-                           CAST(COALESCE(s.username, '') AS TEXT) ILIKE CONCAT('%', :username, '%'))
-                      AND (:status IS NULL OR :status = '' OR CAST(s.status AS TEXT) = :status)
-                      AND (:fromTime IS NULL OR s.created_at >= :fromTime)
-                      AND (:toTime IS NULL OR s.created_at <= :toTime)
+                    WHERE (COALESCE(CAST(:keyword AS TEXT), '') = '' OR
+                           CAST(s.target_class AS TEXT) ILIKE CONCAT('%', CAST(:keyword AS TEXT), '%') OR
+                           CAST(s.method_name AS TEXT) ILIKE CONCAT('%', CAST(:keyword AS TEXT), '%') OR
+                           CAST(COALESCE(s.error_message, '') AS TEXT) ILIKE CONCAT('%', CAST(:keyword AS TEXT), '%'))
+                      AND (COALESCE(CAST(:username AS TEXT), '') = '' OR
+                           CAST(COALESCE(s.username, '') AS TEXT) ILIKE CONCAT('%', CAST(:username AS TEXT), '%'))
+                      AND (COALESCE(CAST(:status AS TEXT), '') = '' OR CAST(s.status AS TEXT) = CAST(:status AS TEXT))
+                      AND (CAST(:fromTime AS TIMESTAMP) IS NULL OR s.created_at >= CAST(:fromTime AS TIMESTAMP))
+                      AND (CAST(:toTime AS TIMESTAMP) IS NULL OR s.created_at <= CAST(:toTime AS TIMESTAMP))
                     ORDER BY s.created_at DESC
                     """,
             countQuery = """
                     SELECT COUNT(1)
                     FROM system_logs s
-                    WHERE (:keyword IS NULL OR :keyword = '' OR
-                           CAST(s.target_class AS TEXT) ILIKE CONCAT('%', :keyword, '%') OR
-                           CAST(s.method_name AS TEXT) ILIKE CONCAT('%', :keyword, '%') OR
-                           CAST(COALESCE(s.error_message, '') AS TEXT) ILIKE CONCAT('%', :keyword, '%'))
-                      AND (:username IS NULL OR :username = '' OR
-                           CAST(COALESCE(s.username, '') AS TEXT) ILIKE CONCAT('%', :username, '%'))
-                      AND (:status IS NULL OR :status = '' OR CAST(s.status AS TEXT) = :status)
-                      AND (:fromTime IS NULL OR s.created_at >= :fromTime)
-                      AND (:toTime IS NULL OR s.created_at <= :toTime)
+                    WHERE (COALESCE(CAST(:keyword AS TEXT), '') = '' OR
+                           CAST(s.target_class AS TEXT) ILIKE CONCAT('%', CAST(:keyword AS TEXT), '%') OR
+                           CAST(s.method_name AS TEXT) ILIKE CONCAT('%', CAST(:keyword AS TEXT), '%') OR
+                           CAST(COALESCE(s.error_message, '') AS TEXT) ILIKE CONCAT('%', CAST(:keyword AS TEXT), '%'))
+                      AND (COALESCE(CAST(:username AS TEXT), '') = '' OR
+                           CAST(COALESCE(s.username, '') AS TEXT) ILIKE CONCAT('%', CAST(:username AS TEXT), '%'))
+                      AND (COALESCE(CAST(:status AS TEXT), '') = '' OR CAST(s.status AS TEXT) = CAST(:status AS TEXT))
+                      AND (CAST(:fromTime AS TIMESTAMP) IS NULL OR s.created_at >= CAST(:fromTime AS TIMESTAMP))
+                      AND (CAST(:toTime AS TIMESTAMP) IS NULL OR s.created_at <= CAST(:toTime AS TIMESTAMP))
                     """,
             nativeQuery = true
     )
