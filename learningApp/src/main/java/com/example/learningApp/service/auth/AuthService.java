@@ -143,14 +143,25 @@ public class AuthService {
                 throw new RuntimeException("Invalid login credentials");
             }
 
-            // Lấy Access Token để lấy userId (sub)
+            // 1. Force Global Sign Out (Kick all other devices out of Cognito)
+            try {
+                cognitoClient.adminUserGlobalSignOut(AdminUserGlobalSignOutRequest.builder()
+                        .userPoolId(userPoolId)
+                        .username(email)
+                        .build());
+                log.info("[AUTH] Global sign-out performed for user {}", email);
+            } catch (Exception e) {
+                log.warn("Global sign-out failed or user was already signed out: {}", e.getMessage());
+            }
+
+            // 2. Get the new Access Token from Cognito Response
             String accessToken = response.authenticationResult().accessToken();
 
-            // Tìm userId từ email đã login (hoặc lấy từ Cognito response nếu có thể)
+            // 3. Find userId in DB to map to Redis
             User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User profile not found in database"));
 
-            // 🔥 [SINGLE SESSION] Force logout existing device and create new SessionId
+            // 4. [SINGLE SESSION] Overwrite Redis with new SessionId
             String sessionId = sessionService.initNewSession(user.getId(), deviceInfo, ipAddress);
 
             return UserLoginResponse.builder()

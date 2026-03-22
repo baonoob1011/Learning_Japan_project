@@ -24,8 +24,9 @@ public class SingleSessionFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        // Skip non-API requests (if any)
-        if (!request.getRequestURI().startsWith("/api/")) {
+        // Skip non-API requests or specific Auth endpoints (Login, Init Session)
+        String path = request.getRequestURI();
+        if (!path.startsWith("/api/") || path.contains("/auth/login") || path.contains("/auth/session/init")) {
             filterChain.doFilter(request, response);
             return;
         }
