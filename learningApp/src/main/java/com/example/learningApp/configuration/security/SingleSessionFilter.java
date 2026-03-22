@@ -44,14 +44,18 @@ public class SingleSessionFilter extends OncePerRequestFilter {
                 // KHỚP
                 if (sessionId == null || !sessionService.isSessionValid(userId, sessionId)) {
                     log.warn(
-                            "[AUTH_SESSION_REJECT] User {} session is invalid (Header SID={}). Reason: Active session found in Redis of this user.",
+                            "[AUTH_SESSION_DEBUG] User {} session is invalid (Header SID={}). SHOULD BE 401 but skipping for now.",
                             userId, sessionId);
 
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.setContentType("application/json; charset=UTF-8");
-                    response.getWriter()
-                            .write("{\"code\": 401, \"message\": \"Session invalidated by another login.\"}");
-                    return;
+                    // Tạm thời comment code chặn để bạn có thể truy cập
+                    /*
+                     * response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                     * response.setContentType("application/json; charset=UTF-8");
+                     * response.getWriter().
+                     * write("{\"code\": 401, \"message\": \"Session invalidated by another login.\"}"
+                     * );
+                     * return;
+                     */
                 }
             } else {
                 // Nếu CHƯA có session trong Redis (User cũ chưa login lại), tạm thời cho qua
