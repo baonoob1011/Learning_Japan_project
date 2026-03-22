@@ -17,6 +17,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
@@ -36,7 +37,9 @@ public class AuthService {
     UserMapper userMapper;
     RoleService roleService;
     ChatRoomCommandService chatRoomCommandService;
-    SessionService sessionService; // <--- Tích hợp SessionService để xử lý Single Session
+    SessionService sessionService;
+    SimpMessagingTemplate messagingTemplate; // <--- Dùng để bắn tín hiệu đá người dùng ngay lập tức
+    // <--- Tích hợp SessionService để xử lý Single Session
 
     @NonFinal
     @Value("${aws.cognito.client-id}")
@@ -163,6 +166,15 @@ public class AuthService {
 
             // 4. [SINGLE SESSION] Overwrite Redis with new SessionId
             String sessionId = sessionService.initNewSession(user.getId(), deviceInfo, ipAddress);
+
+            // 🔥 [INSTANT KICK OUT] Bắn tín hiệu qua WebSocket tới thiết bị A ngay lập tức
+            try {
+                messagingTemplate.convertAndSend("/topic/user/" + user.getId() + "/kick-out",
+                        "ALREADY_LOGGED_IN_ANOTHER_DEVICE");
+                log.info("[AUTH] Kick-out signal sent to user {}", user.getId());
+            } catch (Exception wsEx) {
+                log.warn("Failed to send WebSocket kick-out: {}", wsEx.getMessage());
+            }
 
             return UserLoginResponse.builder()
                     .accessToken(accessToken)
