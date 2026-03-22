@@ -19,19 +19,18 @@ public interface NotificationRepository extends JpaRepository<Notification, Stri
 
     boolean existsByUserAndTitleContainingAndCreatedAtAfter(User user, String titlePart, LocalDateTime after);
 
-    boolean existsByUserAndTitleContainingAndIsReadFalse(User user, String titlePart);
+    boolean existsByUserAndTitleContainingAndReadFalse(User user, String titlePart);
 
-    long countByUserAndIsReadFalse(User user);
+    long countByUserAndReadFalse(User user);
 
     @Modifying
     @Query("""
-        update Notification n
-        set n.isRead = true
-        where n.user = :user and n.isRead = false
-    """)
+                update Notification n
+                set n.isRead = true
+                where n.user = :user and n.isRead = false
+            """)
     void markAllAsReadByUser(@Param("user") User user);
 
     @Modifying
     void deleteAllByUser(User user);
 }
-

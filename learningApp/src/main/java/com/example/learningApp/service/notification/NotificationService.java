@@ -68,7 +68,7 @@ public class NotificationService {
 
     public long getUnreadCount() {
         User user = finder.userById();
-        return repo.countByUserAndIsReadFalse(user);
+        return repo.countByUserAndReadFalse(user);
     }
 
     public void delete(String notificationId) {
@@ -83,4 +83,3 @@ public class NotificationService {
         repo.deleteAllByUser(user);
     }
 }
-
