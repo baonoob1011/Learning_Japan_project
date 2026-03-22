@@ -42,6 +42,27 @@ public class LoggingAspect {
     private final LogService logService;
     private final ObjectMapper objectMapper;
 
+    /**
+     * Only keep important entry-point flows at controller level.
+     * We intentionally skip service-level logs to avoid duplicate/noisy logs.
+     */
+    private static final Set<String> MAINFLOW_METHOD_PREFIXES = Set.of(
+            "login", "logout", "refresh", "register",
+            "create", "save", "upload", "submit", "start",
+            "mark", "finalize", "attempt", "grade",
+            "purchase", "confirm", "forgot", "run",
+            "check", "translate", "generate"
+    );
+
+    private static final Set<String> MAINFLOW_METHOD_NAMES = Set.of(
+            "getTodaySession",
+            "getTodayReviews",
+            "getMyVocabProgress",
+            "getOverallProgress",
+            "finalizeSmartWord",
+            "attemptSmartSkill"
+    );
+
     @Pointcut("execution(* com.example.learningApp.controller..*(..))")
     public void controllerPackage() {
     }
@@ -61,6 +82,11 @@ public class LoggingAspect {
         String ipAddress = extractIpAddress();
         String targetClass = joinPoint.getSignature().getDeclaringTypeName();
         String methodName = joinPoint.getSignature().getName();
+
+        if (!shouldLogMainFlow(targetClass, methodName)) {
+            return joinPoint.proceed();
+        }
+
         String argsJson = serializeArguments(joinPoint.getArgs());
 
         try {
@@ -227,5 +253,35 @@ public class LoggingAspect {
             return message;
         }
         return message.substring(0, 4000);
+    }
+
+    private boolean shouldLogMainFlow(String targetClass, String methodName) {
+        if (targetClass == null || methodName == null) {
+            return false;
+        }
+
+        // Log only controller entry-points (skip service-level duplicate logs).
+        if (!targetClass.contains(".controller.")) {
+            return false;
+        }
+
+        // Never log the log-view endpoint itself (self-referential noise).
+        if ("com.example.learningApp.controller.logging.AdminSystemLogController".equals(targetClass)) {
+            return false;
+        }
+
+        // Skip high-frequency polling notification endpoints.
+        if ("com.example.learningApp.controller.notification.NotificationController".equals(targetClass)
+                && ("getUnreadCount".equals(methodName) || "getMyNotifications".equals(methodName))) {
+            return false;
+        }
+
+        String lowerMethod = methodName.toLowerCase(Locale.ROOT);
+        for (String prefix : MAINFLOW_METHOD_PREFIXES) {
+            if (lowerMethod.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return MAINFLOW_METHOD_NAMES.contains(methodName);
     }
 }

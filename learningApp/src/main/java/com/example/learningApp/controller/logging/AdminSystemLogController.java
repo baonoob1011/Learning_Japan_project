@@ -12,6 +12,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -36,17 +38,21 @@ public class AdminSystemLogController {
             @RequestParam(required = false) String username,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromTime,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toTime
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toTime,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to
     ) {
         int safePage = Math.max(page, 1) - 1;
         int safeSize = Math.max(size, 1);
+        LocalDateTime effectiveFrom = fromTime != null ? fromTime : from;
+        LocalDateTime effectiveTo = toTime != null ? toTime : to;
 
         Page<SystemLog> logs = systemLogRepository.searchLogs(
                 normalize(keyword),
                 normalize(username),
                 normalize(status),
-                fromTime,
-                toTime,
+                effectiveFrom,
+                effectiveTo,
                 PageRequest.of(safePage, safeSize)
         );
 
@@ -68,5 +74,11 @@ public class AdminSystemLogController {
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }
-}
 
+    @DeleteMapping("/all")
+    @Transactional
+    public ResponseEntity<ApiResponse<Integer>> deleteAllSystemLogs() {
+        int deleted = systemLogRepository.deleteAllLogs();
+        return ResponseEntity.ok(ApiResponse.success("Deleted all system logs", deleted));
+    }
+}
