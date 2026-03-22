@@ -70,7 +70,9 @@ public class NotificationService {
         User user = finder.userById();
         long count = repo.countByUserAndReadFalse(user);
         System.out.println(
-                "[NEW_CODE_VER_12:45] Fetching unread count for user: " + user.getUsername() + ", Result: " + count);
+                "[NEW_CODE_VER_12:45] Fetching unread count for userId: " + user.getId()
+                        + ", email: " + user.getEmail()
+                        + ", Result: " + count);
         return count;
     }
 
