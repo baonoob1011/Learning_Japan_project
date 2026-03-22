@@ -8,6 +8,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,14 +21,18 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/payments")
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@Slf4j
 public class VnPayController {
 
         final VnPayService vnPayService;
         final String frontendUrl;
 
+        @Autowired
         public VnPayController(
                         VnPayService vnPayService,
                         @Value("${app.frontend-url:https://nibojapan.cloud}") String frontendUrl) {
+                log.info("🚀 VnPayController initialized with: vnPayService={}, frontendUrl={}", vnPayService,
+                                frontendUrl);
                 this.vnPayService = vnPayService;
                 this.frontendUrl = frontendUrl;
         }
