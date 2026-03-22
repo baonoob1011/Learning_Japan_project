@@ -23,17 +23,10 @@ import java.util.*;
 @Slf4j
 public class VnPayService {
 
-    @Value("${vnpay.tmn-code}")
-    private String vnp_TmnCode;
-
-    @Value("${vnpay.hash-secret}")
-    private String vnp_HashSecret;
-
-    @Value("${vnpay.pay-url}")
-    private String vnp_PayUrl;
-
-    @Value("${vnpay.return-url}")
-    private String vnp_ReturnUrl;
+    private String vnp_TmnCode = "CQVYBQ01";
+    private String vnp_HashSecret = "SU5YJCMYR3QTJ8QF401YLVI6BNMKI2L1";
+    private String vnp_PayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
+    private String vnp_ReturnUrl = "https://api.nibojapan.cloud/api/v1/payments/vnpay/return";
     private final OrderService orderService;
     private final EntityFinder finder;
 
