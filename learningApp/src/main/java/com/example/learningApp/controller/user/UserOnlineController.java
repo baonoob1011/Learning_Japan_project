@@ -1,4 +1,4 @@
-package com.example.learningApp.controller;
+package com.example.learningApp.controller.user;
 
 import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.listener.WebSocketEventListener;
