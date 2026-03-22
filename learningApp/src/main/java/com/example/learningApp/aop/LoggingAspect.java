@@ -45,10 +45,6 @@ public class LoggingAspect {
     private final ObjectMapper objectMapper;
     private final UserRepository userRepository;
 
-    /**
-     * Only keep important entry-point flows at controller level.
-     * We intentionally skip service-level logs to avoid duplicate/noisy logs.
-     */
     private static final Set<String> MAINFLOW_METHOD_PREFIXES = Set.of(
             "login", "logout", "refresh", "register",
             "create", "save", "upload", "submit", "start",
@@ -81,7 +77,13 @@ public class LoggingAspect {
     @Around("(controllerPackage() || servicePackage()) && !noLogPointcut() && !execution(* com.example.learningApp.service.logging..*(..))")
     public Object logActivity(ProceedingJoinPoint joinPoint) throws Throwable {
         long startedAt = System.currentTimeMillis();
-        String username = extractUsername();
+        
+        // 🛡️ Lấy thông tin user hiện tại
+        User currentUser = extractCurrentUser();
+        String username = (currentUser != null) ? currentUser.getEmail() : "Người dùng ẩn danh";
+        String userFullName = (currentUser != null) ? currentUser.getFullName() : null;
+        String userAvatar = (currentUser != null) ? currentUser.getAvatar() : null;
+
         String ipAddress = extractIpAddress();
         String targetClass = joinPoint.getSignature().getDeclaringTypeName();
         String methodName = joinPoint.getSignature().getName();
@@ -98,6 +100,8 @@ public class LoggingAspect {
 
             SystemLog systemLog = new SystemLog();
             systemLog.setUsername(username);
+            systemLog.setUserFullName(userFullName);
+            systemLog.setUserAvatar(userAvatar);
             systemLog.setIpAddress(ipAddress);
             systemLog.setTargetClass(targetClass);
             systemLog.setMethodName(methodName);
@@ -114,6 +118,8 @@ public class LoggingAspect {
 
             SystemLog systemLog = new SystemLog();
             systemLog.setUsername(username);
+            systemLog.setUserFullName(userFullName);
+            systemLog.setUserAvatar(userAvatar);
             systemLog.setIpAddress(ipAddress);
             systemLog.setTargetClass(targetClass);
             systemLog.setMethodName(methodName);
@@ -128,54 +134,32 @@ public class LoggingAspect {
         }
     }
 
-    private String extractUsername() {
+    private User extractCurrentUser() {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth == null || !auth.isAuthenticated()) {
-                return "Người dùng ẩn danh";
+            if (auth == null || !auth.isAuthenticated() || "anonymousUser".equalsIgnoreCase(auth.getName())) {
+                return null;
             }
-            String name = auth.getName();
-            if (name == null || name.isBlank()) {
-                return "Người dùng ẩn danh";
+            String principalName = auth.getName();
+            
+            // Nếu là UUID (sub từ Cognito), tìm trong DB
+            if (looksLikeUuid(principalName)) {
+                return userRepository.findById(principalName).orElse(null);
             }
-            return resolveDisplayUsername(name);
+            
+            // Nếu là email, tìm theo email
+            if (principalName.contains("@")) {
+                return userRepository.findByEmail(principalName).orElse(null);
+            }
+            
+            return null;
         } catch (Exception ex) {
-            return "Người dùng ẩn danh";
+            return null;
         }
-    }
-
-    private String resolveDisplayUsername(String principalName) {
-        if ("anonymousUser".equalsIgnoreCase(principalName)) {
-            return "Người dùng ẩn danh";
-        }
-
-        if (principalName.contains("@")) {
-            return principalName;
-        }
-
-        if (!looksLikeUuid(principalName)) {
-            return principalName;
-        }
-
-        return userRepository.findById(principalName)
-                .map(this::toDisplayName)
-                .orElse(principalName);
-    }
-
-    private String toDisplayName(User user) {
-        if (user == null) {
-            return "Người dùng không xác định";
-        }
-        if (user.getFullName() != null && !user.getFullName().isBlank()) {
-            return user.getFullName();
-        }
-        if (user.getEmail() != null && !user.getEmail().isBlank()) {
-            return user.getEmail();
-        }
-        return user.getId();
     }
 
     private boolean looksLikeUuid(String value) {
+        if (value == null) return false;
         try {
             UUID.fromString(value);
             return true;
