@@ -96,4 +96,18 @@ public class FriendController {
                 )
         );
     }
+
+    // =========================
+    // UNFRIEND
+    // =========================
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<ApiResponse<Void>> unfriend(
+            @PathVariable String userId) {
+
+        friendService.unfriend(userId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Unfriended successfully", null)
+        );
+    }
 }

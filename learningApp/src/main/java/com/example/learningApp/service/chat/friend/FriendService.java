@@ -192,4 +192,25 @@ public class FriendService {
 
         return Map.of("status", friendship.getStatus().name());
     }
+
+    /**
+     * 💔 Hủy kết bạn
+     */
+    @Transactional
+    public void unfriend(String otherUserId) {
+        User currentUser = finder.userById();
+        User otherUser = finder.userId(otherUserId);
+
+        // Đảm bảo u1.id < u2.id giống như khi lưu
+        User u1 = currentUser.getId().compareTo(otherUser.getId()) < 0 ? currentUser : otherUser;
+        User u2 = u1.equals(currentUser) ? otherUser : currentUser;
+
+        friendshipRepository.findByUser1AndUser2(u1, u2).ifPresent(friendshipRepository::delete);
+        
+        // Gửi tín hiệu để UI cập nhật (tùy chọn)
+        messagingTemplate.convertAndSend("/topic/friend-unfriend/" + currentUser.getId(), 
+            Map.of("targetUserId", otherUserId));
+        messagingTemplate.convertAndSend("/topic/friend-unfriend/" + otherUserId, 
+            Map.of("targetUserId", currentUser.getId()));
+    }
 }
