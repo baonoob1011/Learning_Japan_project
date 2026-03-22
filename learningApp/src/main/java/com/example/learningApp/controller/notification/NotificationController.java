@@ -34,7 +34,7 @@ public class NotificationController {
         return ResponseEntity.ok(ApiResponse.success("Get notifications success", res));
     }
 
-    @GetMapping("/unread-count")
+    @RequestMapping(value = {"/unread-count", "/unread-count/"}, method = {RequestMethod.GET, RequestMethod.POST})
     public ResponseEntity<ApiResponse<Map<String, Long>>> getUnreadCount() {
         return ResponseEntity.ok(ApiResponse.success("Unread count fetched", Map.of("unreadCount", notificationService.getUnreadCount())));
     }
