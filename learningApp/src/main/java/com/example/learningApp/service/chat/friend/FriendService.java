@@ -8,6 +8,7 @@ import com.example.learningApp.dto.response.friend.FriendResponse;
 import com.example.learningApp.entity.Friendship;
 import com.example.learningApp.entity.User;
 import com.example.learningApp.enums.FriendRequestStatus;
+import com.example.learningApp.repository.ChatRoomRepository;
 import com.example.learningApp.repository.FriendshipRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
