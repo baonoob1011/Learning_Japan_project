@@ -82,7 +82,7 @@ public class LoggingAspect {
         User currentUser = extractCurrentUser();
         String username = (currentUser != null) ? currentUser.getEmail() : "Người dùng ẩn danh";
         String userFullName = (currentUser != null) ? currentUser.getFullName() : null;
-        String userAvatar = (currentUser != null) ? currentUser.getAvatar() : null;
+        String userAvatar = (currentUser != null) ? currentUser.getAvatarUrl() : null;
 
         String ipAddress = extractIpAddress();
         String targetClass = joinPoint.getSignature().getDeclaringTypeName();
