@@ -168,9 +168,9 @@ public class AuthService {
             String sessionId = sessionService.initNewSession(user.getId(), deviceInfo, ipAddress);
 
             // 🔥 [INSTANT KICK OUT] Bắn tín hiệu qua WebSocket tới thiết bị A ngay lập tức
+            // Gửi message sessionId mới qua WebSocket để các thiết bị khác tự logout (trừ thiết bị vừa login)
             try {
-                messagingTemplate.convertAndSend("/topic/user/" + user.getId() + "/kick-out",
-                        "ALREADY_LOGGED_IN_ANOTHER_DEVICE");
+                messagingTemplate.convertAndSend("/topic/user/" + user.getId() + "/kick-out", sessionId);
                 log.info("[AUTH] Kick-out signal sent to user {}", user.getId());
             } catch (Exception wsEx) {
                 log.warn("Failed to send WebSocket kick-out: {}", wsEx.getMessage());
