@@ -81,7 +81,7 @@ services:
   # 🚀 Backend Application (Learning App)
   ##################################################
   learning-app:
-    image: baonoob1011/learning-app:latest
+    image: ${APP_IMAGE:-baonoob1011/learning-app:latest}
     container_name: learning-app
     ports:
       - "8080:8080"
