@@ -1,39 +1,33 @@
 # Stage 1: Build the application
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM maven:3.9.9-eclipse-temurin-21-alpine AS builder
 
 WORKDIR /app
 
-# Copy maven wrapper và pom.xml để tải dependencies (cache layer)
-COPY .mvn/ .mvn/
-COPY mvnw pom.xml ./
-# Cấp quyền thực thi cho maven wrapper
-RUN chmod +x mvnw
+# Copy pom.xml first for better build cache
+COPY pom.xml ./
 
-# Tải trước các dependencies để tối ưu thời gian build
-RUN ./mvnw dependency:go-offline
+# Pre-download dependencies
+RUN mvn -B -ntp dependency:go-offline
 
-# Copy toàn bộ source code
+# Copy source code
 COPY src ./src
 
-# Build project (bỏ qua test để tăng tốc độ nếu cần, có thể bỏ -DskipTests)
-RUN ./mvnw clean package -DskipTests
+# Build project
+RUN mvn -B -ntp clean package -DskipTests
 
-# Stage 2: Chạy application (dùng JRE để giảm dung lượng image)
+# Stage 2: Run application (JRE)
 FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
-# Cài đặt ffmpeg và curl (dùng để tải yt-dlp), python3 (yt-dlp dependency)
+# Install runtime tools used by the app
 RUN apk add --no-cache ffmpeg curl python3 && \
-    # Tải yt-dlp bản Linux mới nhất
     curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp && \
     chmod a+rx /usr/local/bin/yt-dlp
 
-# Copy file jar từ stage builder sang
+# Copy built jar from builder stage
 COPY --from=builder /app/target/*.jar app.jar
 
-# Mở port (thường là 8080 cho Spring Boot)
 EXPOSE 8080
 
-# Chạy ứng dụng
 ENTRYPOINT ["java", "-jar", "app.jar"]
