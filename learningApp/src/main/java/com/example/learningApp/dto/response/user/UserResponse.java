@@ -3,6 +3,7 @@ package com.example.learningApp.dto.response.user;
 import com.example.learningApp.enums.JLPTLevel;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -18,5 +19,8 @@ public class UserResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String avatarUrl;
+    private LocalDateTime vipExpiredAt;
+    private Boolean isPremium;
+    private List<String> roles;
 }
 

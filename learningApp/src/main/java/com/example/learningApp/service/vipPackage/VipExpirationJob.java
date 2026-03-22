@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -29,9 +30,8 @@ public class VipExpirationJob {
         LocalDateTime now = LocalDateTime.now();
 
         // 1️⃣ Lấy subscription đã hết hạn nhưng còn active
-        List<VipSubscription> expiredSubs =
-                vipSubscriptionRepository
-                        .findByExpiredDateBeforeAndActiveTrue(now);
+        List<VipSubscription> expiredSubs = vipSubscriptionRepository
+                .findByExpiredDateBeforeAndActiveTrue(now);
 
         if (expiredSubs.isEmpty()) {
             log.info("✅ No expired VIP subscriptions");
@@ -46,9 +46,8 @@ public class VipExpirationJob {
             sub.setActive(false);
 
             // 3️⃣ Kiểm tra user còn subscription active nào không
-            boolean stillHasActiveVip =
-                    vipSubscriptionRepository
-                            .existsByUserIdAndActiveTrue(user.getId());
+            boolean stillHasActiveVip = vipSubscriptionRepository
+                    .existsByUserIdAndActiveTrue(user.getId());
 
             if (!stillHasActiveVip) {
 
@@ -56,8 +55,7 @@ public class VipExpirationJob {
                 roleService.changeUserRole(
                         user.getId(),
                         "USER_VIP",
-                        "USER"
-                );
+                        "USER");
 
                 user.setVipExpiredAt(null);
                 userRepository.save(user);
