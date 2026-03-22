@@ -7,6 +7,8 @@ import com.example.learningApp.service.notification.NotificationService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class NotificationController {
+
+    private static final Logger log = LoggerFactory.getLogger(NotificationController.class);
+    private static final String DEPLOY_MARKER = "UNREAD_COUNT_V2_2026-03-22";
 
     NotificationService notificationService;
 
@@ -36,6 +41,7 @@ public class NotificationController {
 
     @RequestMapping(value = {"/unread-count", "/unread-count/"}, method = {RequestMethod.GET, RequestMethod.POST})
     public ResponseEntity<ApiResponse<Map<String, Long>>> getUnreadCount() {
+        log.warn("[{}] hit /api/v1/notifications/unread-count", DEPLOY_MARKER);
         return ResponseEntity.ok(ApiResponse.success("Unread count fetched", Map.of("unreadCount", notificationService.getUnreadCount())));
     }
 
