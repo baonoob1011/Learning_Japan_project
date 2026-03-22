@@ -1,6 +1,5 @@
 package com.example.learningApp.aop;
 
-import com.example.learningApp.annotation.NoLog;
 import com.example.learningApp.entity.SystemLog;
 import com.example.learningApp.service.logging.LogService;
 import com.fasterxml.jackson.core.JsonProcessingException;
