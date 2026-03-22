@@ -1,6 +1,8 @@
 package com.example.learningApp.aop;
 
+import com.example.learningApp.entity.User;
 import com.example.learningApp.entity.SystemLog;
+import com.example.learningApp.repository.UserRepository;
 import com.example.learningApp.service.logging.LogService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -41,6 +43,7 @@ public class LoggingAspect {
 
     private final LogService logService;
     private final ObjectMapper objectMapper;
+    private final UserRepository userRepository;
 
     /**
      * Only keep important entry-point flows at controller level.
@@ -129,12 +132,55 @@ public class LoggingAspect {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth == null || !auth.isAuthenticated()) {
-                return "ANONYMOUS";
+                return "Người dùng ẩn danh";
             }
             String name = auth.getName();
-            return (name == null || name.isBlank()) ? "ANONYMOUS" : name;
+            if (name == null || name.isBlank()) {
+                return "Người dùng ẩn danh";
+            }
+            return resolveDisplayUsername(name);
         } catch (Exception ex) {
-            return "ANONYMOUS";
+            return "Người dùng ẩn danh";
+        }
+    }
+
+    private String resolveDisplayUsername(String principalName) {
+        if ("anonymousUser".equalsIgnoreCase(principalName)) {
+            return "Người dùng ẩn danh";
+        }
+
+        if (principalName.contains("@")) {
+            return principalName;
+        }
+
+        if (!looksLikeUuid(principalName)) {
+            return principalName;
+        }
+
+        return userRepository.findById(principalName)
+                .map(this::toDisplayName)
+                .orElse(principalName);
+    }
+
+    private String toDisplayName(User user) {
+        if (user == null) {
+            return "Người dùng không xác định";
+        }
+        if (user.getFullName() != null && !user.getFullName().isBlank()) {
+            return user.getFullName();
+        }
+        if (user.getEmail() != null && !user.getEmail().isBlank()) {
+            return user.getEmail();
+        }
+        return user.getId();
+    }
+
+    private boolean looksLikeUuid(String value) {
+        try {
+            UUID.fromString(value);
+            return true;
+        } catch (IllegalArgumentException ex) {
+            return false;
         }
     }
 

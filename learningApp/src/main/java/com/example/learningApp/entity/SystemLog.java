@@ -19,6 +19,12 @@ public class SystemLog {
     @Column(length = 255)
     private String username;
 
+    @Column(length = 255)
+    private String userFullName;
+
+    @Column(columnDefinition = "TEXT")
+    private String userAvatar;
+
     @Column(length = 100)
     private String ipAddress;
 
@@ -53,4 +59,3 @@ public class SystemLog {
         }
     }
 }
-
