@@ -35,18 +35,28 @@ public class SingleSessionFilter extends OncePerRequestFilter {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
         if (auth != null && auth.isAuthenticated()) {
-            String userId = auth.getName(); // Cognito 'sub' usually mapped to name
+            String userId = auth.getName(); // Cognito 'sub'
             String sessionId = request.getHeader("X-Session-ID");
 
-            if (sessionId == null || !sessionService.isSessionValid(userId, sessionId)) {
-                log.warn(
-                        "[AUTH_SESSION_REJECT] User {} session is invalid (SID={}). Reason: Potential multi-device login.",
-                        userId, sessionId);
+            // Kiểm tra xem user này đã "mở" quản lý Single Session trong Redis chưa?
+            if (sessionService.hasActiveSession(userId)) {
+                // Nếu ĐÃ có session trong Redis, thì request GỬI LÊN phải có sessionId và phải
+                // KHỚP
+                if (sessionId == null || !sessionService.isSessionValid(userId, sessionId)) {
+                    log.warn(
+                            "[AUTH_SESSION_REJECT] User {} session is invalid (Header SID={}). Reason: Active session found in Redis of this user.",
+                            userId, sessionId);
 
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json; charset=UTF-8");
-                response.getWriter().write("{\"code\": 401, \"message\": \"Session invalidated by another login.\"}");
-                return;
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json; charset=UTF-8");
+                    response.getWriter()
+                            .write("{\"code\": 401, \"message\": \"Session invalidated by another login.\"}");
+                    return;
+                }
+            } else {
+                // Nếu CHƯA có session trong Redis (User cũ chưa login lại), tạm thời cho qua
+                // log.debug("[AUTH_SESSION_SKIP] User {} has no active session in Redis yet.",
+                // userId);
             }
         }
 

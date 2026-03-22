@@ -60,6 +60,11 @@ public class SessionService {
         return providedSessionId.equals(activeSessionId);
     }
 
+    public boolean hasActiveSession(String userId) {
+        String redisKey = REDIS_KEY_PREFIX + userId;
+        return Boolean.TRUE.equals(redisTemplate.hasKey(redisKey));
+    }
+
     public void logout(String userId) {
         String redisKey = REDIS_KEY_PREFIX + userId;
         redisTemplate.delete(redisKey);
