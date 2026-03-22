@@ -20,6 +20,7 @@ import com.example.learningApp.repository.VipSubscriptionRepository;
 import com.example.learningApp.service.vipPackage.VipPurchaseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -111,6 +112,7 @@ public class OrderService {
         }
         /* ===================== SUCCESS ===================== */
 
+        @Transactional
         public OrderSuccessResponse markOrderSuccess(
                 String orderCode,
                 String transactionNo) {
@@ -190,4 +192,3 @@ public class OrderService {
                 orderRepository.save(order);
         }
 }
-

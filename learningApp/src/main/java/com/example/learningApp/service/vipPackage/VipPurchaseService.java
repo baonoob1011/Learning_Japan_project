@@ -51,13 +51,18 @@ public class VipPurchaseService {
 
         userRepository.save(user);
 
-        // ===== 4️⃣ Change role USER -> USER_VIP =====
+        log.info("🚀 Processing VIP upgrade for user: {}", user.getEmail());
+
+        // ===== 4️⃣ Ensure roles exist and Change role USER -> USER_VIP =====
+        roleService.createRoleIfNotExists("USER");
+        roleService.createRoleIfNotExists("USER_VIP");
+
         roleService.changeUserRole(
                 user.getId(),
                 "USER",
                 "USER_VIP");
 
-        log.info("🔥 User {} upgraded to VIP", user.getEmail());
+        log.info("🔥 User {} upgraded to VIP successfully", user.getEmail());
     }
 }
 

@@ -71,31 +71,47 @@ public class RoleService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("User not found"));
 
-        Role oldRole = roleRepository.findByRoleName(oldRoleName)
-                .orElseThrow(() -> new IllegalStateException("Old role not found"));
-
         Role newRole = roleRepository.findByRoleName(newRoleName)
-                .orElseThrow(() -> new IllegalStateException("New role not found"));
+                .orElseThrow(() -> new IllegalStateException("New role not found: " + newRoleName));
 
-        // ===== 1️⃣ Remove old role in Cognito =====
-        cognitoClient.adminRemoveUserFromGroup(builder -> builder
-                .userPoolId(userPoolId)
-                .username(user.getEmail())
-                .groupName(oldRoleName)
-        );
+        // ===== 1️⃣ Handle old role safely =====
+        Role oldRole = roleRepository.findByRoleName(oldRoleName).orElse(null);
 
-        // ===== 2️⃣ Add new role in Cognito =====
-        cognitoClient.adminAddUserToGroup(builder -> builder
-                .userPoolId(userPoolId)
-                .username(user.getEmail())
-                .groupName(newRoleName)
-        );
+        if (oldRole != null) {
+            // Remove from Cognito (resilient)
+            try {
+                cognitoClient.adminRemoveUserFromGroup(builder -> builder
+                        .userPoolId(userPoolId)
+                        .username(user.getEmail())
+                        .groupName(oldRoleName)
+                );
+            } catch (Exception e) {
+                log.warn("⚠ Could not remove user from Cognito group {}: {}", oldRoleName, e.getMessage());
+            }
+            // Remove from DB
+            user.getRoles().remove(oldRole);
+        }
+
+        // ===== 2️⃣ Add new role in Cognito (resilient) =====
+        try {
+            cognitoClient.adminAddUserToGroup(builder -> builder
+                    .userPoolId(userPoolId)
+                    .username(user.getEmail())
+                    .groupName(newRoleName)
+            );
+        } catch (Exception e) {
+            log.error("❌ Failed to add user to Cognito group {}: {}", newRoleName, e.getMessage());
+            // We keep going so the DB update still happens
+        }
 
         // ===== 3️⃣ Update DB =====
-        user.getRoles().remove(oldRole);
+        if (user.getRoles() == null) {
+            user.setRoles(new HashSet<>());
+        }
         user.getRoles().add(newRole);
 
         userRepository.save(user);
+        log.info("✅ Role changed successfully for user {} to {}", user.getEmail(), newRoleName);
     }
 
     @Transactional
