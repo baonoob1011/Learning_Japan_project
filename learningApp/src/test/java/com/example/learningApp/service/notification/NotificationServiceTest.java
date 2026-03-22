@@ -35,7 +35,7 @@ class NotificationServiceTest {
     void getUnreadCount_shouldReturnRepositoryValue() {
         User user = User.builder().id("u1").build();
         when(finder.userById()).thenReturn(user);
-        when(repo.countByUserAndReadFalse(user)).thenReturn(7L);
+        when(repo.countByUserAndIsReadFalse(user)).thenReturn(7L);
 
         assertEquals(7L, service.getUnreadCount());
     }
