@@ -30,7 +30,7 @@ public class SessionService {
         String newSessionId = UUID.randomUUID().toString();
         String redisKey = REDIS_KEY_PREFIX + userId;
 
-        // 1. Invalidate old sessions in Database (Optional audit)
+        // 1. Invalidate old sessions in Database
         userSessionRepository.deactivateAllSessionsByUserId(userId);
 
         // 2. Save new session to Database
@@ -45,29 +45,21 @@ public class SessionService {
                 .build();
         userSessionRepository.save(session);
 
-        // 3. Store in Redis with TTL (e.g., 1 hour to match Cognito Access Token)
+        // 3. Store in Redis with TTL (1 hour to match Cognito Access Token)
         redisTemplate.opsForValue().set(redisKey, newSessionId, Duration.ofHours(1));
 
         log.info("[AUTH_SESSION] User {} Logged in from device {}. Session ID: {}", userId, deviceInfo, newSessionId);
         return newSessionId;
     }
 
-    /**
-     * Verifies if the session provided is the current active session.
-     */
     public boolean isSessionValid(String userId, String providedSessionId) {
         if (userId == null || providedSessionId == null)
             return false;
-
         String redisKey = REDIS_KEY_PREFIX + userId;
         String activeSessionId = redisTemplate.opsForValue().get(redisKey);
-
         return providedSessionId.equals(activeSessionId);
     }
 
-    /**
-     * Logouts the current session.
-     */
     public void logout(String userId) {
         String redisKey = REDIS_KEY_PREFIX + userId;
         redisTemplate.delete(redisKey);

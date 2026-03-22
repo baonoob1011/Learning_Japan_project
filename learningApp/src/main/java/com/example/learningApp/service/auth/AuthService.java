@@ -35,31 +35,27 @@ public class AuthService {
     CognitoIdentityProviderClient cognitoClient;
     UserMapper userMapper;
     RoleService roleService;
-      ChatRoomCommandService chatRoomCommandService;
-    @NonFinal
-    @Value("${aws.iam.access-key}")
-    String accessKey;
-    @NonFinal
-    @Value("${aws.iam.secret-key}")
-    String secretKey;
+    ChatRoomCommandService chatRoomCommandService;
+    SessionService sessionService; // <--- Tích hợp SessionService để xử lý Single Session
+
     @NonFinal
     @Value("${aws.cognito.client-id}")
     String clientId;
+
     @NonFinal
     @Value("${aws.cognito.client-secret}")
     String clientSecret;
+
     @NonFinal
     @Value("${aws.cognito.user-pool-id}")
     String userPoolId;
 
     @Transactional
     public UserResponse registerUser(CreateUserRequest request, boolean isAdmin) {
-
         String email = request.getEmail();
         boolean cognitoUserCreated = false;
-
         try {
-            // 1️⃣ Create user in Cognito
+            // 1. Create user in Cognito
             AdminCreateUserResponse createResponse = cognitoClient.adminCreateUser(
                     AdminCreateUserRequest.builder()
                             .userPoolId(userPoolId)
@@ -67,33 +63,29 @@ public class AuthService {
                             .userAttributes(
                                     AttributeType.builder().name("email").value(email).build(),
                                     AttributeType.builder().name("email_verified").value("true").build(),
-                                    AttributeType.builder().name("name").value(request.getFullName()).build()
-                            )
+                                    AttributeType.builder().name("name").value(request.getFullName()).build())
                             .messageAction(MessageActionType.SUPPRESS)
-                            .build()
-            );
+                            .build());
             cognitoUserCreated = true;
 
-            // Lấy sub từ Cognito
             String sub = createResponse.user().attributes().stream()
                     .filter(attr -> "sub".equals(attr.name()))
                     .findFirst()
                     .map(AttributeType::value)
                     .orElseThrow(() -> new IllegalStateException("Cognito user sub not found"));
 
-            // 2️⃣ Set password
+            // 2. Set password
             cognitoClient.adminSetUserPassword(
                     AdminSetUserPasswordRequest.builder()
                             .userPoolId(userPoolId)
                             .username(email)
                             .password(request.getPassword())
                             .permanent(true)
-                            .build()
-            );
+                            .build());
 
-            // 3️⃣ Save DB, dùng sub làm ID
+            // 3. Save DB, using sub (ID của Cognito) làm Primary Key cho DB User
             User user = User.builder()
-                    .id(sub)               // <-- lưu sub từ Cognito
+                    .id(sub)
                     .email(email)
                     .fullName(request.getFullName())
                     .enabled(true)
@@ -101,50 +93,40 @@ public class AuthService {
 
             User savedUser = userRepository.save(user);
 
-            // 4️⃣ Assign default role
+            // 4. Assign default role
             if (!isAdmin) {
-                roleService.assignRoleToUser(
-                        new AssignRoleRequest(savedUser.getId(), "USER")
-                );
+                roleService.assignRoleToUser(new AssignRoleRequest(savedUser.getId(), "USER"));
             }
 
-            // 5️⃣ Success
             chatRoomCommandService.addUserToCommunity(savedUser);
             return userMapper.toUserResponse(savedUser);
 
         } catch (Exception ex) {
-
-            // 🔥 Manual rollback Cognito
             if (cognitoUserCreated) {
                 try {
                     cognitoClient.adminDeleteUser(
-                            AdminDeleteUserRequest.builder()
-                                    .userPoolId(userPoolId)
-                                    .username(email)
-                                    .build()
-                    );
+                            AdminDeleteUserRequest.builder().userPoolId(userPoolId).username(email).build());
                     log.warn("♻ Rolled back Cognito user: {}", email);
                 } catch (Exception deleteEx) {
                     log.error("❌ Failed to rollback Cognito user {}", email, deleteEx);
                 }
             }
-
             throw new RuntimeException("User registration failed", ex);
         }
     }
 
-
-    public UserLoginResponse login(UserLoginRequest request) {
+    /**
+     * Authenticates with Cognito AND initializes Single Session in Redis.
+     */
+    public UserLoginResponse login(UserLoginRequest request, String deviceInfo, String ipAddress) {
         try {
             String email = request.getEmail();
-
             Map<String, String> authParams = new HashMap<>();
             authParams.put("USERNAME", email);
             authParams.put("PASSWORD", request.getPassword());
 
             if (clientSecret != null && !clientSecret.isBlank()) {
-                String secretHash = CognitoSecretHashUtil
-                        .calculateSecretHash(email, clientId, clientSecret);
+                String secretHash = CognitoSecretHashUtil.calculateSecretHash(email, clientId, clientSecret);
                 authParams.put("SECRET_HASH", secretHash);
             }
 
@@ -155,30 +137,37 @@ public class AuthService {
                     .authParameters(authParams)
                     .build();
 
-            AdminInitiateAuthResponse response =
-                    cognitoClient.adminInitiateAuth(authRequest);
+            AdminInitiateAuthResponse response = cognitoClient.adminInitiateAuth(authRequest);
 
             if (response.authenticationResult() == null) {
                 throw new RuntimeException("Invalid login credentials");
             }
 
+            // Lấy Access Token để lấy userId (sub)
+            String accessToken = response.authenticationResult().accessToken();
+
+            // Tìm userId từ email đã login (hoặc lấy từ Cognito response nếu có thể)
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User profile not found in database"));
+
+            // 🔥 [SINGLE SESSION] Force logout existing device and create new SessionId
+            String sessionId = sessionService.initNewSession(user.getId(), deviceInfo, ipAddress);
+
             return UserLoginResponse.builder()
-                    .accessToken(response.authenticationResult().accessToken())
+                    .accessToken(accessToken)
                     .refreshToken(response.authenticationResult().refreshToken())
+                    .sessionId(sessionId) // <--- Trả về sessionId cho Frontend
                     .build();
 
         } catch (NotAuthorizedException ex) {
-            // Sai email hoặc password
             throw new RuntimeException("Invalid email or password");
-
         } catch (UserNotFoundException ex) {
             throw new RuntimeException("User does not exist");
-
         } catch (Exception ex) {
-            throw new RuntimeException("Login failed", ex);
+            log.error("Login Error: ", ex);
+            throw new RuntimeException("Login failed: " + ex.getMessage());
         }
     }
-
 
     public UserLoginResponse refreshToken(String username, String refreshToken) {
         try {
@@ -186,8 +175,7 @@ public class AuthService {
             authParams.put("REFRESH_TOKEN", refreshToken);
 
             if (clientSecret != null && !clientSecret.isBlank()) {
-                String secretHash = CognitoSecretHashUtil
-                        .calculateSecretHash(username, clientId, clientSecret);
+                String secretHash = CognitoSecretHashUtil.calculateSecretHash(username, clientId, clientSecret);
                 authParams.put("SECRET_HASH", secretHash);
             }
 
@@ -198,11 +186,9 @@ public class AuthService {
                     .authParameters(authParams)
                     .build();
 
-            AdminInitiateAuthResponse response =
-                    cognitoClient.adminInitiateAuth(authRequest);
+            AdminInitiateAuthResponse response = cognitoClient.adminInitiateAuth(authRequest);
 
-            if (response.authenticationResult() == null ||
-                    response.authenticationResult().accessToken() == null) {
+            if (response.authenticationResult() == null || response.authenticationResult().accessToken() == null) {
                 throw new IllegalStateException("Unable to refresh token");
             }
 
@@ -212,34 +198,24 @@ public class AuthService {
                     .build();
 
         } catch (NotAuthorizedException ex) {
-
             throw new RuntimeException("Session expired. Please login again");
-
         } catch (Exception ex) {
             throw new RuntimeException("Refresh token failed", ex);
         }
     }
 
-
-    public void logout(String accessToken) {
+    public void logout(String accessToken, String userId) {
         try {
-            // Global sign out (invalidate access token)
             if (accessToken != null && !accessToken.isBlank()) {
-                GlobalSignOutRequest signOutRequest = GlobalSignOutRequest.builder()
-                        .accessToken(accessToken)
-                        .build();
-
+                GlobalSignOutRequest signOutRequest = GlobalSignOutRequest.builder().accessToken(accessToken).build();
                 cognitoClient.globalSignOut(signOutRequest);
             }
-
-        } catch (NotAuthorizedException ex) {
-            // Token đã hết hạn / đã bị revoke
-            throw new RuntimeException("Session already expired");
-
+            // 🔥 Xóa Session ID khỏi Redis
+            if (userId != null) {
+                sessionService.logout(userId);
+            }
         } catch (Exception ex) {
-            throw new RuntimeException("Logout failed", ex);
+            log.warn("Logout warning: {}", ex.getMessage());
         }
     }
-
 }
-

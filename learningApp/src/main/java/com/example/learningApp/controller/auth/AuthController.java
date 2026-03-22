@@ -32,8 +32,7 @@ public class AuthController {
 
         UserLoginResponse response = authService.refreshToken(request.getUsername(), request.getRefreshToken());
         return ResponseEntity.ok(
-                ApiResponse.success("Refresh token successful", response)
-        );
+                ApiResponse.success("Refresh token successful", response));
     }
 
     @PostMapping("/logout")
@@ -43,4 +42,3 @@ public class AuthController {
 
     }
 }
-
