@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,7 +28,7 @@ public class VnPayController {
 
     public VnPayController(
             VnPayService vnPayService,
-            @Value("${app.frontend-url:http://localhost:3000}") String frontendUrl
+            @Value("${app.frontend-url:https://nibojapan.cloud}") String frontendUrl
     ) {
         this.vnPayService = vnPayService;
         this.frontendUrl = frontendUrl;

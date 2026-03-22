@@ -1,8 +1,10 @@
-
 spring:
   application:
     name: learningApp
 
+server:
+  port: ${SERVER_PORT:8080}
+  
   main:
     banner-mode: off
   mvc:
@@ -23,7 +25,7 @@ spring:
     type: redis
     data:
       redis:
-        host: ${SPRING_REDIS_HOST:localhost}
+        host: ${SPRING_REDIS_HOST}
         port: ${SPRING_REDIS_PORT:6379}
 
   data:
@@ -34,9 +36,9 @@ spring:
         exclude-class: true
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:learningApp}}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    url: ${DB_URL:jdbc:postgresql://${DB_HOST}:${DB_PORT:5433}/${DB_NAME:learningApp}}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   batch:
@@ -58,7 +60,7 @@ spring:
         format_sql: true
 
   kafka:
-    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}
 
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
