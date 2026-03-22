@@ -224,23 +224,25 @@ public class ReviewSessionService {
     }
 
     private void notifySessionReady(User user, ReviewSession session) {
-        if (session.getTotalCount() <= 0) {
+        int dueLikeCount = session.getDueCount() + session.getOverdueInjectedCount();
+        if (dueLikeCount <= 0) {
             return;
         }
-        String content = "Hôm nay bạn có " + session.getDueCount() + " từ đến hạn ôn";
-        if (session.getOverdueInjectedCount() > 0) {
-            content += " và " + session.getOverdueInjectedCount() + " từ quá hạn đã được chọn để ôn dần.";
-        } else {
-            content += ".";
-        }
+        String content = String.format(
+                "Hom nay ban co %d tu can hoc (%d den han, %d qua han, %d tu moi).",
+                session.getTotalCount(),
+                session.getDueCount(),
+                session.getOverdueInjectedCount(),
+                session.getNewCount());
         String metadata = "{sessionId:" + session.getId()
                 + ",dueCount:" + session.getDueCount()
                 + ",overdueInjectedCount:" + session.getOverdueInjectedCount()
                 + ",newCount:" + session.getNewCount()
+                + ",totalCount:" + session.getTotalCount()
                 + "}";
         notificationService.create(
                 user,
-                "Phiên ôn hôm nay đã sẵn sàng",
+                "Phien hoc hom nay da san sang",
                 content,
                 NotificationType.REVIEW_REMINDER,
                 metadata);
