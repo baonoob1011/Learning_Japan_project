@@ -31,6 +31,9 @@ public class FriendService {
     private final EntityFinder finder;
     private final SimpMessagingTemplate messagingTemplate;
 
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
     public List<FriendRequestResponse> getPendingRequests() {
 
         User currentUser = finder.userById();
@@ -204,27 +207,37 @@ public class FriendService {
      */
     @Transactional
     public void unfriend(String otherUserId) {
-        User currentUser = finder.userById();
-        User otherUser = finder.userId(otherUserId);
+        User u1 = finder.userById();
+        User u2 = finder.userId(otherUserId);
 
-        // Đảm bảo u1.id < u2.id giống như khi lưu
-        User u1 = currentUser.getId().compareTo(otherUser.getId()) < 0 ? currentUser : otherUser;
-        User u2 = u1.equals(currentUser) ? otherUser : currentUser;
-
+        // 1. Xóa Friendship (thử cả 2 chiều cho tuyệt đối)
         friendshipRepository.findByUser1AndUser2(u1, u2).ifPresent(friendshipRepository::delete);
+        friendshipRepository.findByUser1AndUser2(u2, u1).ifPresent(friendshipRepository::delete);
 
-        // 🗑️ Đồng thời xóa sạch phòng chat private, tin nhắn và thành viên
-        String privateKey = u1.getId() + "_" + u2.getId();
+        // 2. Tìm Room chung (PRIVATE) bằng privateKey id1_id2 (id1 < id2)
+        String id1 = u1.getId();
+        String id2 = u2.getId();
+        if (id1.compareTo(id2) > 0) {
+            String tmp = id1;
+            id1 = id2;
+            id2 = tmp;
+        }
+        String privateKey = id1 + "_" + id2;
+
         chatRoomRepository.findByPrivateKey(privateKey).ifPresent(room -> {
             chatMessageRepository.deleteByRoomId(room.getId());
             chatRoomMemberRepository.deleteByRoomId(room.getId());
             chatRoomRepository.delete(room);
         });
-        
-        // Gửi tín hiệu để UI cập nhật
-        messagingTemplate.convertAndSend("/topic/friend-unfriend/" + currentUser.getId(), 
-            Map.of("targetUserId", otherUserId));
-        messagingTemplate.convertAndSend("/topic/friend-unfriend/" + otherUserId, 
-            Map.of("targetUserId", currentUser.getId()));
+
+        // 3. 💨 Ép database dọn dẹp ngay lập tức
+        entityManager.flush();
+        entityManager.clear();
+
+        // 4. Gửi tín hiệu để UI cập nhật
+        messagingTemplate.convertAndSend("/topic/friend-unfriend/" + u1.getId(),
+                Map.of("targetUserId", u2.getId()));
+        messagingTemplate.convertAndSend("/topic/friend-unfriend/" + u2.getId(),
+                Map.of("targetUserId", u1.getId()));
     }
 }
