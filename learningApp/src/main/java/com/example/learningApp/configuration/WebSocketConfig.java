@@ -24,7 +24,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*")
+                .setAllowedOrigins(
+                        "http://localhost:3000",
+                        "http://localhost:5173",
+                        "https://nibojapan.cloud",
+                        "https://www.nibojapan.cloud",
+                        "https://learning-japan-project-fe.vercel.app")
                 .withSockJS();
     }
 
@@ -33,4 +38,3 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registration.interceptors(authInterceptor);
     }
 }
-
