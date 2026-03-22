@@ -22,6 +22,7 @@ import java.util.Map;
 public class FriendService {
 
     private final FriendshipRepository friendshipRepository;
+    private final ChatRoomRepository chatRoomRepository;
     private final EntityFinder finder;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -206,6 +207,10 @@ public class FriendService {
         User u2 = u1.equals(currentUser) ? otherUser : currentUser;
 
         friendshipRepository.findByUser1AndUser2(u1, u2).ifPresent(friendshipRepository::delete);
+
+        // 🗑️ Đồng thời xóa luôn phòng chat private (nếu có)
+        String privateKey = u1.getId() + "_" + u2.getId();
+        chatRoomRepository.findByPrivateKey(privateKey).ifPresent(chatRoomRepository::delete);
         
         // Gửi tín hiệu để UI cập nhật (tùy chọn)
         messagingTemplate.convertAndSend("/topic/friend-unfriend/" + currentUser.getId(), 

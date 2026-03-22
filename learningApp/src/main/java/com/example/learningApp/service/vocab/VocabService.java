@@ -236,7 +236,7 @@ public class VocabService {
 
     public List<VocabResponse> getSavedVocabsOfCurrentUser() {
         var user = finder.userById();
-        return user.getSavedVocabs()
+        return vocabRepository.findAllByUsers_Id(user.getId())
                 .stream()
                 .map(vocab -> {
                     VocabResponse resp = vocabMapper.toVocabResponse(vocab);

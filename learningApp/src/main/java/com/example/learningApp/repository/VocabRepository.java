@@ -31,6 +31,8 @@ public interface VocabRepository extends JpaRepository<Vocab, String> {
             @Param("userId") String userId,
             @Param("videoId") String videoId);
 
+    List<Vocab> findAllByUsers_Id(String userId);
+
     // Admin search
     Page<Vocab> findBySurfaceContainingIgnoreCaseOrReadingContainingIgnoreCaseOrTranslatedContainingIgnoreCase(
             String surface, String reading, String translated, Pageable pageable);
