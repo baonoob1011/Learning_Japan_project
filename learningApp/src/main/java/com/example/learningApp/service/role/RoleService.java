@@ -98,6 +98,52 @@ public class RoleService {
         userRepository.save(user);
     }
 
+    @Transactional
+    public void updateUserRole(com.example.learningApp.dto.request.role.UpdateUserRoleRequest request) {
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new IllegalStateException("User not found: " + request.getUserId()));
+
+        Role newRole = roleRepository.findByRoleName(request.getNewRoleName())
+                .orElseThrow(() -> new IllegalStateException("Requested role not found: " + request.getNewRoleName()));
+
+        // 1️⃣ Remove all current roles from Cognito
+        if (user.getRoles() != null) {
+            for (Role oldRole : user.getRoles()) {
+                try {
+                    cognitoClient.adminRemoveUserFromGroup(builder -> builder
+                            .userPoolId(userPoolId)
+                            .username(user.getEmail())
+                            .groupName(oldRole.getRoleName())
+                    );
+                    log.info("🗑 Removed user {} from Cognito group {}", user.getEmail(), oldRole.getRoleName());
+                } catch (Exception e) {
+                    log.warn("⚠ Failed to remove user from Cognito group {}: {}", oldRole.getRoleName(), e.getMessage());
+                }
+            }
+        }
+
+        // 2️⃣ Add new role to Cognito
+        try {
+            cognitoClient.adminAddUserToGroup(builder -> builder
+                    .userPoolId(userPoolId)
+                    .username(user.getEmail())
+                    .groupName(newRole.getRoleName())
+            );
+            log.info("➕ Added user {} to Cognito group {}", user.getEmail(), newRole.getRoleName());
+        } catch (Exception e) {
+            log.error("❌ Failed to add user to Cognito group: {}", e.getMessage());
+            throw new RuntimeException("Could not update role in Cognito: " + e.getMessage());
+        }
+
+        // 3️⃣ Update DB roles (Replace current set with only the new one)
+        java.util.Set<Role> roles = new java.util.HashSet<>();
+        roles.add(newRole);
+        user.setRoles(roles);
+
+        userRepository.save(user);
+        log.info("✅ Role updated successfully for user {} to {}", user.getEmail(), newRole.getRoleName());
+    }
+
     public void assignRoleToUser(AssignRoleRequest request) {
 
         User user = userRepository.findById(request.getUserId())
