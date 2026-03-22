@@ -6,13 +6,16 @@ import com.example.learningApp.dto.response.order.OrderSuccessResponse;
 import com.example.learningApp.service.payment.VnPayService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.AccessLevel;
-import lombok.experimental.FieldDefaults;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -20,78 +23,52 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/payments")
-@FieldDefaults(level = AccessLevel.PRIVATE)
-@Slf4j
+@RequiredArgsConstructor
 public class VnPayController {
 
-        final VnPayService vnPayService;
-        final String frontendUrl;
+    private static final Logger log = LoggerFactory.getLogger(VnPayController.class);
 
-        @Autowired
-        public VnPayController(
-                        VnPayService vnPayService,
-                        @Value("${app.frontend-url:https://nibojapan.cloud}") String frontendUrl) {
-                log.info("🚀 VnPayController initialized with: vnPayService={}, frontendUrl={}", vnPayService,
-                                frontendUrl);
-                this.vnPayService = vnPayService;
-                this.frontendUrl = frontendUrl;
+    private final VnPayService vnPayService;
+
+    @Value("${app.frontend-url:https://nibojapan.cloud}")
+    private String frontendUrl;
+
+    @PostMapping("/vnpay/create")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> createPayment(
+            @RequestBody CreateVnPayRequest request) throws Exception {
+
+        Map<String, Object> response = vnPayService.createPaymentRequest(
+                request.getProductId(),
+                request.getProductType());
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Create VNPAY payment successfully", response));
+    }
+
+    @GetMapping("/vnpay/return")
+    public void paymentReturn(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        log.info("VNPAY Return endpoint hit");
+
+        Map<String, String> params = new HashMap<>();
+        request.getParameterMap().forEach((k, v) -> params.put(k, v[0]));
+
+        vnPayService.handleVnPayReturn(params);
+
+        String redirectUrl = frontendUrl + "/video";
+        log.info("Redirecting to: {}", redirectUrl);
+        response.sendRedirect(redirectUrl);
+    }
+
+    @GetMapping("/vnpay/ipn")
+    public ResponseEntity<Map<String, String>> paymentIPN(HttpServletRequest request) {
+        Map<String, String> params = new HashMap<>();
+        request.getParameterMap().forEach((k, v) -> params.put(k, v[0]));
+
+        try {
+            vnPayService.handleVnPayIpn(params);
+            return ResponseEntity.ok(Map.of("RspCode", "00", "Message", "Confirm Success"));
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("RspCode", "97", "Message", "Invalid Checksum"));
         }
-
-        /* ===================== CREATE ===================== */
-
-        @PostMapping("/vnpay/create")
-        public ResponseEntity<ApiResponse<Map<String, Object>>> createPayment(
-                        @RequestBody CreateVnPayRequest request) throws Exception {
-
-                Map<String, Object> response = vnPayService.createPaymentRequest(
-                                request.getProductId(),
-                                request.getProductType());
-
-                return ResponseEntity.ok(
-                                ApiResponse.success(
-                                                "Create VNPAY payment successfully",
-                                                response));
-        }
-
-        /* ===================== RETURN ===================== */
-        @GetMapping("/vnpay/return")
-        public void paymentReturn(
-                        HttpServletRequest request,
-                        HttpServletResponse response) throws IOException {
-
-                Map<String, String> params = new HashMap<>();
-                request.getParameterMap()
-                                .forEach((k, v) -> params.put(k, v[0]));
-
-                OrderSuccessResponse order = vnPayService.handleVnPayReturn(params);
-
-                // Redirect về FE đúng trang Video của nibojapan.cloud
-                String redirectUrl = frontendUrl + "/video";
-
-                response.sendRedirect(redirectUrl);
-        }
-
-        /* ===================== IPN ===================== */
-
-        @GetMapping("/vnpay/ipn")
-        public ResponseEntity<Map<String, String>> paymentIPN(
-                        HttpServletRequest request) {
-
-                Map<String, String> params = new HashMap<>();
-                request.getParameterMap()
-                                .forEach((k, v) -> params.put(k, v[0]));
-
-                try {
-                        vnPayService.handleVnPayIpn(params);
-
-                        return ResponseEntity.ok(
-                                        Map.of("RspCode", "00", "Message", "Confirm Success"));
-
-                } catch (Exception e) {
-
-                        return ResponseEntity.ok(
-                                        Map.of("RspCode", "97", "Message", "Invalid Checksum"));
-                }
-        }
-
+    }
 }
