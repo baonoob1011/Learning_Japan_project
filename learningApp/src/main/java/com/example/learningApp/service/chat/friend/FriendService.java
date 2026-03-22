@@ -24,6 +24,8 @@ public class FriendService {
 
     private final FriendshipRepository friendshipRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final ChatRoomMemberRepository chatRoomMemberRepository;
+    private final com.example.learningApp.repository.ChatMessageRepository chatMessageRepository;
     private final EntityFinder finder;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -209,11 +211,15 @@ public class FriendService {
 
         friendshipRepository.findByUser1AndUser2(u1, u2).ifPresent(friendshipRepository::delete);
 
-        // 🗑️ Đồng thời xóa luôn phòng chat private (nếu có)
+        // 🗑️ Đồng thời xóa sạch phòng chat private, tin nhắn và thành viên
         String privateKey = u1.getId() + "_" + u2.getId();
-        chatRoomRepository.findByPrivateKey(privateKey).ifPresent(chatRoomRepository::delete);
+        chatRoomRepository.findByPrivateKey(privateKey).ifPresent(room -> {
+            chatMessageRepository.deleteByRoomId(room.getId());
+            chatRoomMemberRepository.deleteByRoomId(room.getId());
+            chatRoomRepository.delete(room);
+        });
         
-        // Gửi tín hiệu để UI cập nhật (tùy chọn)
+        // Gửi tín hiệu để UI cập nhật
         messagingTemplate.convertAndSend("/topic/friend-unfriend/" + currentUser.getId(), 
             Map.of("targetUserId", otherUserId));
         messagingTemplate.convertAndSend("/topic/friend-unfriend/" + otherUserId, 
