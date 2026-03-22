@@ -1,6 +1,8 @@
 package com.example.learningApp.repository;
 
 import com.example.learningApp.entity.Vocab;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,21 +15,23 @@ import java.util.Optional;
 public interface VocabRepository extends JpaRepository<Vocab, String> {
     // Tìm từ gốc chính xác
     Optional<Vocab> findBySurface(String surface);
+
     @Query("SELECT v FROM Vocab v JOIN v.videos vid WHERE vid.id = :videoId")
     List<Vocab> findAllByVideoId(@Param("videoId") String videoId);
-    // Nếu muốn tìm theo partial match (vd: contains)
 
     @Query("""
-        SELECT v
-        FROM Vocab v
-        JOIN v.users u
-        JOIN v.videos vid
-        WHERE u.id = :userId
-          AND vid.id = :videoId
-    """)
+                SELECT v
+                FROM Vocab v
+                JOIN v.users u
+                JOIN v.videos vid
+                WHERE u.id = :userId
+                  AND vid.id = :videoId
+            """)
     List<Vocab> findSavedVocabsByUserAndVideo(
             @Param("userId") String userId,
-            @Param("videoId") String videoId
-    );
-}
+            @Param("videoId") String videoId);
 
+    // Admin search
+    Page<Vocab> findBySurfaceContainingIgnoreCaseOrReadingContainingIgnoreCaseOrTranslatedContainingIgnoreCase(
+            String surface, String reading, String translated, Pageable pageable);
+}

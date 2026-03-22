@@ -1,6 +1,7 @@
 package com.example.learningApp.service.vocab;
 
 import com.example.learningApp.common.EntityFinder;
+import com.example.learningApp.common.PageResponse;
 import com.example.learningApp.common.kafka.Producer;
 import com.example.learningApp.dto.cache.VocabCache;
 import com.example.learningApp.dto.event.VocabSaveExerciseEvent;
@@ -28,6 +29,10 @@ import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -274,6 +279,70 @@ public class VocabService {
         vocab.setTranslated(request.getTranslated());
 
         vocabRepository.save(vocab);
+    }
+
+    // ─── ADMIN METHODS ──────────────────────────────────────────────────────────
+
+    public PageResponse<VocabResponse> getAllVocabsManager(int page, int size, String search) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("surface").ascending());
+        Page<Vocab> vocabPage;
+
+        if (search == null || search.trim().isEmpty()) {
+            vocabPage = vocabRepository.findAll(pageable);
+        } else {
+            String s = search.trim();
+            vocabPage = vocabRepository
+                    .findBySurfaceContainingIgnoreCaseOrReadingContainingIgnoreCaseOrTranslatedContainingIgnoreCase(
+                            s, s, s, pageable);
+        }
+
+        List<VocabResponse> data = vocabPage.getContent().stream()
+                .map(vocabMapper::toVocabResponse)
+                .toList();
+
+        return PageResponse.<VocabResponse>builder()
+                .page(page)
+                .totalPages(vocabPage.getTotalPages())
+                .size(vocabPage.getSize())
+                .totalElements(vocabPage.getTotalElements())
+                .data(data)
+                .build();
+    }
+
+    @Transactional
+    public VocabResponse adminCreateVocab(VocabResponse request) {
+        Vocab vocab = Vocab.builder()
+                .surface(request.getSurface())
+                .reading(request.getReading())
+                .romaji(request.getRomaji())
+                .translated(request.getTranslated())
+                .partOfSpeech(request.getPartOfSpeech())
+                .audioUrl(request.getAudioUrl())
+                .build();
+        return vocabMapper.toVocabResponse(vocabRepository.save(vocab));
+    }
+
+    @Transactional
+    public VocabResponse adminUpdateVocab(String id, VocabResponse request) {
+        Vocab vocab = vocabRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Vocab not found with id: " + id));
+
+        vocab.setSurface(request.getSurface());
+        vocab.setReading(request.getReading());
+        vocab.setRomaji(request.getRomaji());
+        vocab.setTranslated(request.getTranslated());
+        vocab.setPartOfSpeech(request.getPartOfSpeech());
+        vocab.setAudioUrl(request.getAudioUrl());
+
+        return vocabMapper.toVocabResponse(vocabRepository.save(vocab));
+    }
+
+    @Transactional
+    public void adminDeleteVocab(String id) {
+        if (!vocabRepository.existsById(id)) {
+            throw new NotFoundException("Vocab not found with id: " + id);
+        }
+        vocabRepository.deleteById(id);
     }
 
     private static String trimToNull(String value) {
