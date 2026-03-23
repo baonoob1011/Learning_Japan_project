@@ -95,24 +95,7 @@ public class TranslateService {
                 String audioUrl = audioFuture.join();
                 String example = exampleFuture.join();
 
-                // 4️⃣ Gửi Kafka tạo vocab mới vào DB
-                CreateVocabRequest vocabRequest = CreateVocabRequest.builder()
-                                .videoId(request.getVideoId())
-                                .surface(surface)
-                                .reading(reading)
-                                .romaji(romaji)
-                                .translated(sentenceTranslated)
-                                .partOfSpeech(partOfSpeech)
-                                .targetDefs(targetDefs)
-                                .explain(example) // (legacy)
-                                .example(example) // ✅ lưu vào cột example của DB
-                                .audioUrl(audioUrl)
-                                .userId(userId) // ✅ Truyền userId để Consumer biết user nào đang học
-                                .build();
-
-                producer.send(VOCAB_TOPIC, request.getVideoId(), vocabRequest);
-
-                // 5️⃣ Trả response
+                // 4️⃣ Trả response
                 return new TranslateResponse(
                                 request.getVideoId(),
                                 surface,

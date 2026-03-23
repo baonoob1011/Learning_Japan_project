@@ -145,8 +145,10 @@ public class VocabService {
         Vocab savedVocab = vocabRepository.findBySurface(vocab.getSurface())
                 .orElseGet(() -> {
                     Vocab saved = vocabRepository.save(vocab);
-                    // 🚀 Kích hoạt Enrichment (Audio + Example) song song qua Kafka
-                    kafkaProducer.send("enrich-vocab", saved.getId(), saved.getId());
+                    // 🚀 Chỉ kích hoạt Enrichment (Audio + Example) nếu còn thiếu data
+                    if (saved.getAudioUrl() == null || saved.getExample() == null || saved.getExample().isBlank()) {
+                        kafkaProducer.send("enrich-vocab", saved.getId(), saved.getId());
+                    }
                     return saved;
                 });
 
@@ -204,7 +206,26 @@ public class VocabService {
                 // 3️⃣ Không có → translate mới
                 .orElseGet(() -> {
                     var user = finder.userById();
-                    return translateService.translate(request, user.getId());
+                    TranslateResponse res = translateService.translate(request, user.getId());
+
+                    // ✅ LƯU XUỐNG DB LUÔN TẠI ĐÂY (SYNC) để tránh race condition
+                    CreateVocabRequest vocabRequest = CreateVocabRequest.builder()
+                            .videoId(request.getVideoId())
+                            .userId(user.getId())
+                            .surface(res.getSurface())
+                            .reading(res.getReading())
+                            .romaji(res.getRomaji())
+                            .translated(res.getTranslated())
+                            .partOfSpeech(res.getPartOfSpeech())
+                            .targetDefs(res.getTargetDefs())
+                            .explain(res.getExample())
+                            .example(res.getExample())
+                            .audioUrl(res.getAudioUrl())
+                            .build();
+
+                    this.createVocab(vocabRequest);
+
+                    return res;
                 });
     }
 
