@@ -257,13 +257,16 @@ public class YoutubeVideoService {
                 ytDlpPath,
                 "-x", "--audio-format", "mp3",
                 "--ffmpeg-location", ffmpegPath,
-                "--format", "ba/b",
                 "--user-agent",
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 "--add-header", "Referer: https://www.youtube.com/",
-                "--extractor-args", "youtube:player_client=ios,tv,web_embedded",
                 "--geo-bypass",
                 "-o", fileName));
+
+        command.add("--extractor-args");
+        command.add("youtube:player_client=android,tv");
+        command.add("--format");
+        command.add("bestaudio/best");
 
         // --- Bổ sung cookies nếu có để bypass bot check ---
         String cookiesPath = System.getenv("YT_DLP_COOKIES");
