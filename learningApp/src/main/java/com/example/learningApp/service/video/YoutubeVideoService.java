@@ -219,8 +219,10 @@ public class YoutubeVideoService {
     }
 
     /**
-     * Download audio từ YouTube bằng yt-dlp (phiên bản ổn định có Cookies + JS
-     * Runtime)
+     * Download audio từ YouTube bằng yt-dlp với cơ chế Retry:
+     * - Attempt 1: Thử có Cookies (nếu có cấu hình).
+     * - Fallback: Nếu lỗi do Cookies/Bot (Sign in to confirm you're not a bot,
+     * 403), thử lại lần 2 không dùng Cookies.
      */
     public File downloadAudio(String youtubeUrl) throws IOException, InterruptedException {
         String fileName = "audio_" + System.currentTimeMillis() + ".mp3";
@@ -235,7 +237,6 @@ public class YoutubeVideoService {
                         ? "tool/ffmpeg.exe"
                         : "/usr/bin/ffmpeg");
 
-        // Resolve cookies path
         String cookiesPath = System.getenv("YT_DLP_COOKIES");
         if (cookiesPath == null || cookiesPath.isBlank()) {
             File localCookies = new File("tool/cookies.txt");
@@ -244,13 +245,23 @@ public class YoutubeVideoService {
             }
         }
 
-        log.info("Starting audio download with JS solve - URL: {}", youtubeUrl);
-        log.info("Cookies path: {}", cookiesPath != null ? cookiesPath : "Not found (using public only)");
+        log.info("Starting audio download process - URL: {}", youtubeUrl);
 
         try {
+            log.info("Attempt 1: Downloading with cookies (if available) - Path: {}",
+                    cookiesPath != null ? cookiesPath : "NONE");
             return runYtDlp(youtubeUrl, fileName, ytDlpPath, ffmpegPath, cookiesPath);
         } catch (RuntimeException e) {
-            log.error("Download failed: {}", e.getMessage());
+            String errorMsg = e.getMessage();
+            boolean isRetryableError = errorMsg.contains("Sign in to confirm you’re not a bot") ||
+                    errorMsg.contains("cookies are no longer valid") ||
+                    errorMsg.contains("HTTP 403");
+
+            if (isRetryableError) {
+                log.warn("Attempt 1 failed with bot/cookie error: {}. Retrying WITHOUT cookies...", errorMsg);
+                return runYtDlp(youtubeUrl, fileName, ytDlpPath, ffmpegPath, null);
+            }
+            log.error("Download failed on attempt 1 with fatal error: {}", errorMsg);
             throw e;
         }
     }
@@ -269,23 +280,26 @@ public class YoutubeVideoService {
                 "--geo-bypass",
                 "--no-check-certificate",
                 "--js-runtimes", "node", // Solve JS challenge
-                "--extractor-args", "youtube:player_client=web",
                 "--format", "bestaudio/best",
                 "-o", fileName));
 
+        // Chỉ thêm --cookies nếu được truyền vào và file hợp lệ
         if (cookiesPath != null && !cookiesPath.isBlank()) {
             File cFile = new File(cookiesPath);
-            if (cFile.exists() && cFile.canRead()) {
+            if (cFile.exists() && cFile.canRead() && cFile.length() > 0) {
                 command.add("--cookies");
                 command.add(cookiesPath);
+                log.info("[yt-dlp] Using cookies: {}", cookiesPath);
             } else {
-                log.warn("Cookie file not found or unreadable at: {}", cookiesPath);
+                log.warn("[yt-dlp] Suggested cookies file invalid/missing, skipping: {}", cookiesPath);
             }
+        } else {
+            log.info("[yt-dlp] Running without cookies.");
         }
 
         command.add(youtubeUrl);
 
-        log.info("Running yt-dlp command: {}", String.join(" ", command));
+        log.info("Running command: {}", String.join(" ", command));
 
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.redirectErrorStream(true);
@@ -301,7 +315,6 @@ public class YoutubeVideoService {
             }
         }
 
-        // Timeout 5 phút
         boolean finished = process.waitFor(5, TimeUnit.MINUTES);
         if (!finished) {
             process.destroyForcibly();
@@ -313,7 +326,7 @@ public class YoutubeVideoService {
             String out = fullOutput.toString();
 
             if (out.contains("Sign in to confirm you’re not a bot")) {
-                throw new RuntimeException("YouTube anti-bot detected: Sign-in required (check cookies)");
+                throw new RuntimeException("YouTube anti-bot detected: Sign-in required (possible expired cookies)");
             }
             if (out.contains("Video unavailable")) {
                 throw new RuntimeException("YouTube error: Video is unavailable or private");
@@ -327,7 +340,7 @@ public class YoutubeVideoService {
 
         File result = new File(fileName);
         if (!result.exists() || result.length() == 0) {
-            throw new RuntimeException("Download finished but output file is missing or empty: " + fileName);
+            throw new RuntimeException("Download finished but output file is missing or empty.");
         }
 
         return result;
