@@ -257,7 +257,7 @@ public class YoutubeVideoService {
                 ytDlpPath,
                 "-x", "--audio-format", "mp3",
                 "--ffmpeg-location", ffmpegPath,
-                "--extractor-args", "youtube:player_client=android,ios,web",
+                "--format", "ba/b",
                 "-o", fileName));
 
         // --- Bổ sung cookies nếu có để bypass bot check ---
