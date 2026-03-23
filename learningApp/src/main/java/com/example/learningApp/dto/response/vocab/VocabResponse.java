@@ -21,6 +21,7 @@ public class VocabResponse {
     private String partOfSpeech; // loại từ
     private String targetDefs; // nghĩa ngôn ngữ đích
     private String explain;
+    private String example; // ví dụ minh họa
     private String audioUrl; // đường dẫn audio trên S3
     private LearningStatus status; // trạng thái học tập của user hiện tại
     private LocalDateTime nextReviewAt; // Ngày hệ thống hẹn trả bài

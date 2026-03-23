@@ -16,10 +16,8 @@ public class TranslateResponse {
     private String translated;
     private String reading;
     private String romaji;
-    private String partOfSpeech;  // loại từ
-    private String targetDefs;    // nghĩa ngôn ngữ đích
-    private String audioUrl;   // audio lưu đường dẫn s3
-
-
+    private String partOfSpeech; // loại từ
+    private String targetDefs; // nghĩa ngôn ngữ đích
+    private String audioUrl; // audio lưu đường dẫn s3
+    private String example; // ví dụ minh họa
 }
-

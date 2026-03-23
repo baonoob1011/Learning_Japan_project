@@ -17,7 +17,8 @@ public interface TranslateMapper {
         res.setVideoId(videoId);
         return res;
     }
+
     @Mapping(target = "videoId", source = "videoId")
+    @Mapping(target = "example", source = "explain")
     TranslateResponse toTranslateResponse(Vocab vocab, String videoId);
 }
-
