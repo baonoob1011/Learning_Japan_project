@@ -11,7 +11,6 @@ import com.example.learningApp.exception.PaymentExpiredException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
@@ -25,6 +24,11 @@ import java.util.*;
 @RequiredArgsConstructor
 @Slf4j
 public class VnPayService {
+
+    private final String vnp_TmnCode = "CQVYBQ01";
+    private final String vnp_HashSecret = "SU5YJCMYR3QTJ8QF401YLVI6BNMKI2L1";
+    private final String vnp_PayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
+    private final String vnp_ReturnUrl = "https://api.nibojapan.cloud/api/v1/payments/vnpay/return";
 
     private final OrderService orderService;
     private final EntityFinder finder;
