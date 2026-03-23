@@ -47,7 +47,16 @@ public class CallHistoryService {
 
         // 1. Tạo thông báo cho cuộc gọi nhỡ/từ chối
         if ("MISSED".equals(status)) {
-            notificationService.create(receiver, "📞 Cuộc gọi nhỡ", "Bạn có cuộc gọi nhỡ từ " + caller.getFullName());
+            // Lấy roomId của ChatRoom private
+            String privateKey = caller.getId().compareTo(receiver.getId()) < 0 
+                ? caller.getId() + "_" + receiver.getId() 
+                : receiver.getId() + "_" + caller.getId();
+            
+            String chatRoomId = chatRoomRepository.findByPrivateKey(privateKey)
+                .map(com.example.learningApp.entity.ChatRoom::getId)
+                .orElse(null);
+
+            notificationService.create(receiver, "📞 Cuộc gọi nhỡ", "Bạn có cuộc gọi nhỡ từ " + caller.getFullName(), com.example.learningApp.enums.NotificationType.SYSTEM, chatRoomId);
         } else if ("REJECTED".equals(status)) {
             notificationService.create(caller, "📞 Cuộc gọi bị từ chối", receiver.getFullName() + " đã từ chối cuộc gọi");
         }
