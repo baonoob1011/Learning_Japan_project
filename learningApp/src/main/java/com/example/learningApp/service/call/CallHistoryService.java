@@ -27,11 +27,13 @@ public class CallHistoryService {
     private final ChatMessageRepository chatMessageRepository;
 
     @Transactional
-    public CallHistory saveCallRecord(String callerId, String receiverId, String type, String status, Integer duration, String roomId) {
+    public CallHistory saveCallRecord(String callerId, String receiverId, String type, String status, Integer duration,
+            String roomId) {
         User caller = userRepository.findById(callerId).orElse(null);
         User receiver = userRepository.findById(receiverId).orElse(null);
 
-        if (caller == null || receiver == null) return null;
+        if (caller == null || receiver == null)
+            return null;
 
         CallHistory history = CallHistory.builder()
                 .caller(caller)
@@ -47,18 +49,10 @@ public class CallHistoryService {
 
         // 1. Tạo thông báo cho cuộc gọi nhỡ/từ chối
         if ("MISSED".equals(status)) {
-            // Lấy roomId của ChatRoom private
-            String privateKey = caller.getId().compareTo(receiver.getId()) < 0 
-                ? caller.getId() + "_" + receiver.getId() 
-                : receiver.getId() + "_" + caller.getId();
-            
-            String chatRoomId = chatRoomRepository.findByPrivateKey(privateKey)
-                .map(com.example.learningApp.entity.ChatRoom::getId)
-                .orElse(null);
-
-            notificationService.create(receiver, "📞 Cuộc gọi nhỡ", "Bạn có cuộc gọi nhỡ từ " + caller.getFullName(), com.example.learningApp.enums.NotificationType.SYSTEM, chatRoomId);
+            notificationService.create(receiver, "📞 Cuộc gọi nhỡ", "Bạn có cuộc gọi nhỡ từ " + caller.getFullName());
         } else if ("REJECTED".equals(status)) {
-            notificationService.create(caller, "📞 Cuộc gọi bị từ chối", receiver.getFullName() + " đã từ chối cuộc gọi");
+            notificationService.create(caller, "📞 Cuộc gọi bị từ chối",
+                    receiver.getFullName() + " đã từ chối cuộc gọi");
         }
 
         // 2. Lưu vào tin nhắn chat để hiển thị trong lịch sử chat
@@ -68,12 +62,13 @@ public class CallHistoryService {
     }
 
     private void saveAsChatMessage(User caller, User receiver, String type, String status, Integer duration) {
-        String privateKey = caller.getId().compareTo(receiver.getId()) < 0 
-                ? caller.getId() + "_" + receiver.getId() 
+        String privateKey = caller.getId().compareTo(receiver.getId()) < 0
+                ? caller.getId() + "_" + receiver.getId()
                 : receiver.getId() + "_" + caller.getId();
 
         ChatRoom room = chatRoomRepository.findByPrivateKey(privateKey).orElse(null);
-        if (room == null) return; // Nếu chưa bao giờ chat thì thôi (hoặc có thể tạo mới)
+        if (room == null)
+            return; // Nếu chưa bao giờ chat thì thôi (hoặc có thể tạo mới)
 
         String content;
         if ("COMPLETED".equals(status)) {
@@ -99,8 +94,8 @@ public class CallHistoryService {
 
     public List<CallHistory> getCallHistoryForUser(String userId) {
         User user = userRepository.findById(userId).orElse(null);
-        if (user == null) return List.of();
+        if (user == null)
+            return List.of();
         return callHistoryRepository.findByCallerOrReceiver(user);
     }
 }
-
