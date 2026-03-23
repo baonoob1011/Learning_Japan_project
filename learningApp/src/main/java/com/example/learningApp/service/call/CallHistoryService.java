@@ -8,8 +8,11 @@ import com.example.learningApp.repository.ChatRoomRepository;
 import com.example.learningApp.repository.ChatMessageRepository;
 import com.example.learningApp.entity.ChatRoom;
 import com.example.learningApp.entity.ChatMessage;
+import com.example.learningApp.dto.response.chat.ChatMessageResponse;
+import com.example.learningApp.mapper.ChatMessageMapper;
 import com.example.learningApp.service.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +28,8 @@ public class CallHistoryService {
     private final NotificationService notificationService;
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
+    private final SimpMessagingTemplate messagingTemplate;
+    private final ChatMessageMapper chatMessageMapper;
 
     @Transactional
     public CallHistory saveCallRecord(String callerId, String receiverId, String type, String status, Integer duration,
@@ -56,12 +61,13 @@ public class CallHistoryService {
         }
 
         // 2. Lưu vào tin nhắn chat để hiển thị trong lịch sử chat
-        saveAsChatMessage(caller, receiver, type, status, duration);
+        saveAsChatMessage(caller, receiver, type, status, duration, saved.getId());
 
         return saved;
     }
 
-    private void saveAsChatMessage(User caller, User receiver, String type, String status, Integer duration) {
+    private void saveAsChatMessage(User caller, User receiver, String type, String status, Integer duration,
+            String sessionId) {
         String privateKey = caller.getId().compareTo(receiver.getId()) < 0
                 ? caller.getId() + "_" + receiver.getId()
                 : receiver.getId() + "_" + caller.getId();
@@ -71,12 +77,17 @@ public class CallHistoryService {
             return; // Nếu chưa bao giờ chat thì thôi (hoặc có thể tạo mới)
 
         String content;
+        String msgType = ("MISSED".equals(status) || "REJECTED".equals(status) || "CANCELLED".equals(status))
+                ? "MISSED_CALL"
+                : "CALL_LOG";
+
+        // Content dự phòng cho client cũ hoặc để lưu log đơn giản
         if ("COMPLETED".equals(status)) {
-            content = "📞 Cuộc gọi video (" + (duration / 60) + ":" + String.format("%02d", (duration % 60)) + ")";
-        } else if ("MISSED".equals(status)) {
+            content = "📞 Cuộc gọi " + ("VIDEO".equals(type) ? "video" : "thoại") + " (" + (duration / 60) + ":"
+                    + String.format("%02d", (duration % 60)) + ")";
+            msgType = "TEXT";
+        } else if ("MISSED".equals(status) || "REJECTED".equals(status) || "CANCELLED".equals(status)) {
             content = "📞 Cuộc gọi nhỡ";
-        } else if ("REJECTED".equals(status)) {
-            content = "📞 Cuộc gọi bị từ chối";
         } else {
             content = "📞 Cuộc gọi đã kết thúc";
         }
@@ -85,11 +96,20 @@ public class CallHistoryService {
                 .room(room)
                 .sender(caller)
                 .content(content)
+                .type(msgType)
+                .callType(type)
+                .callStatus(status)
+                .callSessionId(sessionId)
                 .sentAt(LocalDateTime.now())
                 .isRead(false)
                 .build();
 
         chatMessageRepository.save(message);
+
+        // Gửi qua websocket để cập nhật ngay lập tức
+        ChatMessageResponse response = chatMessageMapper.toChatMessageResponse(message);
+        response.setReceiverId(receiver.getId()); // Set receiverId for notification logic
+        messagingTemplate.convertAndSend("/topic/room/" + room.getId(), response);
     }
 
     public List<CallHistory> getCallHistoryForUser(String userId) {

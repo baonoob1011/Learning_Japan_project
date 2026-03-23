@@ -29,8 +29,15 @@ public class ChatMessage {
     @Column(columnDefinition = "TEXT")
     private String content;
 
+    @Builder.Default
+    private String type = "TEXT"; // TEXT, MISSED_CALL, COMPLETED_CALL
+
+    private String callType; // AUDIO, VIDEO
+    private String callStatus; // MISSED, COMPLETED, REJECTED
+    private String callSessionId;
+
     private LocalDateTime sentAt;
 
+    @Builder.Default
     private Boolean isRead = false;
 }
-
