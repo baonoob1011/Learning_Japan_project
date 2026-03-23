@@ -19,6 +19,7 @@ public class CreateVocabRequest {
     private String targetDefs; // nghĩa ngôn ngữ đích
     private String explain; // (legacy) ví dụ dạng text thô
     private String example; // ví dụ minh họa (AI generated, lưu vào DB)
+    private String userId; // ID của user (để lưu vào User.savedVocabs)
     private String audioUrl; // đường dẫn audio S3 (nếu đã tạo sẵn)
 
 }

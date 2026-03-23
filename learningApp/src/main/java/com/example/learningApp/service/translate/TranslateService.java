@@ -30,7 +30,7 @@ public class TranslateService {
         private final VocabRepository vocabRepository;
         private final Producer producer;
 
-        public TranslateResponse translate(TranslateRequest request) {
+        public TranslateResponse translate(TranslateRequest request, String userId) {
 
                 // 1️⃣ Lấy token đầu tiên để trích xuất từ gốc (surface)
                 Token token = tokenizeService.firstToken(request.getText());
@@ -107,6 +107,7 @@ public class TranslateService {
                                 .explain(example) // (legacy)
                                 .example(example) // ✅ lưu vào cột example của DB
                                 .audioUrl(audioUrl)
+                                .userId(userId) // ✅ Truyền userId để Consumer biết user nào đang học
                                 .build();
 
                 producer.send(VOCAB_TOPIC, request.getVideoId(), vocabRequest);

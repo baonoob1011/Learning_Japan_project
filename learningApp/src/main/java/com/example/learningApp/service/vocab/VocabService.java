@@ -58,6 +58,7 @@ public class VocabService {
     YoutubeVideoRepository youtubeVideoRepository;
     TranslateService translateService;
     com.example.learningApp.service.translate.TokenizeService tokenizeService;
+    com.example.learningApp.service.translate.RomajiService romajiService;
     UserRepository userRepository;
     VocabCacheRedisService vocabCacheRedisService;
     UserVocabProgressRepository progressRepo;
@@ -139,7 +140,7 @@ public class VocabService {
     public void createVocab(CreateVocabRequest request) {
         Vocab vocab = vocabMapper.toVocab(request);
         var video = finder.videoById(request.getVideoId());
-        var user = finder.userById();
+        var user = finder.userId(request.getUserId());
 
         Vocab savedVocab = vocabRepository.findBySurface(vocab.getSurface())
                 .orElseGet(() -> {
@@ -172,21 +173,39 @@ public class VocabService {
 
         // 1️⃣ Redis (chỉ dùng nếu cache có đủ example, tránh stale data)
         VocabCache cache = vocabCacheRedisService.get(cacheKey);
-        if (cache != null && cache.getExample() != null) {
+        if (cache != null && cache.getExample() != null
+                && cache.getReading() != null && cache.getRomaji() != null) {
             return translateMapper.mapWithVideoId(cache, request.getVideoId());
         }
 
-        // 2️⃣ DB (ưu tiên DB khi Redis không có hoặc thiếu example)
+        // 2️⃣ DB (ưu tiên DB khi Redis không có hoặc thiếu data)
         return vocabRepository.findBySurface(surface)
                 .map(vocab -> {
-                    // Cập nhật lại Redis cache với example mới nhất
+                    // Enrich từ tokenizer nếu DB thiếu reading/romaji
+                    TranslateResponse res = translateMapper.toTranslateResponse(vocab, request.getVideoId());
+
+                    if (token != null) {
+                        if (res.getReading() == null || res.getReading().isBlank()) {
+                            String reading = token.getReading() != null ? token.getReading() : surface;
+                            res.setReading(reading);
+                            res.setRomaji(romajiService.toRomaji(reading));
+                        }
+                        if (res.getPartOfSpeech() == null || res.getPartOfSpeech().isBlank()) {
+                            res.setPartOfSpeech(token.getPartOfSpeechLevel1());
+                        }
+                    }
+
+                    // Cập nhật lại Redis cache với data đầy đủ
                     VocabCache cacheToSave = vocabCacheMapper.toCache(vocab);
                     vocabCacheRedisService.save(cacheKey, cacheToSave);
 
-                    return translateMapper.toTranslateResponse(vocab, request.getVideoId());
+                    return res;
                 })
                 // 3️⃣ Không có → translate mới
-                .orElseGet(() -> translateService.translate(request));
+                .orElseGet(() -> {
+                    var user = finder.userById();
+                    return translateService.translate(request, user.getId());
+                });
     }
 
     public Void saveVocabForCurrentUser(String surface) {
