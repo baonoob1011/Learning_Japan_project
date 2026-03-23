@@ -55,7 +55,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class YoutubeVideoService {
 
-
     @Value("${aws.s3.bucket-nam}")
     private String s3Bucket;
 
@@ -73,14 +72,13 @@ public class YoutubeVideoService {
     private final S3Client s3Client;
     private final TranscribeClient transcribeClient;
 
-    public List<YoutubeVideoSummaryResponse> getAllVideoByVocab(){
-        var listVocabByCurrentUser= vocabService.getSavedVocabsOfCurrentUser();
+    public List<YoutubeVideoSummaryResponse> getAllVideoByVocab() {
+        var listVocabByCurrentUser = vocabService.getSavedVocabsOfCurrentUser();
 
         Set<YoutubeVideo> videoSet = new HashSet<>();
         for (VocabResponse vocab : listVocabByCurrentUser) {
             // nếu vocabResponse có videoIds
-            List<YoutubeVideo> videos =
-                    youtubeVideoRepository.findAllByVocabId(vocab.getId());
+            List<YoutubeVideo> videos = youtubeVideoRepository.findAllByVocabId(vocab.getId());
 
             videoSet.addAll(videos);
         }
@@ -93,8 +91,7 @@ public class YoutubeVideoService {
     @Transactional(readOnly = true)
     public List<YoutubeVideoSummaryResponse> getMySavedVideos() {
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         String userId = authentication.getName();
 
@@ -104,7 +101,6 @@ public class YoutubeVideoService {
                 .map(youtubeVideoMapper::toYoutubeVideoSummaryResponse)
                 .toList();
     }
-
 
     @Transactional
     public void updateVideo(String videoId, YoutubeVideoUpdateRequest request) {
@@ -121,6 +117,7 @@ public class YoutubeVideoService {
 
         youtubeVideoRepository.save(video);
     }
+
     public void saveVideoForUser(String videoId) {
 
         var user = finder.userById();
@@ -141,7 +138,7 @@ public class YoutubeVideoService {
         userRepository.save(user);
     }
 
-    public void removeSavedVideo( String videoId) {
+    public void removeSavedVideo(String videoId) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userId = authentication.getName();
@@ -168,8 +165,7 @@ public class YoutubeVideoService {
                         video.getVideoTag(),
                         video.getLevel(),
                         video.getDuration(),
-                        video.getCreatedAt()
-                ))
+                        video.getCreatedAt()))
                 .collect(Collectors.toList());
     }
 
@@ -200,33 +196,27 @@ public class YoutubeVideoService {
         return null;
     }
 
-
-
     // ------------------- MAIN FLOW -------------------
     public Void saveYoutubeTranscriptAws(YoutubeVideoRequest request) {
 
         String videoId = extractVideoId(request.getUrl());
 
-        YoutubeTranscribeMessage message =
-                new YoutubeTranscribeMessage(
-                        videoId,
-                        request.getUrl(),
-                        request.getLevel(),
-                        request.getVideoTag()
-                );
+        YoutubeTranscribeMessage message = new YoutubeTranscribeMessage(
+                videoId,
+                request.getUrl(),
+                request.getLevel(),
+                request.getVideoTag());
 
         // 🔑 KEY = videoId (cực kỳ quan trọng)
         producer.send(
                 "youtube-transcribe",
                 videoId,
-                message
-        );
+                message);
 
         log.info("📤 Enqueued transcribe job for video {}", videoId);
 
         return null;
     }
-
 
     // Download audio bằng yt-dlp + ffmpeg
     public File downloadAudio(String youtubeUrl) throws IOException, InterruptedException {
@@ -236,30 +226,39 @@ public class YoutubeVideoService {
         String ytDlpPath = System.getenv("YT_DLP_PATH");
         String ffmpegPath = System.getenv("FFMPEG_PATH");
 
-        // 2. Fallback: dùng exe trong thư mục tool của project
+        boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
+        String ytDlpDefault = isWindows ? "yt-dlp.exe" : "yt-dlp";
+        String ffmpegDefault = isWindows ? "ffmpeg.exe" : "ffmpeg";
+
+        // 2. Fallback: dùng folder tool hoặc command mặc định mang theo extension phù
+        // hợp
         if (ytDlpPath == null || ytDlpPath.isBlank()) {
-            ytDlpPath = Paths.get("tool", "yt-dlp.exe").toAbsolutePath().toString();
+            File localTool = new File("tool/" + ytDlpDefault);
+            if (localTool.exists()) {
+                ytDlpPath = localTool.getAbsolutePath();
+            } else {
+                ytDlpPath = ytDlpDefault; // Thử gọi trực tiếp từ PATH
+            }
         }
 
         if (ffmpegPath == null || ffmpegPath.isBlank()) {
-            ffmpegPath = Paths.get("tool", "ffmpeg.exe").toAbsolutePath().toString();
+            File localTool = new File("tool/" + ffmpegDefault);
+            if (localTool.exists()) {
+                ffmpegPath = localTool.getAbsolutePath();
+            } else {
+                ffmpegPath = ffmpegDefault; // Thử gọi trực tiếp từ PATH
+            }
         }
 
-        // 3. Check tồn tại
-        if (!Files.exists(Paths.get(ytDlpPath))) {
-            throw new RuntimeException("Không tìm thấy yt-dlp.exe tại: " + ytDlpPath);
-        }
-        if (!Files.exists(Paths.get(ffmpegPath))) {
-            throw new RuntimeException("Không tìm thấy ffmpeg.exe tại: " + ffmpegPath);
-        }
+        log.info("Using yt-dlp at: {}", ytDlpPath);
+        log.info("Using ffmpeg at: {}", ffmpegPath);
 
         ProcessBuilder pb = new ProcessBuilder(
                 ytDlpPath,
                 "-x", "--audio-format", "mp3",
                 "--ffmpeg-location", ffmpegPath,
                 "-o", fileName,
-                youtubeUrl
-        );
+                youtubeUrl);
 
         pb.redirectErrorStream(true);
         Process process = pb.start();
@@ -327,7 +326,6 @@ public class YoutubeVideoService {
         return audioFile;
     }
 
-
     // Lấy videoId từ URL YouTube
     private String extractVideoId(String youtubeUrl) {
         if (youtubeUrl.contains("v=")) {
@@ -343,12 +341,10 @@ public class YoutubeVideoService {
     public void deleteFromS3(String key) {
         s3Client.deleteObject(builder -> builder
                 .bucket(s3Bucket)
-                .key(key)
-        );
+                .key(key));
 
         log.info("✅ Deleted audio from S3: {}", key);
     }
-
 
     public String uploadToS3(File audioFile, String key) throws IOException {
         s3Client.putObject(PutObjectRequest.builder().bucket(s3Bucket).key(key).build(), audioFile.toPath());
@@ -375,8 +371,7 @@ public class YoutubeVideoService {
             GetTranscriptionJobResponse response = transcribeClient.getTranscriptionJob(
                     GetTranscriptionJobRequest.builder()
                             .transcriptionJobName(jobName)
-                            .build()
-            );
+                            .build());
             job = response.transcriptionJob();
             if (job.transcriptionJobStatus() == TranscriptionJobStatus.IN_PROGRESS) {
                 Thread.sleep(Math.min(1000 * (retries + 1), 10000));
@@ -404,7 +399,6 @@ public class YoutubeVideoService {
         return transcriptJson;
     }
 
-
     public static List<YoutubeTranscript> parseTranscriptionJson(String transcriptJson, YoutubeVideo video) {
         List<YoutubeTranscript> transcripts = new ArrayList<>();
         try {
@@ -417,13 +411,15 @@ public class YoutubeVideoService {
             double sentenceEnd = -1;
 
             for (JsonNode item : items) {
-                if (!item.has("start_time") || !item.has("alternatives")) continue;
+                if (!item.has("start_time") || !item.has("alternatives"))
+                    continue;
 
                 double start = item.path("start_time").asDouble();
                 double end = item.path("end_time").asDouble();
                 String word = item.path("alternatives").get(0).path("content").asText();
 
-                if (sentenceStart < 0) sentenceStart = start;
+                if (sentenceStart < 0)
+                    sentenceStart = start;
                 sentenceEnd = end;
 
                 sentence.append(word).append(" ");
@@ -432,8 +428,8 @@ public class YoutubeVideoService {
                 if (word.matches(".*[.!?]") || end - start > 0.5) {
                     YoutubeTranscript t = YoutubeTranscript.builder()
                             .video(video)
-                            .startOffset((int)(sentenceStart * 1000))
-                            .endOffset((int)(sentenceEnd * 1000))
+                            .startOffset((int) (sentenceStart * 1000))
+                            .endOffset((int) (sentenceEnd * 1000))
                             .text(sentence.toString().trim())
                             .createdAt(LocalDateTime.now())
                             .build();
@@ -448,8 +444,8 @@ public class YoutubeVideoService {
             if (sentence.length() > 0) {
                 YoutubeTranscript t = YoutubeTranscript.builder()
                         .video(video)
-                        .startOffset((int)(sentenceStart * 1000))
-                        .endOffset((int)(sentenceEnd * 1000))
+                        .startOffset((int) (sentenceStart * 1000))
+                        .endOffset((int) (sentenceEnd * 1000))
                         .text(sentence.toString().trim())
                         .createdAt(LocalDateTime.now())
                         .build();
@@ -464,4 +460,3 @@ public class YoutubeVideoService {
     }
 
 }
-

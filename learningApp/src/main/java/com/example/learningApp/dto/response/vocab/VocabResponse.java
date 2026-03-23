@@ -29,6 +29,5 @@ public class VocabResponse {
     // Personalization fields (chỉ user hiện tại thấy)
     private String personalNote;
     private String customTranslated;
-    private String personalExample;
     private java.util.Set<String> personalTags;
 }

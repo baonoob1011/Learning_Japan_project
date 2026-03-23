@@ -25,6 +25,10 @@ RUN apk add --no-cache ffmpeg curl python3 && \
     curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp && \
     chmod a+rx /usr/local/bin/yt-dlp
 
+# Set environment variables for tools used by the app
+ENV YT_DLP_PATH=/usr/local/bin/yt-dlp
+ENV FFMPEG_PATH=/usr/bin/ffmpeg
+
 # Copy built jar from builder stage
 COPY --from=builder /app/target/*.jar app.jar
 

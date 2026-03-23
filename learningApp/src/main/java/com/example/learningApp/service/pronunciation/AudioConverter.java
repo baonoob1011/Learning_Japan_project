@@ -22,7 +22,14 @@ public class AudioConverter {
 
             multipartFile.transferTo(raw);
 
-            String ffmpegPath = new File("tool/ffmpeg.exe").getAbsolutePath();
+            // Ưu tiên ENV, fallback folder tool, cuối cùng là command mặc định
+            String ffmpegPath = System.getenv("FFMPEG_PATH");
+            if (ffmpegPath == null || ffmpegPath.isBlank()) {
+                boolean isWin = System.getProperty("os.name").toLowerCase().contains("win");
+                String ffmpegName = isWin ? "ffmpeg.exe" : "ffmpeg";
+                File localTool = new File("tool/" + ffmpegName);
+                ffmpegPath = localTool.exists() ? localTool.getAbsolutePath() : ffmpegName;
+            }
 
             ProcessBuilder pb = new ProcessBuilder(
                     ffmpegPath,
@@ -32,13 +39,13 @@ public class AudioConverter {
                     "-ar", "16000",
                     "-vn",
                     "-acodec", "pcm_s16le",
-                    normalized.getAbsolutePath()
-            );
+                    normalized.getAbsolutePath());
 
             pb.redirectErrorStream(true);
 
             int exit = pb.start().waitFor();
-            if (exit != 0) throw new RuntimeException("ffmpeg convert failed");
+            if (exit != 0)
+                throw new RuntimeException("ffmpeg convert failed");
 
             raw.delete();
             return normalized;
