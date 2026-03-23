@@ -5,6 +5,7 @@ import com.example.learningApp.common.kafka.Producer;
 import com.example.learningApp.dto.request.translate.TranslateRequest;
 import com.example.learningApp.dto.request.vocab.CreateVocabRequest;
 import com.example.learningApp.dto.response.translate.TranslateResponse;
+import com.example.learningApp.service.ai.ChatbotService;
 import com.example.learningApp.service.translate.interfaces.AudioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,8 @@ public class TranslateService {
         private final SentenceTranslateService sentenceTranslateService;
         private final TokenizeService tokenizeService;
         private final RomajiService romajiService;
+        private final AudioService audioService;
+        private final ChatbotService chatbotService;
         private final Producer producer;
 
         public TranslateResponse translate(TranslateRequest request) {
@@ -42,10 +45,26 @@ public class TranslateService {
                                                 request.getSourceLang(),
                                                 request.getTargetLang()));
 
+                // 4️⃣ Audio
+                CompletableFuture<String> audioFuture = tokenFuture
+                                .thenApplyAsync(token -> audioService.generateAudio(token.getSurface()));
+
+                // 5️⃣ Example (AI generation)
+                CompletableFuture<String> exampleFuture = tokenFuture.thenApplyAsync(token -> {
+                        String prompt = "Tạo 1 ví dụ tiếng Nhật tự nhiên chứa từ '" + token.getSurface() +
+                                        "'. Trình bày theo định dạng:\n" +
+                                        "[Câu tiếng Nhật]\n" +
+                                        "[Phiên âm]\n" +
+                                        "[Dịch nghĩa]";
+                        return chatbotService.chat(prompt);
+                });
+
                 CompletableFuture.allOf(
                                 sentenceTranslatedFuture,
                                 tokenFuture,
-                                targetDefsFuture).join();
+                                targetDefsFuture,
+                                audioFuture,
+                                exampleFuture).join();
 
                 Token token = tokenFuture.join();
 
@@ -56,9 +75,10 @@ public class TranslateService {
 
                 String sentenceTranslated = sentenceTranslatedFuture.join();
                 String targetDefs = targetDefsFuture.join();
+                String audioUrl = audioFuture.join();
+                String example = exampleFuture.join();
 
-                // 6️⃣ Gửi Kafka tạo vocab (Việc Gen Audio và Ví dụ sẽ được xử lý song song ở
-                // Consumer)
+                // 6️⃣ Gửi Kafka tạo vocab
                 CreateVocabRequest vocabRequest = CreateVocabRequest.builder()
                                 .videoId(request.getVideoId())
                                 .surface(surface)
@@ -67,11 +87,13 @@ public class TranslateService {
                                 .translated(sentenceTranslated)
                                 .partOfSpeech(partOfSpeech)
                                 .targetDefs(targetDefs)
+                                .explain(example)
+                                .audioUrl(audioUrl)
                                 .build();
 
                 producer.send(VOCAB_TOPIC, request.getVideoId(), vocabRequest);
 
-                // 7️⃣ Trả response
+                // 7️⃣ Trả response (❌ KHÔNG cache Redis)
                 return new TranslateResponse(
                                 request.getVideoId(),
                                 surface,
@@ -80,7 +102,7 @@ public class TranslateService {
                                 romaji,
                                 partOfSpeech,
                                 targetDefs,
-                                null // audioUrl sẽ được cập nhật sau bởi Kafka worker enrichment
-                );
+                                audioUrl,
+                                example);
         }
 }
