@@ -46,6 +46,7 @@ public class SecurityConfig {
             "/api/v1/users/register",
             "/api/v1/users/forgot-password",
             "/api/v1/users/online",
+            "/api/v1/call-history/**",
             "/api/v1/payments/vnpay/return",
             "/api/v1/users/confirm-forgot-password",
             "/ws/**",

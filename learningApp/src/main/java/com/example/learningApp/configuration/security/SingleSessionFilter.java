@@ -26,7 +26,8 @@ public class SingleSessionFilter extends OncePerRequestFilter {
 
         // Skip non-API requests or specific Auth endpoints (Login, Init Session)
         String path = request.getRequestURI();
-        if (!path.startsWith("/api/") || path.contains("/auth/login") || path.contains("/auth/session/init")) {
+        if (!path.startsWith("/api/") || path.contains("/auth/login") || path.contains("/auth/session/init") 
+            || path.contains("/users/online") || path.contains("/call-history")) {
             filterChain.doFilter(request, response);
             return;
         }
