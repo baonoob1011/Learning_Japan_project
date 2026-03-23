@@ -235,9 +235,16 @@ public class VocabService {
         }
 
         VocabResponse response = vocabMapper.toVocabResponse(vocab);
-        response.setStatus(progressRepo.findByUserAndVocab(user, vocab)
-                .map(p -> p.getStatus())
-                .orElse(com.example.learningApp.enums.LearningStatus.NEW));
+        progressRepo.findByUserAndVocab(user, vocab).ifPresent(p -> {
+            response.setStatus(p.getStatus());
+            response.setPersonalNote(p.getPersonalNote());
+            response.setCustomTranslated(p.getCustomTranslated());
+            response.setPersonalExample(p.getPersonalExample());
+            response.setPersonalTags(p.getPersonalTags());
+        });
+        if (response.getStatus() == null) {
+            response.setStatus(com.example.learningApp.enums.LearningStatus.NEW);
+        }
         return response;
     }
 
