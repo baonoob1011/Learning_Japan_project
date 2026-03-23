@@ -126,7 +126,6 @@ public class VocabService {
                         resp.setStatus(progress.get().getStatus());
                         resp.setPersonalNote(progress.get().getPersonalNote());
                         resp.setCustomTranslated(progress.get().getCustomTranslated());
-                        resp.setPersonalExample(progress.get().getPersonalExample());
                         resp.setPersonalTags(progress.get().getPersonalTags());
                     } else {
                         resp.setStatus(com.example.learningApp.enums.LearningStatus.NEW);
@@ -288,7 +287,6 @@ public class VocabService {
             response.setStatus(p.getStatus());
             response.setPersonalNote(p.getPersonalNote());
             response.setCustomTranslated(p.getCustomTranslated());
-            response.setPersonalExample(p.getPersonalExample());
             response.setPersonalTags(p.getPersonalTags());
         });
         if (response.getStatus() == null) {
@@ -310,7 +308,6 @@ public class VocabService {
                         // Map personalization fields
                         resp.setPersonalNote(progress.get().getPersonalNote());
                         resp.setCustomTranslated(progress.get().getCustomTranslated());
-                        resp.setPersonalExample(progress.get().getPersonalExample());
                         resp.setPersonalTags(progress.get().getPersonalTags());
                     } else {
                         resp.setStatus(com.example.learningApp.enums.LearningStatus.NEW);
@@ -363,8 +360,6 @@ public class VocabService {
             progress.setCustomTranslated(request.getCustomTranslated());
         if (request.getPersonalNote() != null)
             progress.setPersonalNote(request.getPersonalNote());
-        if (request.getPersonalExample() != null)
-            progress.setPersonalExample(request.getPersonalExample());
         if (request.getPersonalTags() != null)
             progress.setPersonalTags(request.getPersonalTags());
         if (request.getStatus() != null)
