@@ -58,7 +58,7 @@ public class KanjiAiService {
     private String callGemini(String prompt) {
 
         String url =
-                "https://generativelanguage.googleapis.com/v1beta/models/"
+                "https://generativelanguage.googleapis.com/v1/models/"
                         + "gemini-1.5-flash:generateContent?key="
                         + apiKey;
 
