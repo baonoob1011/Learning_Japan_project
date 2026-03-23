@@ -24,6 +24,7 @@ import java.util.Set;
 public class User {
 
         @Id
+        @EqualsAndHashCode.Include
         private String id;
 
         @Column(nullable = false, unique = true, length = 255)
@@ -107,4 +108,3 @@ public class User {
         }
 
 }
-
