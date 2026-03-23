@@ -24,4 +24,10 @@ public class VocabResponse {
     private String audioUrl; // đường dẫn audio trên S3
     private LearningStatus status; // trạng thái học tập của user hiện tại
     private LocalDateTime nextReviewAt; // Ngày hệ thống hẹn trả bài
+
+    // Personalization fields (chỉ user hiện tại thấy)
+    private String personalNote;
+    private String customTranslated;
+    private String personalExample;
+    private java.util.Set<String> personalTags;
 }

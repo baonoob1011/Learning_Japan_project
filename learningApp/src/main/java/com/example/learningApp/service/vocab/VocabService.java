@@ -119,8 +119,15 @@ public class VocabService {
                 .map(vocab -> {
                     VocabResponse resp = vocabMapper.toVocabResponse(vocab);
                     var progress = progressRepo.findByUserAndVocab(user, vocab);
-                    resp.setStatus(
-                            progress.map(p -> p.getStatus()).orElse(com.example.learningApp.enums.LearningStatus.NEW));
+                    if (progress.isPresent()) {
+                        resp.setStatus(progress.get().getStatus());
+                        resp.setPersonalNote(progress.get().getPersonalNote());
+                        resp.setCustomTranslated(progress.get().getCustomTranslated());
+                        resp.setPersonalExample(progress.get().getPersonalExample());
+                        resp.setPersonalTags(progress.get().getPersonalTags());
+                    } else {
+                        resp.setStatus(com.example.learningApp.enums.LearningStatus.NEW);
+                    }
                     return resp;
                 })
                 .toList();
@@ -244,6 +251,11 @@ public class VocabService {
                     if (progress.isPresent()) {
                         resp.setStatus(progress.get().getStatus());
                         resp.setNextReviewAt(progress.get().getNextReviewAt());
+                        // Map personalization fields
+                        resp.setPersonalNote(progress.get().getPersonalNote());
+                        resp.setCustomTranslated(progress.get().getCustomTranslated());
+                        resp.setPersonalExample(progress.get().getPersonalExample());
+                        resp.setPersonalTags(progress.get().getPersonalTags());
                     } else {
                         resp.setStatus(com.example.learningApp.enums.LearningStatus.NEW);
                     }
@@ -272,13 +284,37 @@ public class VocabService {
 
     @Transactional
     public void updateVocabMeaning(UpdateVocabRequest request) {
-
+        User user = finder.userById();
         Vocab vocab = finder.vocabBySurface(request.getSurface());
 
-        // 🔒 CHỈ sửa nghĩa
-        vocab.setTranslated(request.getTranslated());
+        // CHỈ cập nhật thông tin cá nhân của User không ảnh hưởng từ vựng gốc
+        var progress = progressRepo.findByUserAndVocab(user, vocab)
+                .orElseGet(() -> {
+                    // Nếu chưa có Progress, tạo mới (tương tự như Save)
+                    var p = com.example.learningApp.entity.UserVocabProgress.builder()
+                            .user(user)
+                            .vocab(vocab)
+                            .status(com.example.learningApp.enums.LearningStatus.NEW)
+                            .build();
+                    if (!user.getSavedVocabs().contains(vocab)) {
+                        user.getSavedVocabs().add(vocab);
+                        userRepository.save(user);
+                    }
+                    return progressRepo.save(p);
+                });
 
-        vocabRepository.save(vocab);
+        if (request.getCustomTranslated() != null)
+            progress.setCustomTranslated(request.getCustomTranslated());
+        if (request.getPersonalNote() != null)
+            progress.setPersonalNote(request.getPersonalNote());
+        if (request.getPersonalExample() != null)
+            progress.setPersonalExample(request.getPersonalExample());
+        if (request.getPersonalTags() != null)
+            progress.setPersonalTags(request.getPersonalTags());
+        if (request.getStatus() != null)
+            progress.setStatus(request.getStatus());
+
+        progressRepo.save(progress);
     }
 
     // ─── ADMIN METHODS ──────────────────────────────────────────────────────────
