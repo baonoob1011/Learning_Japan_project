@@ -53,6 +53,7 @@ public class KanjiAiService {
         try {
             return objectMapper.readValue(text, KanjiAiResponse.class);
         } catch (Exception e) {
+            log.error("Failed to parse Kanji AI JSON: {}", text, e);
             throw new RuntimeException("Invalid Kanji AI JSON: " + text);
         }
     }
@@ -72,9 +73,6 @@ public class KanjiAiService {
                                 "role", "user",
                                 "parts", List.of(Map.of("text", prompt))
                         )
-                ),
-                "generationConfig", Map.of(
-                        "response_mime_type", "application/json"
                 )
         );
 

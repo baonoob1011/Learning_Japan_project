@@ -44,6 +44,7 @@ public class KanjiStrokeAiService {
         try {
             return objectMapper.readValue(text, List.class);
         } catch (Exception e) {
+            log.error("Failed to parse SVG JSON: {}", text, e);
             throw new RuntimeException("Invalid SVG JSON: " + text);
         }
     }
@@ -64,9 +65,6 @@ public class KanjiStrokeAiService {
                                 "role", "user",
                                 "parts", List.of(Map.of("text", prompt))
                         )
-                ),
-                "generationConfig", Map.of(
-                        "response_mime_type", "application/json"
                 )
         );
 
