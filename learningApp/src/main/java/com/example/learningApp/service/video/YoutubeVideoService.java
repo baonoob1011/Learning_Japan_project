@@ -223,10 +223,14 @@ public class YoutubeVideoService {
         String fileName = "audio_" + System.currentTimeMillis() + ".mp3";
 
         String ytDlpPath = resolveEnvOrDefault("YT_DLP_PATH",
-                System.getProperty("os.name").toLowerCase().contains("win") ? "tool/yt-dlp.exe"
+                System.getProperty("os.name").toLowerCase().contains("win")
+                        ? "tool/yt-dlp.exe"
                         : "/usr/local/bin/yt-dlp");
+
         String ffmpegPath = resolveEnvOrDefault("FFMPEG_PATH",
-                System.getProperty("os.name").toLowerCase().contains("win") ? "tool/ffmpeg.exe" : "/usr/bin/ffmpeg");
+                System.getProperty("os.name").toLowerCase().contains("win")
+                        ? "tool/ffmpeg.exe"
+                        : "/usr/bin/ffmpeg");
 
         String cookiesPath = System.getenv("YT_DLP_COOKIES");
         if (cookiesPath == null || cookiesPath.isBlank()) {
@@ -239,23 +243,22 @@ public class YoutubeVideoService {
         log.info("Using yt-dlp at: {}", ytDlpPath);
         log.info("Using ffmpeg at: {}", ffmpegPath);
 
-        // --- Lần 1: Thử tải không dùng Cookies ---
         try {
             log.info("Attempt 1: Download without cookies - URL: {}", youtubeUrl);
             return runYtDlp(youtubeUrl, fileName, ytDlpPath, ffmpegPath, null);
         } catch (RuntimeException e) {
-            log.warn("Download without cookies failed. Checking for cookies fallback... Error: {}", e.getMessage());
+            log.warn("Download without cookies failed: {}", e.getMessage());
 
-            // --- Lần 2: Chỉ retry với Cookies nếu file tồn tại ---
             if (cookiesPath != null && !cookiesPath.isBlank()) {
                 File cookieFile = new File(cookiesPath);
                 if (cookieFile.exists() && cookieFile.isFile() && cookieFile.length() > 0) {
                     log.info("Attempt 2: Retrying with cookies from: {}", cookiesPath);
                     return runYtDlp(youtubeUrl, fileName, ytDlpPath, ffmpegPath, cookiesPath);
                 } else {
-                    log.warn("Cookie file is missing or empty, skipping retry.");
+                    log.warn("Cookie file missing or empty, skipping cookies retry.");
                 }
             }
+
             throw e;
         }
     }
@@ -265,22 +268,24 @@ public class YoutubeVideoService {
 
         List<String> command = new ArrayList<>(List.of(
                 ytDlpPath,
-                "-x", "--audio-format", "mp3",
+                "-x",
+                "--audio-format", "mp3",
                 "--ffmpeg-location", ffmpegPath,
                 "--user-agent",
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 "--add-header", "Referer: https://www.youtube.com/",
                 "--geo-bypass",
-                "--extractor-args", "youtube:player_client=android,tv",
-                "--format", "bestaudio/best",
+                "--format", "bestaudio[ext=m4a]/bestaudio/best",
                 "-o", fileName));
 
-        if (cookiesPath != null) {
+        if (cookiesPath != null && !cookiesPath.isBlank()) {
             command.add("--cookies");
             command.add(cookiesPath);
         }
 
         command.add(youtubeUrl);
+
+        log.info("Running yt-dlp command: {}", String.join(" ", command));
 
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.redirectErrorStream(true);
@@ -305,16 +310,25 @@ public class YoutubeVideoService {
         int exitCode = process.exitValue();
         if (exitCode != 0) {
             String out = fullOutput.toString();
+
             if (out.contains("Sign in to confirm you’re not a bot")) {
-                throw new RuntimeException("Bot detected (Sign-in required)");
+                throw new RuntimeException("Bot detected (sign-in required)");
             }
-            throw new RuntimeException("yt-dlp failed with exit code " + exitCode);
+            if (out.contains("Video unavailable")) {
+                throw new RuntimeException("Video unavailable");
+            }
+            if (out.contains("HTTP Error 403")) {
+                throw new RuntimeException("yt-dlp blocked by YouTube (HTTP 403)");
+            }
+
+            throw new RuntimeException("yt-dlp failed with exit code " + exitCode + ". Output:\n" + out);
         }
 
         File result = new File(fileName);
         if (!result.exists()) {
             throw new RuntimeException("Download finished but file not found: " + fileName);
         }
+
         return result;
     }
 
