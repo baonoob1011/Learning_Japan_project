@@ -105,8 +105,10 @@ services:
       - DB_PASSWORD=postgres
       - YT_DLP_PATH=/usr/local/bin/yt-dlp
       - FFMPEG_PATH=/usr/bin/ffmpeg
+      - YT_DLP_COOKIES=/app/tool/cookies.txt
     volumes:
       - ./tool:/app/tool
+      - /app/learningApp/tool/cookies.txt:/app/tool/cookies.txt:ro
     depends_on:
       redis:
         condition: service_healthy

@@ -219,9 +219,8 @@ public class YoutubeVideoService {
     }
 
     /**
-     * Download audio từ YouTube bằng yt-dlp (phiên bản ổn định cho production)
-     * - Không sử dụng cookies
-     * - Sử dụng web client player
+     * Download audio từ YouTube bằng yt-dlp (phiên bản ổn định có Cookies + JS
+     * Runtime)
      */
     public File downloadAudio(String youtubeUrl) throws IOException, InterruptedException {
         String fileName = "audio_" + System.currentTimeMillis() + ".mp3";
@@ -236,18 +235,27 @@ public class YoutubeVideoService {
                         ? "tool/ffmpeg.exe"
                         : "/usr/bin/ffmpeg");
 
-        log.info("Starting audio download - URL: {}", youtubeUrl);
-        log.info("Paths: yt-dlp [{}], ffmpeg [{}]", ytDlpPath, ffmpegPath);
+        // Resolve cookies path
+        String cookiesPath = System.getenv("YT_DLP_COOKIES");
+        if (cookiesPath == null || cookiesPath.isBlank()) {
+            File localCookies = new File("tool/cookies.txt");
+            if (localCookies.exists()) {
+                cookiesPath = localCookies.getAbsolutePath();
+            }
+        }
+
+        log.info("Starting audio download with JS solve - URL: {}", youtubeUrl);
+        log.info("Cookies path: {}", cookiesPath != null ? cookiesPath : "Not found (using public only)");
 
         try {
-            return runYtDlp(youtubeUrl, fileName, ytDlpPath, ffmpegPath);
+            return runYtDlp(youtubeUrl, fileName, ytDlpPath, ffmpegPath, cookiesPath);
         } catch (RuntimeException e) {
-            log.error("Download failed for URL {}: {}", youtubeUrl, e.getMessage());
+            log.error("Download failed: {}", e.getMessage());
             throw e;
         }
     }
 
-    private File runYtDlp(String youtubeUrl, String fileName, String ytDlpPath, String ffmpegPath)
+    private File runYtDlp(String youtubeUrl, String fileName, String ytDlpPath, String ffmpegPath, String cookiesPath)
             throws IOException, InterruptedException {
 
         List<String> command = new ArrayList<>(List.of(
@@ -260,9 +268,20 @@ public class YoutubeVideoService {
                 "--add-header", "Referer: https://www.youtube.com/",
                 "--geo-bypass",
                 "--no-check-certificate",
+                "--js-runtimes", "node", // Solve JS challenge
                 "--extractor-args", "youtube:player_client=web",
-                "--format", "bestaudio",
+                "--format", "bestaudio/best",
                 "-o", fileName));
+
+        if (cookiesPath != null && !cookiesPath.isBlank()) {
+            File cFile = new File(cookiesPath);
+            if (cFile.exists() && cFile.canRead()) {
+                command.add("--cookies");
+                command.add(cookiesPath);
+            } else {
+                log.warn("Cookie file not found or unreadable at: {}", cookiesPath);
+            }
+        }
 
         command.add(youtubeUrl);
 
@@ -294,7 +313,7 @@ public class YoutubeVideoService {
             String out = fullOutput.toString();
 
             if (out.contains("Sign in to confirm you’re not a bot")) {
-                throw new RuntimeException("YouTube anti-bot detected: Sign-in required");
+                throw new RuntimeException("YouTube anti-bot detected: Sign-in required (check cookies)");
             }
             if (out.contains("Video unavailable")) {
                 throw new RuntimeException("YouTube error: Video is unavailable or private");
