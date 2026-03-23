@@ -140,7 +140,12 @@ public class VocabService {
         var user = finder.userById();
 
         Vocab savedVocab = vocabRepository.findBySurface(vocab.getSurface())
-                .orElseGet(() -> vocabRepository.save(vocab));
+                .orElseGet(() -> {
+                    Vocab saved = vocabRepository.save(vocab);
+                    // 🚀 Kích hoạt Enrichment (Audio + Example) song song qua Kafka
+                    kafkaProducer.send("enrich-vocab", saved.getId(), saved.getId());
+                    return saved;
+                });
 
         // Lưu vào Video
         if (!video.getVocabs().contains(savedVocab)) {
@@ -227,6 +232,8 @@ public class VocabService {
 
         if (vocab.getId() == null || changed) {
             vocab = vocabRepository.save(vocab);
+            // 🚀 Bổ sung audio & ví dụ cho từ vừa tạo nếu chưa có
+            kafkaProducer.send("enrich-vocab", vocab.getId(), vocab.getId());
         }
 
         if (!user.getSavedVocabs().contains(vocab)) {

@@ -28,6 +28,9 @@ public class Vocab {
     private String partOfSpeech; // loại từ
     private String targetDefs; // nghĩa ngôn ngữ đích
     private String explain;
+    @Column(columnDefinition = "TEXT")
+    private String example;
+
     private String audioUrl; // đường dẫn audio trên S3
     @ManyToMany(mappedBy = "vocabs")
     @JsonIgnore

@@ -9,6 +9,7 @@ import com.example.learningApp.service.exam.UserExamResultService;
 import com.example.learningApp.service.progress.UserLearningProgressService;
 import com.example.learningApp.service.vocab.VocabService;
 import com.example.learningApp.service.vocab.VocabExerciseService;
+import com.example.learningApp.service.vocab.VocabEnrichmentService;
 import com.example.learningApp.repository.UserRepository;
 import com.example.learningApp.repository.VocabRepository;
 import com.example.learningApp.dto.event.VocabSaveExerciseEvent;
@@ -27,10 +28,18 @@ public class Consumer {
     private final UserExamResultService userExamResultService;
     private final VocabService vocabService;
 
+    private final VocabEnrichmentService enrichmentService;
+
     private static final String VOCAB_TOPIC = "create-vocab";
     private static final String PROGRESS_TOPIC = "user-learning-progress";
     private static final String EXAM_RESULT_TOPIC = "user-exam-result";
     private static final String VOCAB_SAVE_EXERCISE_TOPIC = "vocab-save-exercise";
+    private static final String VOCAB_ENRICH_TOPIC = "enrich-vocab";
+
+    @KafkaListener(topics = VOCAB_ENRICH_TOPIC)
+    public void enrichVocab(String vocabId) {
+        enrichmentService.enrichVocab(vocabId);
+    }
 
     @KafkaListener(topics = PROGRESS_TOPIC)
     public void learningProgressConsume(UpdateUserLearningProgressRequest request) {
@@ -67,4 +76,3 @@ public class Consumer {
         }
     }
 }
-
