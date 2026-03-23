@@ -26,18 +26,6 @@ import java.util.*;
 @Slf4j
 public class VnPayService {
 
-    @Value("${vnpay.tmn-code}")
-    private String vnp_TmnCode;
-
-    @Value("${vnpay.hash-secret}")
-    private String vnp_HashSecret;
-
-    @Value("${vnpay.pay-url}")
-    private String vnp_PayUrl;
-
-    @Value("${vnpay.return-url}")
-    private String vnp_ReturnUrl;
-
     private final OrderService orderService;
     private final EntityFinder finder;
     private final PaymentRetryRedisService retryRedisService;
