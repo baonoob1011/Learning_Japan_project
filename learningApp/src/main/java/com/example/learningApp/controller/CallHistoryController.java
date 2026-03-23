@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/call-history")
+@RequestMapping("/api/v1/call-history")
 @RequiredArgsConstructor
 public class CallHistoryController {
 

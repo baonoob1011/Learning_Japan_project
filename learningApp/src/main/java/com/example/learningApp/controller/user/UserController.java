@@ -10,6 +10,7 @@ import com.example.learningApp.dto.response.user.UserResponse;
 import com.example.learningApp.service.auth.AuthService;
 import com.example.learningApp.service.user.AvatarService;
 import com.example.learningApp.service.user.UserService;
+import com.example.learningApp.listener.WebSocketEventListener;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @RestController
@@ -35,12 +37,12 @@ public class UserController {
     AvatarService avatarService;
 
 
+    @GetMapping("/online")
+    public ResponseEntity<ApiResponse<Set<String>>> getOnlineUsers() {
+        return ResponseEntity.ok(ApiResponse.success("Online users fetched", WebSocketEventListener.getOnlineUsers()));
+    }
+
 //    @PostMapping("/online")
-//    public ResponseEntity<ApiResponse<Void>> userOnline() {
-//        vocabLoginReminderService.remindWhenUserOnline();
-//        log.info("co duoc goi");
-//        return ResponseEntity.ok(ApiResponse.success("User online processed", null));
-//    }
 
 
     @PostMapping("/register")
