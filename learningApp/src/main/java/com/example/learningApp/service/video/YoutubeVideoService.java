@@ -258,6 +258,9 @@ public class YoutubeVideoService {
                 "-x", "--audio-format", "mp3",
                 "--ffmpeg-location", ffmpegPath,
                 "--format", "ba/b",
+                "--user-agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "--geo-bypass",
                 "-o", fileName));
 
         // --- Bổ sung cookies nếu có để bypass bot check ---
