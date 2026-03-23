@@ -1,26 +1,21 @@
 package com.example.learningApp.service.translate;
 
-import com.atilika.kuromoji.ipadic.Token;
-import com.example.learningApp.common.kafka.Producer;
 import com.example.learningApp.dto.request.translate.TranslateRequest;
-import com.example.learningApp.dto.request.vocab.CreateVocabRequest;
 import com.example.learningApp.dto.response.translate.TranslateResponse;
+import com.example.learningApp.entity.Vocab;
+import com.example.learningApp.repository.VocabRepository;
 import com.example.learningApp.service.ai.ChatbotService;
 import com.example.learningApp.service.translate.interfaces.AudioService;
+import com.atilika.kuromoji.ipadic.Token;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.concurrent.CompletableFuture;
-
-import com.example.learningApp.repository.VocabRepository;
-import com.example.learningApp.entity.Vocab;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
 public class TranslateService {
-
-        private static final String VOCAB_TOPIC = "create-vocab";
 
         private final SentenceTranslateService sentenceTranslateService;
         private final TokenizeService tokenizeService;
@@ -28,7 +23,6 @@ public class TranslateService {
         private final AudioService audioService;
         private final ChatbotService chatbotService;
         private final VocabRepository vocabRepository;
-        private final Producer producer;
 
         public TranslateResponse translate(TranslateRequest request, String userId) {
 

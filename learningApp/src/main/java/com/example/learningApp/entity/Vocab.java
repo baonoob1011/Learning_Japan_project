@@ -23,10 +23,13 @@ public class Vocab {
     private String id;
     private String surface; // từ gốc
     private String romaji; // phiên âm
+    @Column(columnDefinition = "TEXT")
     private String translated;
     private String reading;
     private String partOfSpeech; // loại từ
+    @Column(columnDefinition = "TEXT")
     private String targetDefs; // nghĩa ngôn ngữ đích
+    @Column(columnDefinition = "TEXT")
     private String explain;
     @Column(columnDefinition = "TEXT")
     private String example;
