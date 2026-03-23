@@ -2,6 +2,7 @@ package com.example.learningApp.service.ai;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -15,6 +16,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class KanjiStrokeAiService {
 
     @Value("${gemini.api-key}")
@@ -64,25 +66,33 @@ public class KanjiStrokeAiService {
                         )
                 ),
                 "generationConfig", Map.of(
-                        "responseMimeType", "application/json"
+                        "response_mime_type", "application/json"
                 )
         );
 
-        HttpEntity<Map<String, Object>> request =
-                new HttpEntity<>(body, headers);
+        try {
+            HttpEntity<Map<String, Object>> request =
+                    new HttpEntity<>(body, headers);
 
-        ResponseEntity<Map> response =
-                restTemplate.postForEntity(url, request, Map.class);
+            ResponseEntity<Map> response =
+                    restTemplate.postForEntity(url, request, Map.class);
 
-        List<Map<String, Object>> candidates =
-                (List<Map<String, Object>>) response.getBody().get("candidates");
+            List<Map<String, Object>> candidates =
+                    (List<Map<String, Object>>) response.getBody().get("candidates");
 
-        Map<String, Object> content =
-                (Map<String, Object>) candidates.get(0).get("content");
+            Map<String, Object> content =
+                    (Map<String, Object>) candidates.get(0).get("content");
 
-        List<Map<String, Object>> parts =
-                (List<Map<String, Object>>) content.get("parts");
+            List<Map<String, Object>> parts =
+                    (List<Map<String, Object>>) content.get("parts");
 
-        return parts.get(0).get("text").toString().trim();
+            return parts.get(0).get("text").toString().trim();
+        } catch (org.springframework.web.client.HttpClientErrorException e) {
+            log.error("Gemini API error: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw new RuntimeException("Failed to call Gemini API: " + e.getResponseBodyAsString(), e);
+        } catch (Exception e) {
+            log.error("Unexpected error calling Gemini API", e);
+            throw new RuntimeException("Unexpected error calling Gemini API", e);
+        }
     }
 }

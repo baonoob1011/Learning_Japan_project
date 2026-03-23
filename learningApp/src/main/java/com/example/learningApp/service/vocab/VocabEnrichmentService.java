@@ -83,16 +83,23 @@ public class VocabEnrichmentService {
                             Map.of("role", "user", "parts", List.of(Map.of("text", prompt)))));
 
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
-            var response = restTemplate.postForEntity(url, entity, Map.class);
+            try {
+                var response = restTemplate.postForEntity(url, entity, Map.class);
 
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                @SuppressWarnings("unchecked")
-                var candidates = (List<Map<String, Object>>) response.getBody().get("candidates");
-                @SuppressWarnings("unchecked")
-                var content = (Map<String, Object>) candidates.get(0).get("content");
-                @SuppressWarnings("unchecked")
-                var parts = (List<Map<String, Object>>) content.get("parts");
-                return parts.get(0).get("text").toString().trim();
+                if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                    @SuppressWarnings("unchecked")
+                    var candidates = (List<Map<String, Object>>) response.getBody().get("candidates");
+                    @SuppressWarnings("unchecked")
+                    var content = (Map<String, Object>) candidates.get(0).get("content");
+                    @SuppressWarnings("unchecked")
+                    var parts = (List<Map<String, Object>>) content.get("parts");
+                    return parts.get(0).get("text").toString().trim();
+                }
+            } catch (org.springframework.web.client.HttpClientErrorException e) {
+                log.error("Gemini enrichment API error for word '{}': status={}, body={}", 
+                        word, e.getStatusCode(), e.getResponseBodyAsString());
+            } catch (Exception e) {
+                log.error("Unexpected error in Gemini enrichment for word '{}'", word, e);
             }
         } catch (Exception e) {
             log.error("Gemini example generation failed for word: {}", word, e);

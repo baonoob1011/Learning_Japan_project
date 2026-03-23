@@ -1,5 +1,6 @@
 package com.example.learningApp.service.ai;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class ChatbotService {
 
     @Value("${gemini.api-key}")
@@ -37,23 +39,30 @@ public class ChatbotService {
                 )
         );
 
-        HttpEntity<Map<String, Object>> request =
-                new HttpEntity<>(body, headers);
+        try {
+            HttpEntity<Map<String, Object>> request =
+                    new HttpEntity<>(body, headers);
 
-        ResponseEntity<Map> response =
-                restTemplate.postForEntity(url, request, Map.class);
+            ResponseEntity<Map> response =
+                    restTemplate.postForEntity(url, request, Map.class);
 
-        // Parse response
-        List<Map<String, Object>> candidates =
-                (List<Map<String, Object>>) response.getBody().get("candidates");
+            // Parse response
+            List<Map<String, Object>> candidates =
+                    (List<Map<String, Object>>) response.getBody().get("candidates");
 
-        Map<String, Object> content =
-                (Map<String, Object>) candidates.get(0).get("content");
+            Map<String, Object> content =
+                    (Map<String, Object>) candidates.get(0).get("content");
 
-        List<Map<String, Object>> parts =
-                (List<Map<String, Object>>) content.get("parts");
+            List<Map<String, Object>> parts =
+                    (List<Map<String, Object>>) content.get("parts");
 
-        return parts.get(0).get("text").toString();
+            return parts.get(0).get("text").toString();
+        } catch (org.springframework.web.client.HttpClientErrorException e) {
+            log.error("Gemini Chat API error: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw new RuntimeException("Chat API failed: " + e.getResponseBodyAsString(), e);
+        } catch (Exception e) {
+            log.error("Unexpected error in ChatbotService", e);
+            throw new RuntimeException("Unexpected error in ChatbotService", e);
+        }
     }
 }
-
