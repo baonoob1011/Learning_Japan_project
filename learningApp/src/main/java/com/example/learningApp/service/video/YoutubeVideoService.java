@@ -222,36 +222,46 @@ public class YoutubeVideoService {
     public File downloadAudio(String youtubeUrl) throws IOException, InterruptedException {
         String fileName = "audio_" + System.currentTimeMillis() + ".mp3";
 
-        // 1. Ưu tiên biến môi trường
-        String ytDlpPath = System.getenv("YT_DLP_PATH");
-        String ffmpegPath = System.getenv("FFMPEG_PATH");
+        String ytDlpPath = resolveEnvOrDefault("YT_DLP_PATH",
+                System.getProperty("os.name").toLowerCase().contains("win") ? "tool/yt-dlp.exe"
+                        : "/usr/local/bin/yt-dlp");
+        String ffmpegPath = resolveEnvOrDefault("FFMPEG_PATH",
+                System.getProperty("os.name").toLowerCase().contains("win") ? "tool/ffmpeg.exe" : "/usr/bin/ffmpeg");
 
-        boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
-        String ytDlpDefault = isWindows ? "yt-dlp.exe" : "yt-dlp";
-        String ffmpegDefault = isWindows ? "ffmpeg.exe" : "ffmpeg";
-
-        // 2. Fallback: dùng folder tool hoặc command mặc định mang theo extension phù
-        // hợp
-        if (ytDlpPath == null || ytDlpPath.isBlank()) {
-            File localTool = new File("tool/" + ytDlpDefault);
-            if (localTool.exists()) {
-                ytDlpPath = localTool.getAbsolutePath();
-            } else {
-                ytDlpPath = ytDlpDefault; // Thử gọi trực tiếp từ PATH
-            }
-        }
-
-        if (ffmpegPath == null || ffmpegPath.isBlank()) {
-            File localTool = new File("tool/" + ffmpegDefault);
-            if (localTool.exists()) {
-                ffmpegPath = localTool.getAbsolutePath();
-            } else {
-                ffmpegPath = ffmpegDefault; // Thử gọi trực tiếp từ PATH
+        String cookiesPath = System.getenv("YT_DLP_COOKIES");
+        if (cookiesPath == null || cookiesPath.isBlank()) {
+            File localCookies = new File("tool/cookies.txt");
+            if (localCookies.exists()) {
+                cookiesPath = localCookies.getAbsolutePath();
             }
         }
 
         log.info("Using yt-dlp at: {}", ytDlpPath);
         log.info("Using ffmpeg at: {}", ffmpegPath);
+
+        // --- Lần 1: Thử tải không dùng Cookies ---
+        try {
+            log.info("Attempt 1: Download without cookies - URL: {}", youtubeUrl);
+            return runYtDlp(youtubeUrl, fileName, ytDlpPath, ffmpegPath, null);
+        } catch (RuntimeException e) {
+            log.warn("Download without cookies failed. Checking for cookies fallback... Error: {}", e.getMessage());
+
+            // --- Lần 2: Chỉ retry với Cookies nếu file tồn tại ---
+            if (cookiesPath != null && !cookiesPath.isBlank()) {
+                File cookieFile = new File(cookiesPath);
+                if (cookieFile.exists() && cookieFile.isFile() && cookieFile.length() > 0) {
+                    log.info("Attempt 2: Retrying with cookies from: {}", cookiesPath);
+                    return runYtDlp(youtubeUrl, fileName, ytDlpPath, ffmpegPath, cookiesPath);
+                } else {
+                    log.warn("Cookie file is missing or empty, skipping retry.");
+                }
+            }
+            throw e;
+        }
+    }
+
+    private File runYtDlp(String youtubeUrl, String fileName, String ytDlpPath, String ffmpegPath, String cookiesPath)
+            throws IOException, InterruptedException {
 
         List<String> command = new ArrayList<>(List.of(
                 ytDlpPath,
@@ -261,23 +271,11 @@ public class YoutubeVideoService {
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 "--add-header", "Referer: https://www.youtube.com/",
                 "--geo-bypass",
+                "--extractor-args", "youtube:player_client=android,tv",
+                "--format", "bestaudio/best",
                 "-o", fileName));
 
-        command.add("--extractor-args");
-        command.add("youtube:player_client=android,tv");
-        command.add("--format");
-        command.add("bestaudio/best");
-
-        // --- Bổ sung cookies nếu có để bypass bot check ---
-        String cookiesPath = System.getenv("YT_DLP_COOKIES");
-        if (cookiesPath == null || cookiesPath.isBlank()) {
-            File localCookies = new File("tool/cookies.txt");
-            if (localCookies.exists()) {
-                cookiesPath = localCookies.getAbsolutePath();
-            }
-        }
-        if (cookiesPath != null && !cookiesPath.isBlank()) {
-            log.info("Sử dụng cookies từ: {}", cookiesPath);
+        if (cookiesPath != null) {
             command.add("--cookies");
             command.add(cookiesPath);
         }
@@ -285,71 +283,44 @@ public class YoutubeVideoService {
         command.add(youtubeUrl);
 
         ProcessBuilder pb = new ProcessBuilder(command);
-
         pb.redirectErrorStream(true);
         Process process = pb.start();
 
-        StringBuilder toolOutput = new StringBuilder();
-        boolean ytDlpOutputError = false;
-        String ytDlpErrorLine = null;
-
+        StringBuilder fullOutput = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                toolOutput.append(line).append(System.lineSeparator());
+                fullOutput.append(line).append("\n");
                 log.info("[yt-dlp] {}", line);
-
-                if (line.contains("No supported JavaScript runtime could be found")) {
-                    log.warn("yt-dlp JS runtime warning detected. Continuing download with limited formats.");
-                    continue;
-                }
-
-                if (line.startsWith("ERROR:")) {
-                    ytDlpOutputError = true;
-                    ytDlpErrorLine = line;
-                    if (process.isAlive()) {
-                        process.destroyForcibly();
-                    }
-                    break;
-                }
             }
         }
 
-        try {
-            boolean completed = process.waitFor(3, TimeUnit.MINUTES);
-            if (!completed) {
-                process.destroyForcibly();
-                throw new RuntimeException("yt-dlp timeout after 3 minutes. Process killed.");
-            }
-
-            int exitCode = process.exitValue();
-            if (ytDlpOutputError) {
-                throw new RuntimeException("yt-dlp output error: " + ytDlpErrorLine);
-            }
-            if (exitCode != 0) {
-                if (process.isAlive()) {
-                    process.destroyForcibly();
-                }
-                throw new RuntimeException("yt-dlp failed, exitCode=" + exitCode
-                        + ". Process killed. Output:\n" + toolOutput);
-            }
-        } catch (InterruptedException e) {
+        boolean finished = process.waitFor(5, TimeUnit.MINUTES);
+        if (!finished) {
             process.destroyForcibly();
-            Thread.currentThread().interrupt();
-            throw e;
-        } finally {
-            if (process.isAlive()) {
-                process.destroyForcibly();
+            throw new RuntimeException("yt-dlp timed out after 5 minutes");
+        }
+
+        int exitCode = process.exitValue();
+        if (exitCode != 0) {
+            String out = fullOutput.toString();
+            if (out.contains("Sign in to confirm you’re not a bot")) {
+                throw new RuntimeException("Bot detected (Sign-in required)");
             }
+            throw new RuntimeException("yt-dlp failed with exit code " + exitCode);
         }
 
-        File audioFile = new File(fileName);
-        if (!audioFile.exists()) {
-            throw new RuntimeException("Audio file not created: " + fileName);
+        File result = new File(fileName);
+        if (!result.exists()) {
+            throw new RuntimeException("Download finished but file not found: " + fileName);
         }
+        return result;
+    }
 
-        return audioFile;
+    private String resolveEnvOrDefault(String envKey, String defaultValue) {
+        String value = System.getenv(envKey);
+        return (value == null || value.isBlank()) ? defaultValue : value;
     }
 
     // Lấy videoId từ URL YouTube

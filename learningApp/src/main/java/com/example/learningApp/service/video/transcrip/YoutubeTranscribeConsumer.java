@@ -27,10 +27,7 @@ public class YoutubeTranscribeConsumer {
     private final YoutubeVideoService youtubeVideoService;
     private final TranscriptService transcriptService;
 
-    @KafkaListener(
-            topics = "youtube-transcribe",
-            concurrency = "3"
-    )
+    @KafkaListener(topics = "youtube-transcribe", concurrency = "3")
     @Transactional
     public void consume(YoutubeTranscribeMessage msg)
             throws IOException, InterruptedException {
@@ -60,10 +57,12 @@ public class YoutubeTranscribeConsumer {
         video.setVideoTag(msg.getVideoTag());
         youtubeVideoRepository.save(video);
 
-        File audioFile = youtubeVideoService.downloadAudio(msg.getUrl());
-        String jobName = "yt-transcribe-" + System.currentTimeMillis(); // <- khai báo ở đây
+        String jobName = "yt-transcribe-" + System.currentTimeMillis();
+        File audioFile = null;
 
         try {
+            audioFile = youtubeVideoService.downloadAudio(msg.getUrl());
+
             String s3Key = "audio_" + System.currentTimeMillis() + ".mp3";
             String s3Uri = youtubeVideoService.uploadToS3(audioFile, s3Key);
 
@@ -80,17 +79,18 @@ public class YoutubeTranscribeConsumer {
             video.setUpdatedAt(Instant.now());
 
             youtubeVideoRepository.save(video);
-
-
             youtubeVideoService.deleteFromS3(s3Key);
 
         } catch (Exception e) {
             video.setVideoStatus(VideoStatus.FAILED);
             youtubeVideoRepository.save(video);
-            log.error("Transcribe pipeline failed for video {}. Marked as FAILED and skip retry.", videoId, e);
-            return;
+            log.error("Transcribe pipeline failed for video {}. Marked as FAILED and skip retry. Error: {}", videoId,
+                    e.getMessage());
+            // Không ném lại exception để Kafka không retry
         } finally {
-            if (audioFile.exists()) audioFile.delete();
+            if (audioFile != null && audioFile.exists()) {
+                audioFile.delete();
+            }
 
             try {
                 transcriptService.deleteTranscriptionJob(jobName);
@@ -101,4 +101,3 @@ public class YoutubeTranscribeConsumer {
 
     }
 }
-
