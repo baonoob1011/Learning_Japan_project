@@ -253,13 +253,30 @@ public class YoutubeVideoService {
         log.info("Using yt-dlp at: {}", ytDlpPath);
         log.info("Using ffmpeg at: {}", ffmpegPath);
 
-        ProcessBuilder pb = new ProcessBuilder(
+        List<String> command = new ArrayList<>(List.of(
                 ytDlpPath,
                 "-x", "--audio-format", "mp3",
                 "--ffmpeg-location", ffmpegPath,
                 "--extractor-args", "youtube:player_client=android,ios,web",
-                "-o", fileName,
-                youtubeUrl);
+                "-o", fileName));
+
+        // --- Bổ sung cookies nếu có để bypass bot check ---
+        String cookiesPath = System.getenv("YT_DLP_COOKIES");
+        if (cookiesPath == null || cookiesPath.isBlank()) {
+            File localCookies = new File("tool/cookies.txt");
+            if (localCookies.exists()) {
+                cookiesPath = localCookies.getAbsolutePath();
+            }
+        }
+        if (cookiesPath != null && !cookiesPath.isBlank()) {
+            log.info("Sử dụng cookies từ: {}", cookiesPath);
+            command.add("--cookies");
+            command.add(cookiesPath);
+        }
+
+        command.add(youtubeUrl);
+
+        ProcessBuilder pb = new ProcessBuilder(command);
 
         pb.redirectErrorStream(true);
         Process process = pb.start();
