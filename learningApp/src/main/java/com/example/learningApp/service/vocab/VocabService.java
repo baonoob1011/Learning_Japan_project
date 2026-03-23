@@ -13,6 +13,7 @@ import com.example.learningApp.dto.response.translate.TranslateResponse;
 import com.example.learningApp.dto.response.vocab.VocabResponse;
 import com.example.learningApp.entity.Exam;
 import com.example.learningApp.entity.User;
+import com.example.learningApp.entity.UserVocabProgress;
 import com.example.learningApp.entity.Vocab;
 import com.example.learningApp.entity.YoutubeVideo;
 import com.example.learningApp.exception.NotFoundException;

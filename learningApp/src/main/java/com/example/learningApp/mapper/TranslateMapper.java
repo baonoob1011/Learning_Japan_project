@@ -18,7 +18,7 @@ public interface TranslateMapper {
         return res;
     }
 
+    @Mapping(target = "example", source = "vocabEntity.explain")
     @Mapping(target = "videoId", source = "videoId")
-    @Mapping(target = "example", source = "explain")
-    TranslateResponse toTranslateResponse(Vocab vocab, String videoId);
+    TranslateResponse toTranslateResponse(Vocab vocabEntity, String videoId);
 }
