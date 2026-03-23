@@ -50,7 +50,7 @@ public class KanjiStrokeAiService {
 
         String url =
                 "https://generativelanguage.googleapis.com/v1beta/models/"
-                        + "gemini-3-flash-preview:generateContent?key="
+                        + "gemini-1.5-flash:generateContent?key="
                         + apiKey;
 
         HttpHeaders headers = new HttpHeaders();

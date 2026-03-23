@@ -61,11 +61,6 @@ public class KanjiService {
             kanji.setOnyomi(aiData.getOnyomi());
             kanji.setKunyomi(aiData.getKunyomi());
 
-            // Lưu strokeData dạng JSON
-            String strokeJson =
-                    objectMapper.writeValueAsString(aiData.getStrokeData());
-            kanji.setSvgStrokes(strokeJson);
-
             // Lưu svgStrokes dạng JSON
             String svgJson =
                     objectMapper.writeValueAsString(svgStrokes);
