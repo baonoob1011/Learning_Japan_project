@@ -19,6 +19,6 @@ import java.util.Set;
 public interface VocabMapper {
     Vocab toVocab(CreateVocabRequest request);
 
-    @Mapping(target = "example", source = "explain")
+    @Mapping(target = "example", source = "example")
     VocabResponse toVocabResponse(Vocab vocab);
 }

@@ -104,7 +104,8 @@ public class TranslateService {
                                 .translated(sentenceTranslated)
                                 .partOfSpeech(partOfSpeech)
                                 .targetDefs(targetDefs)
-                                .explain(example)
+                                .explain(example) // (legacy)
+                                .example(example) // ✅ lưu vào cột example của DB
                                 .audioUrl(audioUrl)
                                 .build();
 

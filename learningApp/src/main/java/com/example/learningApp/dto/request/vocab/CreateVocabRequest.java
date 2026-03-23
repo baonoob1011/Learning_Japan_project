@@ -10,15 +10,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class CreateVocabRequest {
-    private String videoId;       // từ gốc
-    private String surface;       // từ gốc
-    private String romaji;        // phiên âm
+    private String videoId; // từ gốc
+    private String surface; // từ gốc
+    private String romaji; // phiên âm
     private String translated;
     private String reading;
-    private String partOfSpeech;  // loại từ
-    private String targetDefs;    // nghĩa ngôn ngữ đích
-    private String explain;      // đường dẫn audio S3 (nếu đã tạo sẵn)
-    private String audioUrl;      // đường dẫn audio S3 (nếu đã tạo sẵn)
+    private String partOfSpeech; // loại từ
+    private String targetDefs; // nghĩa ngôn ngữ đích
+    private String explain; // (legacy) ví dụ dạng text thô
+    private String example; // ví dụ minh họa (AI generated, lưu vào DB)
+    private String audioUrl; // đường dẫn audio S3 (nếu đã tạo sẵn)
 
 }
-
