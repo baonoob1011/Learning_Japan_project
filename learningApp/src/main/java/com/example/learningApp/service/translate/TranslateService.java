@@ -12,6 +12,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.concurrent.CompletableFuture;
 
+import com.example.learningApp.repository.VocabRepository;
+import com.example.learningApp.entity.Vocab;
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class TranslateService {
@@ -23,35 +27,51 @@ public class TranslateService {
         private final RomajiService romajiService;
         private final AudioService audioService;
         private final ChatbotService chatbotService;
+        private final VocabRepository vocabRepository;
         private final Producer producer;
 
         public TranslateResponse translate(TranslateRequest request) {
 
-                // 1️⃣ Dịch toàn bộ câu
+                // 1️⃣ Lấy token đầu tiên để trích xuất từ gốc (surface)
+                Token token = tokenizeService.firstToken(request.getText());
+                String surface = token.getSurface();
+
+                // 2️⃣ Kiểm tra trong DB (Nếu CÓ -> Trả về luôn thông tin trong DB, KHÔNG gọi AI
+                // / AWS)
+                Optional<Vocab> existingVocab = vocabRepository.findBySurface(surface);
+                if (existingVocab.isPresent()) {
+                        Vocab vocab = existingVocab.get();
+                        return new TranslateResponse(
+                                        request.getVideoId(),
+                                        vocab.getSurface(),
+                                        vocab.getTranslated(), // Dịch câu / đoạn nguyên gốc
+                                        vocab.getReading(),
+                                        vocab.getRomaji(),
+                                        vocab.getPartOfSpeech(),
+                                        vocab.getTargetDefs(), // Dịch nghĩa đích
+                                        vocab.getAudioUrl(),
+                                        vocab.getExample());
+                }
+
+                // 3️⃣ Nếu CHƯA CÓ -> Tiến hành xử lý dịch, sinh âm thanh, và chat AI tạo ví dụ
+                // (thực thi song song)
                 CompletableFuture<String> sentenceTranslatedFuture = CompletableFuture
                                 .supplyAsync(() -> sentenceTranslateService.translate(
                                                 request.getText(),
                                                 request.getSourceLang(),
                                                 request.getTargetLang()));
 
-                // 2️⃣ Tokenize
-                CompletableFuture<Token> tokenFuture = CompletableFuture
-                                .supplyAsync(() -> tokenizeService.firstToken(request.getText()));
-
-                // 3️⃣ Dịch nghĩa của từ
-                CompletableFuture<String> targetDefsFuture = tokenFuture
-                                .thenApplyAsync(token -> sentenceTranslateService.translate(
-                                                token.getSurface(),
+                CompletableFuture<String> targetDefsFuture = CompletableFuture
+                                .supplyAsync(() -> sentenceTranslateService.translate(
+                                                surface,
                                                 request.getSourceLang(),
                                                 request.getTargetLang()));
 
-                // 4️⃣ Audio
-                CompletableFuture<String> audioFuture = tokenFuture
-                                .thenApplyAsync(token -> audioService.generateAudio(token.getSurface()));
+                CompletableFuture<String> audioFuture = CompletableFuture
+                                .supplyAsync(() -> audioService.generateAudio(surface));
 
-                // 5️⃣ Example (AI generation)
-                CompletableFuture<String> exampleFuture = tokenFuture.thenApplyAsync(token -> {
-                        String prompt = "Tạo 1 ví dụ tiếng Nhật tự nhiên chứa từ '" + token.getSurface() +
+                CompletableFuture<String> exampleFuture = CompletableFuture.supplyAsync(() -> {
+                        String prompt = "Tạo 1 ví dụ tiếng Nhật tự nhiên chứa từ '" + surface +
                                         "'. Trình bày theo định dạng:\n" +
                                         "[Câu tiếng Nhật]\n" +
                                         "[Phiên âm]\n" +
@@ -59,16 +79,13 @@ public class TranslateService {
                         return chatbotService.chat(prompt);
                 });
 
+                // Đợi tất cả completable futures hoàn thành
                 CompletableFuture.allOf(
                                 sentenceTranslatedFuture,
-                                tokenFuture,
                                 targetDefsFuture,
                                 audioFuture,
                                 exampleFuture).join();
 
-                Token token = tokenFuture.join();
-
-                String surface = token.getSurface();
                 String reading = token.getReading() != null ? token.getReading() : surface;
                 String romaji = romajiService.toRomaji(reading);
                 String partOfSpeech = token.getPartOfSpeechLevel1();
@@ -78,7 +95,7 @@ public class TranslateService {
                 String audioUrl = audioFuture.join();
                 String example = exampleFuture.join();
 
-                // 6️⃣ Gửi Kafka tạo vocab
+                // 4️⃣ Gửi Kafka tạo vocab mới vào DB
                 CreateVocabRequest vocabRequest = CreateVocabRequest.builder()
                                 .videoId(request.getVideoId())
                                 .surface(surface)
@@ -93,7 +110,7 @@ public class TranslateService {
 
                 producer.send(VOCAB_TOPIC, request.getVideoId(), vocabRequest);
 
-                // 7️⃣ Trả response (❌ KHÔNG cache Redis)
+                // 5️⃣ Trả response
                 return new TranslateResponse(
                                 request.getVideoId(),
                                 surface,
