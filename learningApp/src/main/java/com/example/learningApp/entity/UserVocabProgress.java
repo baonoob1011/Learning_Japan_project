@@ -7,6 +7,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -65,6 +67,22 @@ public class UserVocabProgress {
     private LocalDateTime updatedAt;
 
     private LocalDateTime lastReminderSentAt;
+
+    // ===== User private customization (chi user nay moi thay) =====
+    @Column(columnDefinition = "TEXT")
+    private String personalNote;
+
+    @Column(columnDefinition = "TEXT")
+    private String customTranslated;
+
+    @Column(columnDefinition = "TEXT")
+    private String personalExample;
+
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "user_vocab_progress_tags", joinColumns = @JoinColumn(name = "progress_id"))
+    @Column(name = "tag")
+    @Builder.Default
+    private Set<String> personalTags = new HashSet<>();
 
     @PrePersist
     void onCreate() {

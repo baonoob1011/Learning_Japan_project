@@ -42,7 +42,8 @@ public class GlobalExceptionHandler {
 
     // 🔹 Validation error
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationException(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationException(
+            MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getFieldErrors()
                 .forEach(err -> errors.put(err.getField(), err.getDefaultMessage()));
@@ -56,7 +57,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<String>> handleNullPointerException(NullPointerException ex) {
         log.error("❌ NullPointerException", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Unexpected null value occurred: " + ex.getMessage()));
+                .body(ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                        "Unexpected null value occurred: " + ex.getMessage()));
     }
 
     // 🔹 Bean creation / config error
@@ -64,7 +66,15 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<String>> handleBeanCreationException(BeanCreationException ex) {
         log.error("⚙️ BeanCreationException", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Application configuration error: " + ex.getMessage()));
+                .body(ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                        "Application configuration error: " + ex.getMessage()));
+    }
+
+    @ExceptionHandler(PaymentExpiredException.class)
+    public ResponseEntity<ApiResponse<Object>> handlePaymentExpiredException(PaymentExpiredException ex) {
+        log.warn("⚠️ PaymentExpiredException: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.GONE) // Or 410 Gone for expired resources
+                .body(ApiResponse.error(HttpStatus.GONE.value(), ex.getMessage()));
     }
 
     // 🔹 Bắt tất cả lỗi còn lại
@@ -75,4 +85,3 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), ex.getMessage()));
     }
 }
-

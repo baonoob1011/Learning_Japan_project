@@ -23,9 +23,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -110,6 +109,49 @@ public class OrderService {
 
                 return orderRepository.save(order);
         }
+
+        public Optional<Order> findByOrderCode(String orderCode) {
+                return orderRepository.findByOrderCode(orderCode);
+        }
+
+        public Optional<Order> findById(String orderId) {
+                return orderRepository.findById(orderId);
+        }
+
+        public Order findMyOrderByCode(String orderCode) {
+                var currentUser = finder.userById();
+                return orderRepository.findByOrderCodeAndUserId(orderCode, currentUser.getId())
+                        .orElseThrow(() -> new RuntimeException("Order not found"));
+        }
+
+        @Transactional
+        public Order rotateOrderCode(String orderId, String newOrderCode) {
+                Order order = orderRepository.findById(orderId)
+                        .orElseThrow(() -> new RuntimeException("Order not found"));
+
+                if (order.getStatus() == PaymentStatus.SUCCESS) {
+                        return order;
+                }
+
+                order.setOrderCode(newOrderCode);
+                order.setTransactionNo(null);
+                order.setStatus(PaymentStatus.PENDING);
+
+                return orderRepository.save(order);
+        }
+
+        @Transactional
+        public void markOrderExpired(String orderId) {
+                Order order = orderRepository.findById(orderId)
+                        .orElseThrow(() -> new RuntimeException("Order not found"));
+
+                if (order.getStatus() == PaymentStatus.SUCCESS) {
+                        return;
+                }
+
+                order.setStatus(PaymentStatus.EXPIRED);
+                orderRepository.save(order);
+        }
         /* ===================== SUCCESS ===================== */
 
         @Transactional
@@ -189,6 +231,18 @@ public class OrderService {
 
                 order.setStatus(PaymentStatus.FAILED);
 
+                orderRepository.save(order);
+        }
+
+        public void markOrderFailedById(String orderId) {
+                Order order = orderRepository.findById(orderId)
+                        .orElseThrow(() -> new RuntimeException("Order not found"));
+
+                if (order.getStatus() == PaymentStatus.SUCCESS) {
+                        return;
+                }
+
+                order.setStatus(PaymentStatus.FAILED);
                 orderRepository.save(order);
         }
 }

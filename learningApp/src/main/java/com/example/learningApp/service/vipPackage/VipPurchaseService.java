@@ -82,4 +82,3 @@ public class VipPurchaseService {
         log.info("🔥 User {} upgraded to VIP successfully", user.getEmail());
     }
 }
-
