@@ -170,15 +170,16 @@ public class VocabService {
         String surface = (token != null) ? token.getSurface() : request.getText();
         String cacheKey = request.getVideoId() + ":" + surface.toLowerCase();
 
-        // 1️⃣ Redis
+        // 1️⃣ Redis (chỉ dùng nếu cache có đủ example, tránh stale data)
         VocabCache cache = vocabCacheRedisService.get(cacheKey);
-        if (cache != null) {
+        if (cache != null && cache.getExample() != null) {
             return translateMapper.mapWithVideoId(cache, request.getVideoId());
         }
 
-        // 2️⃣ DB
+        // 2️⃣ DB (ưu tiên DB khi Redis không có hoặc thiếu example)
         return vocabRepository.findBySurface(surface)
                 .map(vocab -> {
+                    // Cập nhật lại Redis cache với example mới nhất
                     VocabCache cacheToSave = vocabCacheMapper.toCache(vocab);
                     vocabCacheRedisService.save(cacheKey, cacheToSave);
 
