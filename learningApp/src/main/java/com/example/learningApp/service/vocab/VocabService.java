@@ -57,6 +57,7 @@ public class VocabService {
     EntityFinder finder;
     YoutubeVideoRepository youtubeVideoRepository;
     TranslateService translateService;
+    com.example.learningApp.service.translate.TokenizeService tokenizeService;
     UserRepository userRepository;
     VocabCacheRedisService vocabCacheRedisService;
     UserVocabProgressRepository progressRepo;
@@ -164,25 +165,24 @@ public class VocabService {
 
     public TranslateResponse findOrTranslate(TranslateRequest request) {
 
-        String cacheKey = request.getVideoId() + ":" + request.getText().toLowerCase();
+        // Dùng tokenizer để bóc tách từ gốc (surface) chính xác
+        com.atilika.kuromoji.ipadic.Token token = tokenizeService.firstToken(request.getText());
+        String surface = (token != null) ? token.getSurface() : request.getText();
+        String cacheKey = request.getVideoId() + ":" + surface.toLowerCase();
 
         // 1️⃣ Redis
         VocabCache cache = vocabCacheRedisService.get(cacheKey);
         if (cache != null) {
-            return translateMapper.mapWithVideoId(
-                    cache,
-                    request.getVideoId());
+            return translateMapper.mapWithVideoId(cache, request.getVideoId());
         }
 
         // 2️⃣ DB
-        return vocabRepository.findBySurface(request.getText())
+        return vocabRepository.findBySurface(surface)
                 .map(vocab -> {
                     VocabCache cacheToSave = vocabCacheMapper.toCache(vocab);
                     vocabCacheRedisService.save(cacheKey, cacheToSave);
 
-                    return translateMapper.toTranslateResponse(
-                            vocab,
-                            request.getVideoId());
+                    return translateMapper.toTranslateResponse(vocab, request.getVideoId());
                 })
                 // 3️⃣ Không có → translate mới
                 .orElseGet(() -> translateService.translate(request));
