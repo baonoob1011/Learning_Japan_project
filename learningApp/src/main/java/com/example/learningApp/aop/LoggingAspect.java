@@ -38,8 +38,7 @@ import java.util.*;
 public class LoggingAspect {
 
     private static final Set<String> SENSITIVE_KEYS = Set.of(
-            "password", "token", "accesstoken", "refreshtoken", "secret", "authorization"
-    );
+            "password", "token", "accesstoken", "refreshtoken", "secret", "authorization");
 
     private final LogService logService;
     private final ObjectMapper objectMapper;
@@ -50,8 +49,9 @@ public class LoggingAspect {
             "create", "save", "upload", "submit", "start",
             "mark", "finalize", "attempt", "grade",
             "purchase", "confirm", "forgot", "run",
-            "check", "translate", "generate"
-    );
+            "check", "translate", "generate",
+            "update", "delete", "remove", "add", "handle",
+            "retry", "cancel", "activate", "deactivate", "verify", "enroll", "process", "change");
 
     private static final Set<String> MAINFLOW_METHOD_NAMES = Set.of(
             "getTodaySession",
@@ -59,8 +59,7 @@ public class LoggingAspect {
             "getMyVocabProgress",
             "getOverallProgress",
             "finalizeSmartWord",
-            "attemptSmartSkill"
-    );
+            "attemptSmartSkill");
 
     @Pointcut("execution(* com.example.learningApp.controller..*(..))")
     public void controllerPackage() {
@@ -77,44 +76,28 @@ public class LoggingAspect {
     @Around("(controllerPackage() || servicePackage()) && !noLogPointcut() && !execution(* com.example.learningApp.service.logging..*(..))")
     public Object logActivity(ProceedingJoinPoint joinPoint) throws Throwable {
         long startedAt = System.currentTimeMillis();
-        
-        // 🛡️ Lấy thông tin user hiện tại
-        User currentUser = extractCurrentUser();
-        String username = (currentUser != null) ? currentUser.getEmail() : "Người dùng ẩn danh";
-        String userFullName = (currentUser != null) ? currentUser.getFullName() : null;
-        String userAvatar = (currentUser != null) ? currentUser.getAvatarUrl() : null;
-
-        String ipAddress = extractIpAddress();
-        String targetClass = joinPoint.getSignature().getDeclaringTypeName();
-        String methodName = joinPoint.getSignature().getName();
-
-        if (!shouldLogMainFlow(targetClass, methodName)) {
-            return joinPoint.proceed();
-        }
-
-        String argsJson = serializeArguments(joinPoint.getArgs());
 
         try {
-            Object result = joinPoint.proceed();
-            long executionMs = System.currentTimeMillis() - startedAt;
-
-            SystemLog systemLog = new SystemLog();
-            systemLog.setUsername(username);
-            systemLog.setUserFullName(userFullName);
-            systemLog.setUserAvatar(userAvatar);
-            systemLog.setIpAddress(ipAddress);
-            systemLog.setTargetClass(targetClass);
-            systemLog.setMethodName(methodName);
-            systemLog.setArguments(argsJson);
-            systemLog.setResult(serializeValue(result));
-            systemLog.setExecutionTime(executionMs);
-            systemLog.setStatus("SUCCESS");
-            systemLog.setCreatedAt(LocalDateTime.now());
-
-            logService.saveAsync(systemLog);
-            return result;
+            return joinPoint.proceed();
         } catch (Throwable throwable) {
+            String targetClass = joinPoint.getSignature().getDeclaringTypeName();
+            String methodName = joinPoint.getSignature().getName();
+
+            // Chỉ log lỗi cho các method thuộc main flow được cấu hình để tránh log tràn
+            // lan (lung tun)
+            if (!shouldLogMainFlow(targetClass, methodName)) {
+                throw throwable;
+            }
+
             long executionMs = System.currentTimeMillis() - startedAt;
+
+            // 🛡️ Lấy thông tin ngữ cảnh lỗi khi có sự cố xảy ra
+            User currentUser = extractCurrentUser();
+            String username = (currentUser != null) ? currentUser.getEmail() : "Người dùng ẩn danh";
+            String userFullName = (currentUser != null) ? currentUser.getFullName() : null;
+            String userAvatar = (currentUser != null) ? currentUser.getAvatarUrl() : null;
+            String ipAddress = extractIpAddress();
+            String argsJson = serializeArguments(joinPoint.getArgs());
 
             SystemLog systemLog = new SystemLog();
             systemLog.setUsername(username);
@@ -141,17 +124,17 @@ public class LoggingAspect {
                 return null;
             }
             String principalName = auth.getName();
-            
+
             // Nếu là UUID (sub từ Cognito), tìm trong DB
             if (looksLikeUuid(principalName)) {
                 return userRepository.findById(principalName).orElse(null);
             }
-            
+
             // Nếu là email, tìm theo email
             if (principalName.contains("@")) {
                 return userRepository.findByEmail(principalName).orElse(null);
             }
-            
+
             return null;
         } catch (Exception ex) {
             return null;
@@ -159,7 +142,8 @@ public class LoggingAspect {
     }
 
     private boolean looksLikeUuid(String value) {
-        if (value == null) return false;
+        if (value == null)
+            return false;
         try {
             UUID.fromString(value);
             return true;
@@ -222,8 +206,7 @@ public class LoggingAspect {
             return Map.of(
                     "type", "HttpServletRequest",
                     "method", request.getMethod(),
-                    "uri", request.getRequestURI()
-            );
+                    "uri", request.getRequestURI());
         }
         if (value instanceof HttpServletResponse) {
             return Map.of("type", "HttpServletResponse");
@@ -252,7 +235,8 @@ public class LoggingAspect {
     }
 
     private void maskSensitive(JsonNode node) {
-        if (node == null) return;
+        if (node == null)
+            return;
 
         if (node.isObject()) {
             ObjectNode objectNode = (ObjectNode) node;
