@@ -2,6 +2,7 @@ package com.example.learningApp.mapper;
 
 import com.example.learningApp.dto.response.order.OrderDetailResponse;
 import com.example.learningApp.dto.response.order.OrderItemResponse;
+import com.example.learningApp.dto.response.order.OrderResponse;
 import com.example.learningApp.dto.response.order.OrderSuccessResponse;
 import com.example.learningApp.entity.Order;
 import com.example.learningApp.entity.OrderItem;
@@ -9,6 +10,10 @@ import org.mapstruct.*;
 
 @Mapper(componentModel = "spring")
 public interface OrderMapper {
+
+    /* ================= ORDER RESPONSE ================= */
+
+    OrderResponse toOrderResponse(Order order);
 
     /* ================= ORDER DETAIL ================= */
 
