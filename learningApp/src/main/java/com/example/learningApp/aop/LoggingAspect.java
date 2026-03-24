@@ -83,12 +83,7 @@ public class LoggingAspect {
             String targetClass = joinPoint.getSignature().getDeclaringTypeName();
             String methodName = joinPoint.getSignature().getName();
 
-            // Chỉ log lỗi cho các method thuộc main flow được cấu hình để tránh log tràn
-            // lan (lung tun)
-            if (!shouldLogMainFlow(targetClass, methodName)) {
-                throw throwable;
-            }
-
+            // Chúng ta log TẤT CẢ các lỗi để phục vụ việc debug hệ thống hiệu quả hơn
             long executionMs = System.currentTimeMillis() - startedAt;
 
             // 🛡️ Lấy thông tin ngữ cảnh lỗi khi có sự cố xảy ra
