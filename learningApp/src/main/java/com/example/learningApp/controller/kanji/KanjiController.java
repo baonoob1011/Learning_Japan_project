@@ -45,5 +45,4 @@ public class KanjiController {
                                                 "Kanji list fetched successfully",
                                                 kanjiService.getAllKanji()));
         }
-}
 

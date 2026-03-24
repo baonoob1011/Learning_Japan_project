@@ -1,6 +1,7 @@
 package com.example.learningApp.service.kanji;
 
 import com.example.learningApp.dto.request.kanji.CreateKanjiRequest;
+import com.example.learningApp.dto.request.kanji.UpdateKanjiRequest;
 import com.example.learningApp.dto.response.kanji.KanjiAiResponse;
 import com.example.learningApp.dto.response.kanji.KanjiResponse;
 import com.example.learningApp.entity.Kanji;
@@ -97,6 +98,36 @@ public class KanjiService {
 
         kanjiRepository.delete(kanji);
     }
+    // =================================================
+    // UPDATE Kanji
+    // =================================================
+    @Transactional
+    public KanjiResponse updateKanji(String id, UpdateKanjiRequest request) {
+
+        Kanji kanji = kanjiRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Kanji not found"));
+
+        if (request.getCharacter() != null && !request.getCharacter().equals(kanji.getCharacter())) {
+            // Re-generate strokes if character changed
+            try {
+                List<String> svgStrokes =
+                        kanjiStrokeAiService.generateSvgStrokes(request.getCharacter());
+                String svgJson = objectMapper.writeValueAsString(svgStrokes);
+                kanji.setSvgStrokes(svgJson);
+                kanji.setCharacter(request.getCharacter());
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to update character strokes", e);
+            }
+        }
+
+        if (request.getMeaning() != null) kanji.setMeaning(request.getMeaning());
+        if (request.getOnyomi() != null) kanji.setOnyomi(request.getOnyomi());
+        if (request.getKunyomi() != null) kanji.setKunyomi(request.getKunyomi());
+
+        Kanji saved = kanjiRepository.save(kanji);
+        return mapToResponse(saved);
+    }
+
     // =================================================
     // Mapper Entity -> Response
     // =================================================
