@@ -23,7 +23,7 @@ public class UserVocabProgressResponse {
     private int writingScore;
     private int readingScore;
     private int masteryLevel;
-    private boolean flashcardLearned;
+    private FlashcardStatus flashcardStatus;
 
     private LocalDateTime lastReviewedAt;
     private LocalDateTime createdAt;
