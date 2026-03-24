@@ -7,8 +7,12 @@ import com.example.learningApp.entity.Order;
 import com.example.learningApp.entity.OrderItem;
 import org.mapstruct.*;
 
+import com.example.learningApp.dto.response.order.OrderResponse;
 @Mapper(componentModel = "spring")
 public interface OrderMapper {
+
+    @Mapping(target = "id", source = "id")
+    OrderResponse toOrderResponse(Order order);
 
     /* ================= ORDER DETAIL ================= */
 
