@@ -1,5 +1,6 @@
 package com.example.learningApp.entity;
 
+import com.example.learningApp.enums.FlashcardStatus;
 import com.example.learningApp.enums.LearningStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -60,6 +61,10 @@ public class UserVocabProgress {
     private int readingScore = 0;     // 0-100
     @Builder.Default
     private int masteryLevel = 0;     // 0-100 (tổng hợp)
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private FlashcardStatus flashcardStatus = FlashcardStatus.NEW;
 
     private LocalDateTime createdAt;
     private LocalDateTime lastReviewedAt;

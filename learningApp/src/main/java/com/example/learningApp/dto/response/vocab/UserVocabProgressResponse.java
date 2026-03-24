@@ -1,5 +1,6 @@
 package com.example.learningApp.dto.response.vocab;
 
+import com.example.learningApp.enums.FlashcardStatus;
 import com.example.learningApp.enums.LearningStatus;
 import lombok.Builder;
 import lombok.Data;
@@ -22,6 +23,7 @@ public class UserVocabProgressResponse {
     private int writingScore;
     private int readingScore;
     private int masteryLevel;
+    private boolean flashcardLearned;
 
     private LocalDateTime lastReviewedAt;
     private LocalDateTime createdAt;
