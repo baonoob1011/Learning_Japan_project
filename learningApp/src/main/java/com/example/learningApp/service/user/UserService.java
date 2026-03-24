@@ -12,6 +12,7 @@ import com.example.learningApp.entity.User;
 import com.example.learningApp.mapper.UserMapper;
 import com.example.learningApp.repository.UserLearningProgressRepository;
 import com.example.learningApp.repository.UserRepository;
+import com.example.learningApp.repository.UserVocabProgressRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
