@@ -46,3 +46,23 @@ public class KanjiController {
                                                 kanjiService.getAllKanji()));
         }
 
+        @PutMapping("/{id}")
+        public ResponseEntity<ApiResponse<KanjiResponse>> updateKanji(
+                        @PathVariable String id,
+                        @RequestBody UpdateKanjiRequest request) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Kanji updated successfully",
+                                                kanjiService.updateKanji(id, request)));
+        }
+
+        @DeleteMapping("/{id}")
+        public ResponseEntity<ApiResponse<Void>> deleteKanji(
+                        @PathVariable String id) {
+                kanjiService.deleteKanji(id);
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Kanji deleted successfully",
+                                                null));
+        }
+}
