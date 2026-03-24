@@ -3,6 +3,7 @@ package com.example.learningApp.controller.kanji;
 import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.request.kanji.CreateKanjiRequest;
 import com.example.learningApp.dto.request.kanji.KanjiStrokeRequest;
+import com.example.learningApp.dto.request.kanji.UpdateKanjiRequest;
 import com.example.learningApp.dto.response.kanji.KanjiCheckResponse;
 import com.example.learningApp.dto.response.kanji.KanjiResponse;
 import com.example.learningApp.service.kanji.KanjiService;
