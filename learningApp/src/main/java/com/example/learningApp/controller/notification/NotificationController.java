@@ -23,7 +23,7 @@ import java.util.Map;
 public class NotificationController {
 
     private static final Logger log = LoggerFactory.getLogger(NotificationController.class);
-    private static final String DEPLOY_MARKER = "UNREAD_COUNT_V3_FIX_GET_2026-03-22";
+    private static final String DEPLOY_MARKER = "UNREAD_COUNT_V3_FIX_GET_2026-03-24";
 
     NotificationService notificationService;
 
@@ -37,21 +37,20 @@ public class NotificationController {
         return ResponseEntity.ok(ApiResponse.success("Get notifications success", res));
     }
 
-    @RequestMapping(value = { "/unread-count", "/unread-count/" }, method = { RequestMethod.GET, RequestMethod.POST })
+    @GetMapping("/unread-count")
     public ResponseEntity<ApiResponse<Map<String, Long>>> getUnreadCount() {
-        log.warn("[{}] hit /api/v1/notifications/unread-count", DEPLOY_MARKER);
-        System.out.println(">>> " + DEPLOY_MARKER + " | NotificationController#getUnreadCount called");
+        log.info("[{}] hit /api/v1/notifications/unread-count via GET", DEPLOY_MARKER);
         return ResponseEntity.ok(ApiResponse.success("Unread count fetched",
                 Map.of("unreadCount", notificationService.getUnreadCount())));
     }
 
-    @RequestMapping(value = "/{id}/read", method = { RequestMethod.PUT, RequestMethod.POST })
+    @PutMapping("/{id}/read")
     public ResponseEntity<ApiResponse<Void>> markAsRead(@PathVariable String id) {
         notificationService.markAsRead(id);
         return ResponseEntity.ok(ApiResponse.success("Notification marked as read", null));
     }
 
-    @RequestMapping(value = "/read-all", method = { RequestMethod.PUT, RequestMethod.POST })
+    @PutMapping("/read-all")
     public ResponseEntity<ApiResponse<Void>> markAllAsRead() {
         notificationService.markAllAsRead();
         return ResponseEntity.ok(ApiResponse.success("All notifications marked as read", null));
