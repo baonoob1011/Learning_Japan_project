@@ -9,6 +9,7 @@ import com.example.learningApp.dto.response.kanji.KanjiResponse;
 import com.example.learningApp.service.kanji.KanjiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -47,6 +48,8 @@ public class KanjiController {
                                                 kanjiService.getAllKanji()));
         }
 
+        @PreAuthorize("hasRole('ADMIN')")
+
         @PutMapping("/{id}")
         public ResponseEntity<ApiResponse<KanjiResponse>> updateKanji(
                         @PathVariable String id,
@@ -56,6 +59,8 @@ public class KanjiController {
                                                 "Kanji updated successfully",
                                                 kanjiService.updateKanji(id, request)));
         }
+
+        @PreAuthorize("hasRole('ADMIN')")
 
         @DeleteMapping("/{id}")
         public ResponseEntity<ApiResponse<Void>> deleteKanji(
