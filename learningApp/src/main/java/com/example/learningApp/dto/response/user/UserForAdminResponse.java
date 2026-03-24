@@ -25,6 +25,10 @@ public class UserForAdminResponse {
     private Integer processPercent; // 0 - 100
     private boolean isPremium;     // True/False
 
+    private Long totalVocabLearned;
+    private Long masteredVocabCount;
+    private Long learningVocabCount;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

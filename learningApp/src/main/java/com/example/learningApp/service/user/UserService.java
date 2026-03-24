@@ -58,6 +58,52 @@ public class UserService {
     CognitoIdentityProviderClient cognitoClient;
     UserRepository userRepository;
     UserLearningProgressRepository userLearningProgressRepository;
+    UserVocabProgressRepository userVocabProgressRepository;
+    com.example.learningApp.repository.OrderRepository orderRepository;
+    com.example.learningApp.mapper.OrderMapper orderMapper;
+
+    public UserForAdminResponse getUserDetail(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        UserForAdminResponse response = mapToUserResponse(user);
+
+        // Learning Progress
+        var progress = userLearningProgressRepository.findFirstByUserIdOrderByLastExamAtDesc(userId);
+        if (progress != null) {
+            response.setLevel(progress.getLevel());
+            int percent = (progress.getTotalQuestionsDone() == 0) ? 0
+                    : (int) ((double) progress.getCorrectQuestions() / progress.getTotalQuestionsDone() * 100);
+            response.setProcessPercent(percent);
+            response.setStage(progress.getTotalExamsTaken() > 10 ? "Exam" : "Junbi");
+        } else {
+            response.setLevel(user.getLevel() != null ? user.getLevel().name() : "N5");
+            response.setProcessPercent(0);
+            response.setStage("Newbie");
+        }
+
+        // Premium status - assume it depends on roles or an expiration date
+        response.setPremium(user.getRoles().stream().anyMatch(r -> r.getRoleName().equals("PREMIUM")) || (user.getVipExpiredAt() != null && user.getVipExpiredAt().isAfter(java.time.LocalDateTime.now())));
+
+        // Vocab Stats
+        var vocabProgressList = userVocabProgressRepository.findByUser(user);
+        response.setTotalVocabLearned((long) vocabProgressList.size());
+        response.setMasteredVocabCount(vocabProgressList.stream()
+                .filter(p -> p.getStatus() == com.example.learningApp.enums.LearningStatus.KNOWN)
+                .count());
+        response.setLearningVocabCount(vocabProgressList.stream()
+                .filter(p -> p.getStatus() == com.example.learningApp.enums.LearningStatus.LEARNING 
+                          || p.getStatus() == com.example.learningApp.enums.LearningStatus.REVIEW)
+                .count());
+
+        return response;
+    }
+
+    public List<com.example.learningApp.dto.response.order.OrderResponse> getUserOrders(String userId) {
+        return orderRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(orderMapper::toOrderResponse)
+                .toList();
+    }
 
     public void changePassword(String accessToken, String oldPassword, String newPassword) {
         try {

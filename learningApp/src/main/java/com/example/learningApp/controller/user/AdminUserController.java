@@ -76,5 +76,16 @@ public class AdminUserController {
         return ResponseEntity.ok(ApiResponse.success("User statistics retrieved successfully", response));
     }
 
+    @GetMapping("/{userId}")
+    public ResponseEntity<ApiResponse<UserForAdminResponse>> getUserDetail(@PathVariable String userId) {
+        UserForAdminResponse response = userService.getUserDetail(userId);
+        return ResponseEntity.ok(ApiResponse.success("User detail retrieved successfully", response));
+    }
+
+    @GetMapping("/{userId}/orders")
+    public ResponseEntity<ApiResponse<List<com.example.learningApp.dto.response.order.OrderResponse>>> getUserOrders(@PathVariable String userId) {
+        var response = userService.getUserOrders(userId);
+        return ResponseEntity.ok(ApiResponse.success("User orders retrieved successfully", response));
+    }
 }
 
