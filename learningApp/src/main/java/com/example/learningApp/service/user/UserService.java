@@ -83,7 +83,8 @@ public class UserService {
         }
 
         // Premium status - assume it depends on roles or an expiration date
-        response.setPremium(user.getRoles().stream().anyMatch(r -> r.getRoleName().equals("PREMIUM")) || (user.getVipExpiredAt() != null && user.getVipExpiredAt().isAfter(java.time.LocalDateTime.now())));
+        response.setPremium(user.getRoles().stream().anyMatch(r -> r.getRoleName().equals("PREMIUM"))
+                || (user.getVipExpiredAt() != null && user.getVipExpiredAt().isAfter(java.time.LocalDateTime.now())));
 
         // Vocab Stats
         var vocabProgressList = userVocabProgressRepository.findByUser(user);
@@ -92,8 +93,8 @@ public class UserService {
                 .filter(p -> p.getStatus() == com.example.learningApp.enums.LearningStatus.KNOWN)
                 .count());
         response.setLearningVocabCount(vocabProgressList.stream()
-                .filter(p -> p.getStatus() == com.example.learningApp.enums.LearningStatus.LEARNING 
-                          || p.getStatus() == com.example.learningApp.enums.LearningStatus.REVIEW)
+                .filter(p -> p.getStatus() == com.example.learningApp.enums.LearningStatus.LEARNING
+                        || p.getStatus() == com.example.learningApp.enums.LearningStatus.REVIEW)
                 .count());
 
         return response;
@@ -410,4 +411,3 @@ public class UserService {
     }
 
 }
-
