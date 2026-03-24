@@ -7,7 +7,6 @@ import com.example.learningApp.dto.response.vocab.UserVocabProgressResponse;
 import com.example.learningApp.entity.User;
 import com.example.learningApp.entity.UserVocabProgress;
 import com.example.learningApp.entity.Vocab;
-import com.example.learningApp.enums.FlashcardStatus;
 import com.example.learningApp.enums.LearningStatus;
 import com.example.learningApp.enums.ReviewGrade;
 import com.example.learningApp.enums.StudyMode;
@@ -56,8 +55,6 @@ public class TrackingVocabLearningService {
                 request.isRemembered(),
                 now);
 
-        progress.setFlashcardStatus(request.isRemembered() ? FlashcardStatus.LEARNED : FlashcardStatus.NOT_LEARNED);
-
         progressRepo.save(progress);
 
         // Cập nhật session (xóa khỏi hàng đợi sau khi học xong kỹ năng)
@@ -80,7 +77,6 @@ public class TrackingVocabLearningService {
                         .writingScore(p.getWritingScore())
                         .readingScore(p.getReadingScore())
                         .masteryLevel(p.getMasteryLevel())
-                        .flashcardStatus(p.getFlashcardStatus())
                         .lastReviewedAt(p.getLastReviewedAt())
                         .createdAt(p.getCreatedAt())
                         .build())
@@ -154,7 +150,6 @@ public class TrackingVocabLearningService {
                 .writingScore(0)
                 .readingScore(0)
                 .masteryLevel(0)
-                .flashcardStatus(FlashcardStatus.NEW)
                 .nextReviewAt(LocalDateTime.now())
                 .lastReviewedAt(LocalDateTime.now())
                 .build();
