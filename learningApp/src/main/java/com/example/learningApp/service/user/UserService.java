@@ -12,6 +12,11 @@ import com.example.learningApp.entity.User;
 import com.example.learningApp.mapper.UserMapper;
 import com.example.learningApp.repository.UserLearningProgressRepository;
 import com.example.learningApp.repository.UserRepository;
+import com.example.learningApp.repository.OrderRepository;
+import com.example.learningApp.repository.UserVocabProgressRepository;
+import com.example.learningApp.mapper.OrderMapper;
+import com.example.learningApp.enums.LearningStatus;
+import com.example.learningApp.dto.response.order.OrderResponse;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -59,8 +64,8 @@ public class UserService {
     UserRepository userRepository;
     UserLearningProgressRepository userLearningProgressRepository;
     UserVocabProgressRepository userVocabProgressRepository;
-    com.example.learningApp.repository.OrderRepository orderRepository;
-    com.example.learningApp.mapper.OrderMapper orderMapper;
+    OrderRepository orderRepository;
+    OrderMapper orderMapper;
 
     public UserForAdminResponse getUserDetail(String userId) {
         User user = userRepository.findById(userId)
@@ -90,17 +95,17 @@ public class UserService {
         var vocabProgressList = userVocabProgressRepository.findByUser(user);
         response.setTotalVocabLearned((long) vocabProgressList.size());
         response.setMasteredVocabCount(vocabProgressList.stream()
-                .filter(p -> p.getStatus() == com.example.learningApp.enums.LearningStatus.KNOWN)
+                .filter(p -> p.getStatus() == LearningStatus.KNOWN)
                 .count());
         response.setLearningVocabCount(vocabProgressList.stream()
-                .filter(p -> p.getStatus() == com.example.learningApp.enums.LearningStatus.LEARNING
-                        || p.getStatus() == com.example.learningApp.enums.LearningStatus.REVIEW)
+                .filter(p -> p.getStatus() == LearningStatus.LEARNING
+                        || p.getStatus() == LearningStatus.REVIEW)
                 .count());
 
         return response;
     }
 
-    public List<com.example.learningApp.dto.response.order.OrderResponse> getUserOrders(String userId) {
+    public List<OrderResponse> getUserOrders(String userId) {
         return orderRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
                 .map(orderMapper::toOrderResponse)
                 .toList();
