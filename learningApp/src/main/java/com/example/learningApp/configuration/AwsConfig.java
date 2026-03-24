@@ -64,9 +64,6 @@ public class AwsConfig {
         @Bean
         public AmazonS3 amazonS3() {
                 System.out.println("AccessKeyVy: " + accessKey);
-                System.out.println("code mới nè kanji: ");
-
-                System.out.println("code mới nè kanji: ");
 
                 BasicAWSCredentials awsCreds = new BasicAWSCredentials(accessKey, secretKey);
                 return AmazonS3ClientBuilder.standard()
