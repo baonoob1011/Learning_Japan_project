@@ -237,6 +237,13 @@
 			<artifactId>junit-platform-suite</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>org.apache.pdfbox</groupId>
+			<artifactId>pdfbox</artifactId>
+			<version>2.0.31</version>
+			<scope>test</scope>
+		</dependency>
 		<!--  ✅ Validation: hỗ trợ @Valid, @Email, @NotBlank...  -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
