@@ -1,0 +1,29 @@
+package com.example.learningApp.repository;
+
+import com.example.learningApp.entity.Exam;
+import com.example.learningApp.entity.ExamSection;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface ExamSectionRepository extends JpaRepository<ExamSection, String> {
+    Optional<ExamSection> findByTitle(String title);
+
+    Optional<ExamSection> findByTitleAndSectionOrderAndLevel(
+            String title,
+            Integer sectionOrder,
+            String level);
+
+    Optional<ExamSection> findByTitleAndSectionOrderAndLevelAndExams_Code(
+            String title,
+            Integer sectionOrder,
+            String level,
+            String examCode);
+
+}
+

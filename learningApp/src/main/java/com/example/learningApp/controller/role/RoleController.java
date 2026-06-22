@@ -1,8 +1,8 @@
 package com.example.learningApp.controller.role;
 
-import com.example.learningApp.dto.ApiResponse;
+import com.example.learningApp.common.ApiResponse;
 import com.example.learningApp.dto.request.role.AssignRoleRequest;
-import com.example.learningApp.dto.request.role.CreateRoleRequest;
+import com.example.learningApp.dto.request.role.UpdateUserRoleRequest;
 import com.example.learningApp.service.role.RoleService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -21,12 +21,12 @@ public class RoleController {
 
     RoleService roleService;
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<Void>> createRole(
-            @RequestBody @Valid CreateRoleRequest request) {
+    @PutMapping("/update-user")
+    public ResponseEntity<ApiResponse<Void>> updateUserRole(
+            @RequestBody @Valid UpdateUserRoleRequest request) {
 
-        roleService.createRole(request);
-        return ResponseEntity.ok(ApiResponse.success("Role created successfully", null));
+        roleService.updateUserRole(request);
+        return ResponseEntity.ok(ApiResponse.success("User role updated successfully", null));
     }
 
     @PostMapping("/assign")
@@ -37,3 +37,4 @@ public class RoleController {
         return ResponseEntity.ok(ApiResponse.success("Role assigned to user", null));
     }
 }
+

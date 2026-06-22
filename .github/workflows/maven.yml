@@ -1,0 +1,42 @@
+# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
+
+name: Java CI with Maven
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+
+permissions:
+  contents: write # Cần thiết cho việc submit dependency graph
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    # 1. Update lên phiên bản Java 21 theo cấu hình pom.xml của bạn
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven
+        
+    # 2. Cấp quyền chạy cho file maven wrapper (quan trọng)
+    - name: Make mvnw executable
+      run: chmod +x ./learningApp/mvnw
+
+    # 3. Trỏ đường dẫn vào thư mục learningApp chứa file pom.xml
+    - name: Build with Maven
+      run: ./mvnw -B package -DskipTests --file pom.xml
+      working-directory: ./learningApp
+
+

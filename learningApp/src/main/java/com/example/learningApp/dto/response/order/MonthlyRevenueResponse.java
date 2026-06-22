@@ -1,0 +1,16 @@
+package com.example.learningApp.dto.response.order;
+
+import lombok.*;
+import lombok.experimental.FieldDefaults;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class MonthlyRevenueResponse {
+    int month;
+    String monthName;
+    Long revenue;
+}
+

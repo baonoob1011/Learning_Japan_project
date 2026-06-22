@@ -4,28 +4,50 @@ spring:
 
   main:
     banner-mode: off
-
+  mvc:
+    throw-exception-if-no-handler-found: true
+    web:
+      resources:
+        add-mappings: false
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: ${COGNITO_ISSUER_URI}
-
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 200MB
   cache:
     type: redis
+    data:
+      redis:
+        host: ${SPRING_REDIS_HOST:localhost}
+        port: ${SPRING_REDIS_PORT:6379}
 
   data:
-    redis:
-      host: localhost
-      port: 6379
-      cluster:
-        enabled: false
+    elasticsearch:
+      repositories:
+        enabled: true
+      mapping:
+        exclude-class: true
 
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: ${DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:learningApp}}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
+
+  batch:
+    jdbc:
+      initialize-schema: ${SPRING_BATCH_JDBC_INITIALIZE_SCHEMA:always}
+    platform: ${SPRING_BATCH_PLATFORM:postgresql}
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:org/springframework/batch/core/schema-postgresql.sql
+      continue-on-error: true
 
   jpa:
     hibernate:
@@ -35,62 +57,62 @@ spring:
         format_sql: true
 
   kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: true
+
     consumer:
-      bootstrap-servers: localhost:9092
-      group-id: user-service-group
-      key-deserializer: ${KAFKA_KEY_SERIALIZER}
-      value-deserializer: ${KAFKA_VALUE_SERIALIZER}
+      group-id: user-learning-progress-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: earliest
+      enable-auto-commit: false
       properties:
         spring.json.trusted.packages: "*"
+    listener:
+      ack-mode: record
 
-# ================= CUSTOM CONFIG =================
-
-openSearch:
-  host: ${AWS_OPENSEARCH_HOST}
-  username: ${AWS_OPENSEARCH_USERNAME}
-  password: ${AWS_OPENSEARCH_PASSWORD}
+vnpay:
+  tmn-code: ${VNPAY_TMN_CODE}
+  hash-secret: ${VNPAY_HASH_SECRET}
+  pay-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+  return-url: https://api.nibojapan.cloud/api/v1/payments/vnpay/return
 
 aws:
-  iam:
-    region: ${AWS_REGION}
+  iam-nam:
+    access-key: ${AWS_ACCESS_KEY_NAM}
+    secret-key: ${AWS_SECRET_KEY_NAM}
+  region: ${AWS_REGION}
+  region-nam: ${AWS_REGION_NAM}
+  cognito:
     cognito-domain: ${AWS_COGNITO_DOMAIN}
-    access-key: ${AWS_ACCESS_KEY}
-    secret-key: ${AWS_SECRET_KEY}
-
-    region-cognito: ${AWS_REGION_COGNITO}
-    access-key-cognito: ${AWS_ACCESS_KEY_COGNITO}
-    secret-key-cognito: ${AWS_SECRET_KEY_COGNITO}
-
     client-id: ${AWS_CLIENT_ID}
     client-secret: ${AWS_CLIENT_SECRET}
     user-pool-id: ${AWS_USER_POOL_ID}
-
+  iam:
+    access-key: ${AWS_ACCESS_KEY}
+    secret-key: ${AWS_SECRET_KEY}
+  s3:
+    bucket: ${AWS_S3_BUCKET_NAME}
+    bucket-nam: ${AWS_S3_BUCKET_NAME_V2}
 google:
-  redirect-uri: ${REDICT_URI}
-
-cloudwatch:
-  log-group: ${AWS_LOG_GROUP}
-  log-stream: ${AWS_IAM_LOG_STREAM}
+  api-key: ${GOOGLE_API_KEY}
+gemini:
+  api-key: ${GEMINI_API_KEY}
 
 jwt:
   secret-key: ${JWT_SECRET}
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,metrics,prometheus
-  endpoint:
-    prometheus:
-      enabled: true
-  metrics:
-    enable:
-      all: true
-
 app:
+  frontend-url: https://nibojapan.cloud
+  vocab-reminder:
+    cron: ${VOCAB_REMINDER_CRON:0 0 8 * * *}
   admin:
     email: ${ADMIN_EMAIL}
     full-name: ${ADMIN_FULL_NAME}
     role: ${ADMIN_ROLE}
     password: ${ADMIN_PASSWORD}
-

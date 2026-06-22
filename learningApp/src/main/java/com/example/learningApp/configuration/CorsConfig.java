@@ -11,33 +11,30 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
+    private static final List<String> ALLOWED_ORIGINS = List.of(
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "https://nibojapan.cloud",
+            "https://www.nibojapan.cloud",
+            "https://learning-japan-project-fe.vercel.app");
+
+    private static final List<String> ALLOWED_ORIGIN_PATTERNS = List.of(
+            "https://*.vercel.app");
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        System.out.println("[CORS_CONFIG_VER_V3_22_MAR] Initializing CORS...");
         CorsConfiguration config = new CorsConfiguration();
-
-        // 👇 FE domain
-        config.setAllowedOrigins(
-                List.of("http://localhost:3000")
-        );
-
-        config.setAllowedMethods(
-                List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")
-        );
-
-        config.setAllowedHeaders(
-                List.of("Authorization", "Content-Type")
-        );
-
-        config.setExposedHeaders(
-                List.of("Authorization")
-        );
-
+        config.setAllowedOrigins(ALLOWED_ORIGINS);
+        config.setAllowedOriginPatterns(ALLOWED_ORIGIN_PATTERNS);
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("Authorization", "Content-Type"));
         config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
 
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
-
         return source;
     }
 }

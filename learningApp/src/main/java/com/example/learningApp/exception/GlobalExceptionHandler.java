@@ -1,6 +1,6 @@
 package com.example.learningApp.exception;
 
-import com.example.learningApp.dto.ApiResponse;
+import com.example.learningApp.common.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.http.HttpStatus;
@@ -18,89 +18,70 @@ import java.util.Map;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-
-    // 🔹 Business logic error (VD: refresh token bị revoke)
+    // 🔹 Business logic error
     @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<ApiResponse<Object>> handleIllegalStateException(
-            IllegalStateException ex) {
-
-        ApiResponse<Object> response = ApiResponse.builder()
-                .code(HttpStatus.UNAUTHORIZED.value())
-                .message(ex.getMessage())
-                .build();
-
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    public ResponseEntity<ApiResponse<Object>> handleIllegalStateException(IllegalStateException ex) {
+        log.warn("⚠️ IllegalStateException: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error(HttpStatus.UNAUTHORIZED.value(), ex.getMessage()));
     }
 
     @ExceptionHandler(NotAuthorizedException.class)
     public ResponseEntity<ApiResponse<Object>> handleNotAuthorizedException(NotAuthorizedException ex) {
-
-        ApiResponse<Object> response = ApiResponse.builder()
-                .code(HttpStatus.UNAUTHORIZED.value())
-                .message(ex.getMessage())
-                .build();
-
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        log.warn("⚠️ NotAuthorizedException: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error(HttpStatus.UNAUTHORIZED.value(), ex.getMessage()));
     }
 
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<String>> handleNoResourceFoundException(NoResourceFoundException ex) {
+        log.warn("⚠️ NoResourceFoundException: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(HttpStatus.NOT_FOUND.value(), "API endpoint not found"));
+    }
 
     // 🔹 Validation error
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationException(
             MethodArgumentNotValidException ex) {
-
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getFieldErrors()
                 .forEach(err -> errors.put(err.getField(), err.getDefaultMessage()));
 
-        ApiResponse<Map<String, String>> response = ApiResponse.<Map<String, String>>builder()
-                .code(HttpStatus.BAD_REQUEST.value())
-                .message("Validation failed")
-                .result(errors)
-                .build();
-
-        return ResponseEntity.badRequest().body(response);
+        return ResponseEntity.badRequest()
+                .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), "Validation failed: " + errors.toString()));
     }
 
     // 🔹 NullPointerException
     @ExceptionHandler(NullPointerException.class)
     public ResponseEntity<ApiResponse<String>> handleNullPointerException(NullPointerException ex) {
         log.error("❌ NullPointerException", ex);
-
-        ApiResponse<String> response = ApiResponse.<String>builder()
-                .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .message("Unexpected null value occurred")
-                .result(ex.getMessage())
-                .build();
-
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                        "Unexpected null value occurred: " + ex.getMessage()));
     }
 
-    // 🔹 Lỗi tạo Bean (config sai)
+    // 🔹 Bean creation / config error
     @ExceptionHandler(BeanCreationException.class)
     public ResponseEntity<ApiResponse<String>> handleBeanCreationException(BeanCreationException ex) {
         log.error("⚙️ BeanCreationException", ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                        "Application configuration error: " + ex.getMessage()));
+    }
 
-        ApiResponse<String> response = ApiResponse.<String>builder()
-                .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .message("Application configuration error")
-                .result(ex.getMessage())
-                .build();
-
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    @ExceptionHandler(PaymentExpiredException.class)
+    public ResponseEntity<ApiResponse<Object>> handlePaymentExpiredException(PaymentExpiredException ex) {
+        log.warn("⚠️ PaymentExpiredException: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.GONE) // Or 410 Gone for expired resources
+                .body(ApiResponse.error(HttpStatus.GONE.value(), ex.getMessage()));
     }
 
     // 🔹 Bắt tất cả lỗi còn lại
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<String>> handleGeneralException(Exception ex) {
         log.error("🔥 Unhandled Exception", ex);
-
-        ApiResponse<String> response = ApiResponse.<String>builder()
-                .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .message("Internal server error")
-                .result(ex.getMessage())
-                .build();
-
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), ex.getMessage()));
     }
 }

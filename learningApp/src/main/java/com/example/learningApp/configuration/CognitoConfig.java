@@ -13,11 +13,11 @@ import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityPr
 public class CognitoConfig {
 
 
-    @Value("${aws.iam.access-key-cognito}")
+    @Value("${aws.iam.access-key}")
     String accessKey;
 
 
-    @Value("${aws.iam.secret-key-cognito}")
+    @Value("${aws.iam.secret-key}")
     String secretKey;
 
 
@@ -36,3 +36,4 @@ public class CognitoConfig {
                 .build();
     }
 }
+

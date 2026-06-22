@@ -3,30 +3,60 @@ version: "3.9"
 services:
 
   ##################################################
+  # 🐘 PostgreSQL
+  ##################################################
+  postgres:
+    image: postgres:17-alpine
+    container_name: postgres
+    command: [ "postgres", "-p", "5433" ]
+    environment:
+      POSTGRES_DB: learningApp
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5433"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d learningApp -p 5433" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  ##################################################
   # 🦓 Zookeeper
   ##################################################
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "2181:2181"
+    restart: unless-stopped
 
   ##################################################
   # 🦜 Kafka
   ##################################################
   kafka:
     image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
     depends_on:
       - zookeeper
     ports:
-      - "9092:9092"
+      - "9092:9092" # External (host machine)
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      # Dual listener: INTERNAL cho Docker, EXTERNAL cho host machine
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    restart: unless-stopped
 
   ##################################################
   # 🧠 Redis (for bitmap, cache, etc.)
@@ -36,119 +66,56 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
-    command: ["redis-server", "--appendonly", "yes"]
+    command: [ "redis-server", "--appendonly", "yes" ]
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     restart: unless-stopped
 
   ##################################################
-  # 📊 Redis Exporter (Prometheus metrics)
+  # 🚀 Backend Application (Learning App)
   ##################################################
-  redis-exporter:
-    image: oliver006/redis_exporter:latest
-    container_name: redis-exporter
+  learning-app:
+    image: ${APP_IMAGE:-baonoob1011/learning-app:latest}
+    container_name: learning-app
     ports:
-      - "9121:9121"
+      - "8080:8080"
+    env_file:
+      - .env # Nếu dự án bạn đang dùng file .env
     environment:
-      - REDIS_ADDR=redis://redis:6379
-    depends_on:
-      - redis
-    restart: unless-stopped
-
-  ##################################################
-  # ⚙️ Kafka Exporter (Prometheus metrics)
-  ##################################################
-  kafka-exporter:
-    image: danielqsj/kafka-exporter:latest
-    container_name: kafka-exporter
-    environment:
-      KAFKA_BROKERS: "kafka:9092"
-      KAFKA_VERSION: 2.6.0
-    ports:
-      - "9308:9308"
-    depends_on:
-      - kafka
-    restart: unless-stopped
-
-  ##################################################
-  # 📈 Node Exporter (System metrics)
-  ##################################################
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: node-exporter
-    ports:
-      - "9100:9100"
-    restart: unless-stopped
-
-  ##################################################
-  # 🚨 Alertmanager
-  ##################################################
-  alertmanager:
-    image: prom/alertmanager:latest
-    container_name: alertmanager
+      - SPRING_PROFILES_ACTIVE=default
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      # Support both old and new Spring Redis property names at runtime.
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      # Force Spring datasource at runtime (works even if image has old application.yaml)
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5433/learningApp
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - DB_URL=jdbc:postgresql://postgres:5433/learningApp
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - YT_DLP_PATH=/usr/local/bin/yt-dlp
+      - FFMPEG_PATH=/usr/bin/ffmpeg
+      - YT_DLP_COOKIES=/app/tool/cookies.txt
     volumes:
-      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
-    ports:
-      - "9093:9093"
-    restart: unless-stopped
-
-  ##################################################
-  # 📦 Prometheus
-  ##################################################
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
+      - ./tool:/app/tool
     depends_on:
-      - alertmanager
-      - node-exporter
-      - kafka
-      - redis-exporter
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./rules.yml:/etc/prometheus/rules.yml:ro
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--web.enable-lifecycle"
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
-
-  ##################################################
-  # 📊 Grafana Dashboard
-  ##################################################
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    depends_on:
-      - prometheus
-    ports:
-      - "4000:3000"   # <--- đổi 3000 bên trái thành port bạn muốn
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    restart: unless-stopped
-
-  ##################################################
-  # 🔎 Elasticsearch (for ELK)
-  ##################################################
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.2
-    container_name: elasticsearch
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-    volumes:
-      - esdata:/usr/share/elasticsearch/data
-    ports:
-      - "9200:9200"
-    restart: unless-stopped
-
-
 
 ##################################################
 # 📦 Shared Volumes
@@ -156,3 +123,4 @@ services:
 volumes:
   redis_data:
   esdata:
+  postgres_data:

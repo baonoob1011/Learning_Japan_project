@@ -13,3 +13,4 @@ public class RefreshTokenRequest {
     private String username;
     private String refreshToken;
 }
+
